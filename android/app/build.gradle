@@ -1,0 +1,65 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services" // Applied here
+}
+
+android {
+    namespace = "com.ragtagsocial.ragtag"
+    
+    // Force compileSdk to API 35
+    compileSdk = 35
+
+    // If you have Build Tools 35.0.0 installed, set this explicitly:
+    buildToolsVersion = "35.0.0"
+
+    // (Optional) If you rely on Flutter’s NDK version, keep it. Otherwise remove or set manually:
+    // ndkVersion = flutter.ndkVersion
+
+    defaultConfig {
+        applicationId = "com.ragtagsocial.ragtag"
+        minSdkVersion 23
+
+        // Force targetSdk to 35
+        targetSdk = 35
+
+        // Hardcode versionCode/versionName or keep referencing Flutter if you prefer
+        versionCode 1
+        versionName "1.0"
+        // versionCode = flutter.versionCode
+        // versionName = flutter.versionName
+    }
+
+    buildTypes {
+        release {
+            // Adjust your signingConfig as needed
+            signingConfig = signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    // Firebase BoM
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    
+    // Firebase libraries
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-analytics'
+}
+
+apply plugin: 'com.google.gms.google-services'

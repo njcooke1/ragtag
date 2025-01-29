@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "485912934856",
+    "project_id": "ragtag-f0334",
+    "storage_bucket": "ragtag-f0334.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485912934856:android:d29b22aefc56c3bdfd28fd",
+        "android_client_info": {
+          "package_name": "com.ragtagsocial.ragtag"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsNco57QEqMLw3dAWxGCUzeHyoGCznsGs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
