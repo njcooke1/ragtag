@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ragtagrevived
 
 A new Flutter project.
@@ -14,3 +15,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# ragtag
+everythingallatonce
+>>>>>>> aafe0b6508f5c656ef17007e9fca949d2f4bee23
