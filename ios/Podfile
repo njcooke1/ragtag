@@ -15,6 +15,9 @@ target 'Runner' do
   flutter_install_all_pods(File.dirname(File.realpath(__FILE__)))
   
   # Additional Pods you may need (e.g., Firebase)
-  # pod 'Firebase/Core'
-  # pod 'Firebase/Firestore'
+  pod 'Firebase/Core'
+  pod 'Firebase/Firestore'
+  pod 'Firebase/Auth'
+  pod 'Firebase/Messaging'
+  pod 'Firebase/Database'
 end
