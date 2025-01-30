@@ -1,0 +1,11 @@
+platform :ios, '13.0'
+
+use_frameworks!
+
+flutter_application_path = '../../'
+load File.join(flutter_application_path, '.flutter', 'flutter_export_environment.sh')
+
+target 'Runner' do
+  use_frameworks!
+  pod 'Flutter', :path => File.join(flutter_application_path, '.flutter', 'engine')
+end
