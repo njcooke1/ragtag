@@ -1,11 +1,9 @@
 workflows:
   ios-workflow:
-    name: iOS Workflow
+    name: "iOS Workflow"
     environment:
       flutter: stable
       xcode: latest
-    ios_signing:
-      signAllIosTargets: false
 
     scripts:
       - name: Precache iOS
