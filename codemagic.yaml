@@ -1,0 +1,17 @@
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    environment:
+      flutter: stable
+      xcode: latest
+    ios_signing:
+      signAllIosTargets: false
+
+    scripts:
+      - name: Precache iOS
+        script: |
+          flutter precache --ios
+          flutter pub get
+          cd ios
+          pod install
+          cd ..
