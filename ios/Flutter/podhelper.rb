@@ -97,7 +97,7 @@ def flutter_additional_ios_build_settings(target)
         build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]'] = "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
       elsif xcframework_file.start_with?('ios-') # ios-arm64
         build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]'] = "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
-       # else Info.plist or another platform.
+        # else Info.plist or another platform.
       end
     end
     build_configuration.build_settings['OTHER_LDFLAGS'] = '$(inherited) -framework Flutter'
@@ -180,6 +180,18 @@ def flutter_additional_macos_build_settings(target)
   end
 end
 
+# -----------------------------------------------------------------------------
+# NEW METHOD: flutter_install_all_pods
+# -----------------------------------------------------------------------------
+# This convenience method allows you to call:
+#   flutter_install_all_pods(File.dirname(File.realpath(__FILE__)))
+# from your Podfile. It delegates to the iOS version only.
+#
+# If you're also building for macOS, you can call flutter_install_all_macos_pods.
+def flutter_install_all_pods(ios_application_path = nil)
+  flutter_install_all_ios_pods(ios_application_path)
+end
+
 # Install pods needed to embed Flutter iOS engine and plugins.
 #
 # @example
@@ -216,8 +228,9 @@ def flutter_install_ios_engine_pod(ios_application_path = nil)
   copied_podspec_path = File.expand_path('Flutter.podspec', podspec_directory)
 
   # Generate a fake podspec to represent the Flutter framework.
-  # This is only necessary because plugin podspecs contain `s.dependency 'Flutter'`, and if this Podfile
-  # does not add a `pod 'Flutter'` CocoaPods will try to download it from the CocoaPods trunk.
+  # This is only necessary because plugin podspecs contain `s.dependency 'Flutter'`,
+  # and if this Podfile does not add a `pod 'Flutter'` CocoaPods will try to
+  # download it from the CocoaPods trunk.
   File.open(copied_podspec_path, 'w') do |podspec|
     podspec.write <<~EOF
       #
@@ -254,8 +267,9 @@ def flutter_install_macos_engine_pod(mac_application_path = nil)
   copied_podspec_path = File.expand_path('FlutterMacOS.podspec', File.join(mac_application_path, 'Flutter', 'ephemeral'))
 
   # Generate a fake podspec to represent the FlutterMacOS framework.
-  # This is only necessary because plugin podspecs contain `s.dependency 'FlutterMacOS'`, and if this Podfile
-  # does not add a `pod 'FlutterMacOS'` CocoaPods will try to download it from the CocoaPods trunk.
+  # This is only necessary because plugin podspecs contain `s.dependency 'FlutterMacOS'`,
+  # and if this Podfile does not add a `pod 'FlutterMacOS'` CocoaPods will try to
+  # download it from the CocoaPods trunk.
   File.open(copied_podspec_path, 'w') do |podspec|
     podspec.write <<~EOF
       #
@@ -323,7 +337,7 @@ def flutter_install_plugin_pods(application_path = nil, relative_symlink_dir, pl
     relative = flutter_relative_path_from_podfile(symlink)
 
     # If Swift Package Manager is enabled and the plugin has a Package.swift,
-    # skip from installing as a pod.
+    # skip installing as a pod.
     swift_package_exists = File.exist?(File.join(relative, platform_directory, plugin_name, "Package.swift"))
     next if swift_package_manager_enabled && swift_package_exists
 
@@ -371,7 +385,7 @@ end
 def flutter_parse_xcconfig_file(file)
   file_abs_path = File.expand_path(file)
   if !File.exist? file_abs_path
-    return [];
+    return []
   end
   entries = Hash.new
   skip_line_start_symbols = ["#", "/"]
@@ -379,7 +393,7 @@ def flutter_parse_xcconfig_file(file)
     next if skip_line_start_symbols.any? { |symbol| line =~ /^\s*#{symbol}/ }
     key_value_pair = line.split(pattern = '=')
     if key_value_pair.length == 2
-      entries[key_value_pair[0].strip()] = key_value_pair[1].strip();
+      entries[key_value_pair[0].strip()] = key_value_pair[1].strip()
     else
       puts "Invalid key/value pair: #{line}"
     end
