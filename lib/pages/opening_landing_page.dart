@@ -110,6 +110,13 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
     });
   }
 
+  /// Precache the background image so it’s already loaded when LandingPage appears.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/background.png'), context);
+  }
+
   @override
   void dispose() {
     _controller.dispose();
