@@ -13,3 +13,11 @@ workflows:
           cd ios
           pod install
           cd ..
+
+      - name: Build iOS Release
+        script: |
+          # Option A: Build an .xcarchive for iOS
+          # flutter build ios --release
+
+          # Option B: Build a distributable .ipa for iOS
+          flutter build ipa --release
