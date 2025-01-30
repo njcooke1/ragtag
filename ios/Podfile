@@ -19,3 +19,10 @@ target 'Runner' do
   pod 'Firebase/Messaging'
   pod 'Firebase/Database'
 end
+
+post_install do |installer|
+    installer.pods_project.targets.each do |target|
+      flutter_additional_ios_build_settings(target)
+    end
+  end
+  
