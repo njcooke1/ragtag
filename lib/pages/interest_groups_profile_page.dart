@@ -5,8 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// A redesigned interest (or class) groups page showing group details, events, resources, etc.
-/// We'll take in communityId, communityData, and userId via constructor arguments.
-/// Default to "interestGroups" if not specified.
 class RedesignedInterestGroupsPage extends StatefulWidget {
   final String communityId;
   final Map<String, dynamic> communityData;
@@ -77,8 +75,10 @@ class _RedesignedInterestGroupsPageState
   ///   - The group is a "classGroups" doc
   ///   - The user is a member
   ///   - Or the user is an admin
-  bool get canAddCalendar => isAdmin || (isMember && collectionName == 'classGroups');
-  bool get canAddTodo => isAdmin || (isMember && collectionName == 'classGroups');
+  bool get canAddCalendar =>
+      isAdmin || (isMember && collectionName == 'classGroups');
+  bool get canAddTodo =>
+      isAdmin || (isMember && collectionName == 'classGroups');
 
   /// Let admins OR class group members edit/delete events/tasks
   bool get canEditOrDelete =>
@@ -459,7 +459,8 @@ class _RedesignedInterestGroupsPageState
     final groupName = communityData['name'] ?? '';
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF8F8F8),
+      backgroundColor:
+          isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF8F8F8),
       // FABs pinned at bottom in a Row
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Row(
@@ -547,8 +548,6 @@ class _RedesignedInterestGroupsPageState
                                     'Upcoming Events',
                                     Icons.event_outlined,
                                   ),
-                                  // Constrain height so only the events list
-                                  // scrolls within it
                                   Container(
                                     height: 200,
                                     child: _buildEventsListScroll(),
@@ -804,6 +803,7 @@ class _RedesignedInterestGroupsPageState
               padding: const EdgeInsets.only(left: 4.0),
               child: InkWell(
                 onTap: () {
+                  // Navigation example - adjust as needed
                   Navigator.pushNamed(context, '/admin-dashboard');
                 },
                 child: Container(
@@ -873,10 +873,7 @@ class _RedesignedInterestGroupsPageState
             child: _buildActionCard(
               icon: Icons.calendar_today_outlined,
               label: 'Calendar',
-              onTap: () {
-                // Possibly show a full calendar or bottom sheet
-                _showSnack("Open calendar view if needed...");
-              },
+              onTap: _showCalendarPopup,
             ),
           ),
           const SizedBox(width: 16),
@@ -901,9 +898,7 @@ class _RedesignedInterestGroupsPageState
             child: _buildActionCard(
               icon: Icons.checklist_outlined,
               label: 'To-Do',
-              onTap: () {
-                _showSnack("Open To-Do screen if needed...");
-              },
+              onTap: _showTodoPopup,
             ),
           ),
         ],
@@ -911,7 +906,6 @@ class _RedesignedInterestGroupsPageState
     );
   }
 
-  /// Restored correct `_buildActionCard` that shows an icon + text in a gradient outline.
   Widget _buildActionCard({
     required IconData icon,
     required String label,
@@ -1079,7 +1073,7 @@ class _RedesignedInterestGroupsPageState
     if (eventList.isEmpty) {
       return Center(
         child: Text(
-          " ",
+          "No events",
           style: GoogleFonts.workSans(
             color: isDarkMode ? Colors.white70 : Colors.black87,
           ),
@@ -1193,7 +1187,8 @@ class _RedesignedInterestGroupsPageState
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        final Color bgColor = isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
+        final Color bgColor =
+            isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
 
         return AlertDialog(
           backgroundColor: bgColor,
@@ -1335,7 +1330,7 @@ class _RedesignedInterestGroupsPageState
     if (_groupTodos.isEmpty) {
       return Center(
         child: Text(
-          " ",
+          "No tasks",
           style: GoogleFonts.workSans(
             color: isDarkMode ? Colors.white70 : Colors.black87,
           ),
@@ -1352,57 +1347,56 @@ class _RedesignedInterestGroupsPageState
     );
   }
 
-Widget _buildTodoTile(Map<String, dynamic> todo) {
-  final todoId = todo['id'];
-  final todoTitle = todo['title'] ?? '';
-  final isChecked = _myTodoStatus[todoId] == true;
+  Widget _buildTodoTile(Map<String, dynamic> todo) {
+    final todoId = todo['id'];
+    final todoTitle = todo['title'] ?? '';
+    final isChecked = _myTodoStatus[todoId] == true;
 
-  return GestureDetector(
-    // Place your onLongPress callback here
-    onLongPress: canEditOrDelete ? () => _showTaskActionsBottomSheet(todo) : null,
-
-    child: Card(
-      color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: CheckboxListTile(
-        dense: true,
-        controlAffinity: ListTileControlAffinity.leading,
-        title: Text(
-          todoTitle,
-          style: GoogleFonts.workSans(
-            color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
-          ),
+    return GestureDetector(
+      onLongPress:
+          canEditOrDelete ? () => _showTaskActionsBottomSheet(todo) : null,
+      child: Card(
+        color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+        elevation: 1,
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
         ),
-        value: isChecked,
-        onChanged: (val) async {
-          final uid = FirebaseAuth.instance.currentUser?.uid;
-          if (uid == null) return;
+        child: CheckboxListTile(
+          dense: true,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: Text(
+            todoTitle,
+            style: GoogleFonts.workSans(
+              color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
+            ),
+          ),
+          value: isChecked,
+          onChanged: (val) async {
+            final uid = FirebaseAuth.instance.currentUser?.uid;
+            if (uid == null) return;
 
-          final newValue = val ?? false;
-          setState(() {
-            _myTodoStatus[todoId] = newValue;
-          });
-          try {
-            await FirebaseFirestore.instance
-                .collection(collectionName)
-                .doc(communityId)
-                .collection('members')
-                .doc(uid)
-                .collection('todosStatus')
-                .doc(todoId)
-                .set({"checked": newValue});
-          } catch (e) {
-            _showSnack("Could not update to-do status: $e");
-          }
-        },
+            final newValue = val ?? false;
+            setState(() {
+              _myTodoStatus[todoId] = newValue;
+            });
+            try {
+              await FirebaseFirestore.instance
+                  .collection(collectionName)
+                  .doc(communityId)
+                  .collection('members')
+                  .doc(uid)
+                  .collection('todosStatus')
+                  .doc(todoId)
+                  .set({"checked": newValue});
+            } catch (e) {
+              _showSnack("Could not update to-do status: $e");
+            }
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showTaskActionsBottomSheet(Map<String, dynamic> todo) {
     showModalBottomSheet(
@@ -1451,7 +1445,8 @@ Widget _buildTodoTile(Map<String, dynamic> todo) {
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        final Color bgColor = isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
+        final Color bgColor =
+            isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
 
         return AlertDialog(
           backgroundColor: bgColor,
@@ -1720,7 +1715,8 @@ Widget _buildTodoTile(Map<String, dynamic> todo) {
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        final Color bgColor = isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
+        final Color bgColor =
+            isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
 
         return AlertDialog(
           backgroundColor: bgColor,
@@ -1759,8 +1755,7 @@ Widget _buildTodoTile(Map<String, dynamic> todo) {
                       decoration: InputDecoration(
                         labelText: "Title",
                         labelStyle: GoogleFonts.workSans(
-                          color:
-                              isDarkMode ? Colors.white70 : Colors.grey[700],
+                          color: isDarkMode ? Colors.white70 : Colors.grey[700],
                         ),
                         filled: true,
                         fillColor: isDarkMode
@@ -1847,8 +1842,7 @@ Widget _buildTodoTile(Map<String, dynamic> todo) {
                       decoration: InputDecoration(
                         labelText: "Location",
                         labelStyle: GoogleFonts.workSans(
-                          color:
-                              isDarkMode ? Colors.white70 : Colors.grey[700],
+                          color: isDarkMode ? Colors.white70 : Colors.grey[700],
                         ),
                         filled: true,
                         fillColor: isDarkMode
@@ -1863,7 +1857,8 @@ Widget _buildTodoTile(Map<String, dynamic> todo) {
                     Text(
                       "Current Selection:\n$dateTimeLabel",
                       style: GoogleFonts.workSans(
-                        color: isDarkMode ? Colors.grey[100] : Colors.grey[800],
+                        color:
+                            isDarkMode ? Colors.grey[100] : Colors.grey[800],
                         fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
@@ -1944,7 +1939,8 @@ Widget _buildTodoTile(Map<String, dynamic> todo) {
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        final Color bgColor = isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
+        final Color bgColor =
+            isDarkMode ? const Color(0xFF2A2A2A) : Colors.white;
 
         return AlertDialog(
           backgroundColor: bgColor,
@@ -2213,5 +2209,137 @@ Widget _buildTodoTile(Map<String, dynamic> todo) {
     } catch (e) {
       _showSnack("Report failed: $e");
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  UPDATED: CALENDAR POPUP & TODO POPUP with "X" close button
+  // ---------------------------------------------------------------------------
+
+  /// Show a bottom sheet listing all upcoming events in a scrollable view,
+  /// partially filling screen, with an X to close.
+  void _showCalendarPopup() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return Column(
+              children: [
+                // Header row with label + X button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      Text(
+                        "All Events",
+                        style: GoogleFonts.workSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              isDarkMode ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close,
+                          color:
+                              isDarkMode ? Colors.white70 : Colors.black87,
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // The scrollable list of events
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: eventList.length,
+                    itemBuilder: (context, index) {
+                      final eventData = eventList[index];
+                      return _buildEventTile(eventData);
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Show a bottom sheet listing all tasks in a scrollable view,
+  /// partially filling screen, with an X to close.
+  void _showTodoPopup() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return Column(
+              children: [
+                // Header row with label + X button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      Text(
+                        "All To-Do Items",
+                        style: GoogleFonts.workSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              isDarkMode ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close,
+                          color:
+                              isDarkMode ? Colors.white70 : Colors.black87,
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // The scrollable list of tasks
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: _groupTodos.length,
+                    itemBuilder: (context, index) {
+                      final todo = _groupTodos[index];
+                      return _buildTodoTile(todo);
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

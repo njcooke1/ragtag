@@ -5,6 +5,13 @@ plugins {
     id "com.google.gms.google-services" // Applied here
 }
 
+// Load signing info from key.properties (if it exists)
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.ragtagsocial.ragtag"
     
@@ -14,33 +21,40 @@ android {
     // If you have Build Tools 35.0.0 installed, set this explicitly:
     buildToolsVersion = "35.0.0"
 
-    // (Optional) If you rely on Flutter’s NDK version, keep it. Otherwise remove or set manually:
-    // ndkVersion = flutter.ndkVersion
-
     defaultConfig {
         applicationId = "com.ragtagsocial.ragtag"
         minSdkVersion 23
-
-        // Force targetSdk to 35
         targetSdk = 35
 
-        // Hardcode versionCode/versionName or keep referencing Flutter if you prefer
         versionCode 1
         versionName "1.0"
-        // versionCode = flutter.versionCode
-        // versionName = flutter.versionName
+    }
+
+    // Configure signing for release
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
     }
 
     buildTypes {
         release {
-            // Adjust your signingConfig as needed
-            signingConfig = signingConfigs.debug
+            // Use the release signing config
+            signingConfig signingConfigs.release
+            
+            // (Optional) enable ProGuard/R8 for shrinking/obfuscation:
+            // minifyEnabled true
+            // shrinkResources true
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {

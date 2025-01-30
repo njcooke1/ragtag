@@ -1542,68 +1542,25 @@ class _ClubsProfilePageState extends State<ClubsProfilePage>
     );
   }
 
-  Widget _buildImagesCarousel() {
-    if (_slidingPictures.isEmpty) {
-      return Container(
-        color: _isDarkMode ? Colors.grey.shade900 : Colors.grey.shade200,
-        child: Center(
-          child: Text(
-            'No Images Available',
-            style: TextStyle(
-              color: _isDarkMode ? Colors.white54 : Colors.grey.shade600,
+// ONLY the updated portion of _buildImagesCarousel()
+
+Widget _buildImagesCarousel() {
+  // If no pictures, show a Stack with "No images" + possible add button.
+  if (_slidingPictures.isEmpty) {
+    return Stack(
+      children: [
+        Container(
+          color: _isDarkMode ? Colors.grey.shade900 : Colors.grey.shade200,
+          child: Center(
+            child: Text(
+              'No Images Available',
+              style: TextStyle(
+                color: _isDarkMode ? Colors.white54 : Colors.grey.shade600,
+              ),
             ),
           ),
         ),
-      );
-    }
-    final displayed = _slidingPictures.take(5).toList();
-    return Stack(
-      children: [
-        PageView.builder(
-          itemCount: displayed.length,
-          onPageChanged: (index) => setState(() => _currentImageIndex = index),
-          itemBuilder: (context, index) {
-            final imageUrl = displayed[index];
-            // Long press => let admin reorder or delete
-            return GestureDetector(
-              onLongPress: () {
-                if (_isAdmin) {
-                  _showManageImages();
-                }
-              },
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: Colors.grey.shade300),
-                errorWidget: (_, __, ___) => Container(color: Colors.grey),
-              ),
-            );
-          },
-        ),
-        Positioned(
-          bottom: 16,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(displayed.length, (idx) {
-              final isActive = (idx == _currentImageIndex);
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: isActive ? 22 : 10,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFFD76D77)
-                      : (_isDarkMode ? Colors.grey : Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              );
-            }),
-          ),
-        ),
-        // Add icon => pick/upload more images
+        // Add button for admin
         if (_isAdmin)
           Positioned(
             top: 16,
@@ -1634,6 +1591,86 @@ class _ClubsProfilePageState extends State<ClubsProfilePage>
       ],
     );
   }
+
+  // If we have pictures, build the normal stacked PageView + add icon
+  final displayed = _slidingPictures.take(5).toList();
+  return Stack(
+    children: [
+      PageView.builder(
+        itemCount: displayed.length,
+        onPageChanged: (index) => setState(() => _currentImageIndex = index),
+        itemBuilder: (context, index) {
+          final imageUrl = displayed[index];
+          // Long press => let admin reorder or delete
+          return GestureDetector(
+            onLongPress: () {
+              if (_isAdmin) {
+                _showManageImages();
+              }
+            },
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(color: Colors.grey.shade300),
+              errorWidget: (_, __, ___) => Container(color: Colors.grey),
+            ),
+          );
+        },
+      ),
+      Positioned(
+        bottom: 16,
+        left: 0,
+        right: 0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(displayed.length, (idx) {
+            final isActive = (idx == _currentImageIndex);
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: isActive ? 22 : 10,
+              height: 3,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? const Color(0xFFD76D77)
+                    : (_isDarkMode ? Colors.grey : Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            );
+          }),
+        ),
+      ),
+      // Add icon => pick/upload more images (if admin)
+      if (_isAdmin)
+        Positioned(
+          top: 16,
+          left: 16,
+          child: GestureDetector(
+            onTap: _handleAddSlidingPicture,
+            child: Container(
+              width: 45,
+              height: 45,
+              decoration: BoxDecoration(
+                color: _isDarkMode
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _isDarkMode ? Colors.white70 : Colors.black54,
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.add,
+                color: _isDarkMode ? Colors.white : Colors.black,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+    ],
+  );
+}
 
   Widget _buildExpandableDescription(String description) {
     return AnimatedContainer(
