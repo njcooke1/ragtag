@@ -42,3 +42,4 @@ code_signing:
   xcode_project:
     automatic_code_signing: true
     bundle_id: "com.ragtag.ragtag"
+    
