@@ -21,31 +21,30 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
 
-    # Here's where we configure publishing to App Store Connect
     publishing:
       app_store_connect:
+        # Tells the publishing config to use the credentials set in code_signing
+        inherit: true
+        
+        # "app-store", "ad-hoc", "enterprise", or "development"
         export_method: app-store
-        # Optionally:
-        # submit_to_testflight: true
-        # should_auto_submit_app_store_version: true
-        # release_type: MANUAL
 
-# Everything related to code signing goes into this top-level code_signing section
+# The top-level code_signing block where your Apple ID + password go
 code_signing:
   app_store_connect:
     # The Apple ID email you use to sign in to App Store Connect
     apple_id: $APPLE_ID
 
-    # If you use Apple ID + password for authentication (vs. API key),
-    # you must provide an app-specific password here (2FA-enabled Apple IDs).
+    # Must be an "app-specific password" if you have 2FA enabled on your Apple ID
+    # Generate one at https://appleid.apple.com/ under "Security"
     password: $APPLE_PASSWORD
 
-    # If you're in multiple Apple Developer teams, specify:
+    # If you have multiple Apple Developer teams, uncomment:
     # team_id: $TEAM_ID
 
   xcode_project:
-    # Tells Codemagic to handle provisioning profiles automatically
+    # Tells Codemagic to generate provisioning profiles automatically
     automatic_code_signing: true
 
-    # Must match the Bundle Identifier in Xcode (ios/Runner.xcworkspace)
+    # Must match your project's Bundle ID (ios/Runner.xcworkspace > Signing & Capabilities)
     bundle_id: "com.ragtag.ragtag"
