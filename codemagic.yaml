@@ -4,11 +4,8 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-      
-      # This pulls in the environment variables from the group "Nicholas Cooke"
       groups:
         - "Nicholas Cooke"
-
     scripts:
       - name: "Precache & Install Pods"
         script: |
@@ -17,7 +14,6 @@ workflows:
           cd ios
           pod install
           cd ..
-
       - name: "Build iOS Release"
         script: |
           flutter build ipa --release
@@ -27,19 +23,19 @@ workflows:
 
     publishing:
       app_store_connect:
-        # 'inherit: true' means “use the API key from the top-level code_signing block”
-        inherit: true
+        # Instead of 'inherit: true', define it directly:
+        api_key:
+          key_id: $APP_STORE_CONNECT_KEY_ID
+          issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+          private_key: $APP_STORE_CONNECT_PRIVATE_KEY
         export_method: app-store
 
-# Code signing credentials at the TOP LEVEL (not inside 'workflows')
-code_signing:
-  app_store_connect:
-    # These match environment variables in your "Nicholas Cooke" group
-    key_id: $APP_STORE_CONNECT_KEY_ID
-    issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-    private_key: $APP_STORE_CONNECT_PRIVATE_KEY
-
-  xcode_project:
-    automatic_code_signing: true
-    bundle_id: "com.ragtag.ragtag"
-    
+# OPTIONAL: You only need top-level code_signing if you want to 'inherit' from there.
+# code_signing:
+#   app_store_connect:
+#     key_id: $APP_STORE_CONNECT_KEY_ID
+#     issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+#     private_key: $APP_STORE_CONNECT_PRIVATE_KEY
+#   xcode_project:
+#     automatic_code_signing: true
+#     bundle_id: "com.ragtag.ragtag"
