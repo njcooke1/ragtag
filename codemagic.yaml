@@ -22,29 +22,23 @@ workflows:
       - build/ios/ipa/*.ipa
 
     publishing:
+      # Instruct Codemagic to publish via App Store Connect using
+      # the API key defined in the top-level code_signing block
       app_store_connect:
-        # Tells the publishing config to use the credentials set in code_signing
         inherit: true
-        
-        # "app-store", "ad-hoc", "enterprise", or "development"
         export_method: app-store
 
-# The top-level code_signing block where your Apple ID + password go
+# Move code signing credentials to top-level
 code_signing:
   app_store_connect:
-    # The Apple ID email you use to sign in to App Store Connect
-    apple_id: $APPLE_ID
-
-    # Must be an "app-specific password" if you have 2FA enabled on your Apple ID
-    # Generate one at https://appleid.apple.com/ under "Security"
-    password: $APPLE_PASSWORD
-
-    # If you have multiple Apple Developer teams, uncomment:
-    # team_id: $TEAM_ID
+    # Instead of apple_id/password, use API key-based auth:
+    # 1) key_id => The Key ID (e.g. "4P3J9NG42Y")
+    # 2) issuer_id => The Issuer ID from App Store Connect
+    # 3) private_key => The entire content of the .p8 file
+    key_id: $APP_STORE_CONNECT_KEY_ID
+    issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+    private_key: $APP_STORE_CONNECT_PRIVATE_KEY
 
   xcode_project:
-    # Tells Codemagic to generate provisioning profiles automatically
     automatic_code_signing: true
-
-    # Must match your project's Bundle ID (ios/Runner.xcworkspace > Signing & Capabilities)
     bundle_id: "com.ragtag.ragtag"
