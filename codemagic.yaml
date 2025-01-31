@@ -4,8 +4,7 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-      groups:
-        - "Nicholas Cooke"  # Make sure this group has the 3 environment vars
+
     scripts:
       - name: "Precache & Install Pods"
         script: |
@@ -17,13 +16,20 @@ workflows:
       - name: "Build iOS Release"
         script: |
           flutter build ipa --release
+
     artifacts:
       - build/ios/ipa/*.ipa
 
     publishing:
       app_store_connect:
         api_key:
-          key_id: $APP_STORE_CONNECT_KEY_ID
-          issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-          private_key: $APP_STORE_CONNECT_PRIVATE_KEY
+          key_id: "4P3J9NG42Y"  # Codemagic Key ID
+          issuer_id: "fdc7b1c2-d82e-45d6-8ade-1d380db54d65"  # Issuer ID
+          private_key: |
+            -----BEGIN PRIVATE KEY-----
+            MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgfjhltNSaiRRAEADT
+            7Vz9FIDYeUWaY0xq8t86uUBTzeygCgYIKoZIzj0DAQehRANCAASoMAus06DEkKK4
+            zGMW8iVmhvB7lWoGow6/WDNpUhmGwv27Z83t+PCavbvU6ec+1eJvjfzvc5KoLPpR
+            qujhBlmh
+            -----END PRIVATE KEY-----
         export_method: app-store
