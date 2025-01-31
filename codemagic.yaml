@@ -16,17 +16,20 @@ workflows:
 
       - name: "Build iOS Release"
         script: |
-          # Produces a signed .ipa in build/ios/ipa
           flutter build ipa --release
 
-    # This saves the .ipa to Codemagic artifacts for download
     artifacts:
       - build/ios/ipa/*.ipa
 
-    # If you want Codemagic to handle code signing for you:
     publishing:
       ios:
-        export_method: app-store  # or 'app-store', 'development', etc.
-        automatic_code_signing:
-          apple_id: $APPLE_ID
-          bundle_id: "com.ragtag.ragtag" # Must match your project
+        export_method: app-store
+
+    code_signing:
+      app_store_connect:
+        apple_id: $APPLE_ID
+        # team_id: $TEAM_ID (if needed)
+
+      xcode_project:
+        automatic_code_signing: true
+        bundle_id: "com.ragtag.ragtag"
