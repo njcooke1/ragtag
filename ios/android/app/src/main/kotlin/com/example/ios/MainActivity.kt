@@ -1,4 +1,4 @@
-package com.example.ios
+package com.ragtag.ragtag
 
 import io.flutter.embedding.android.FlutterActivity
 
