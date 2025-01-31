@@ -1,3 +1,4 @@
+# Top-level code_signing and workflows are siblings
 workflows:
   ios-workflow:
     name: "iOS Workflow"
@@ -6,7 +7,7 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: "Install Dependencies"
+      - name: "Install Pods"
         script: |
           flutter precache --ios
           flutter pub get
@@ -23,15 +24,16 @@ workflows:
 
     publishing:
       app_store_connect:
-        inherit: true           # <----- Tells publishing to use credentials from code_signing
+        # Tells publishing to use the API key from 'code_signing' below
+        inherit: true
         export_method: app-store
 
-# Define code signing credentials at TOP LEVEL
+# MAKE SURE this code_signing block is NOT nested under workflows
 code_signing:
   app_store_connect:
-    key_id: $APP_STORE_CONNECT_KEY_ID          # e.g. "4P3J9NG42Y"
-    issuer_id: $APP_STORE_CONNECT_ISSUER_ID    # e.g. "12ab34cd-5678-90ef-1234-5abc6789de01"
-    private_key: $APP_STORE_CONNECT_PRIVATE_KEY  # Entire .p8 file contents
+    key_id: $APP_STORE_CONNECT_KEY_ID            # e.g. "4P3J9NG42Y"
+    issuer_id: $APP_STORE_CONNECT_ISSUER_ID      # e.g. "12ab34cd-5678-90ef-1234-5abc6789de01"
+    private_key: $APP_STORE_CONNECT_PRIVATE_KEY  # Entire .p8 file contents (including BEGIN/END lines)
 
   xcode_project:
     automatic_code_signing: true
