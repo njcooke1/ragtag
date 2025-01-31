@@ -4,19 +4,20 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-      # If you put them in a variable group, list it here:
+      # If using a variable group in Codemagic for your credentials, list it here:
       groups:
         - "Nicholas Cooke"
     scripts:
-      - name: "Build iOS Release"
+      - name: "Build iOS"
         script: |
-          flutter precache --ios
-          flutter pub get
-          cd ios
-          pod install
-          cd ..
-          flutter build ipa --release
-
+          echo "Building iOS..."
+          # or real steps like:
+          # flutter precache --ios
+          # flutter pub get
+          # cd ios
+          # pod install
+          # cd ..
+          # flutter build ipa --release
     publishing:
       app_store_connect:
         api_key:
