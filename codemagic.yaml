@@ -21,15 +21,17 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
 
+    # This is where you configure app-store publishing
     publishing:
-      ios:
-        export_method: app-store
-
-    code_signing:
       app_store_connect:
-        apple_id: $APPLE_ID
-        # team_id: $TEAM_ID (if needed)
-
-      xcode_project:
-        automatic_code_signing: true
+        apple_id: $APPLE_ID        # from your environment or codemagic secret
+        team_id: $TEAM_ID          # from your environment or codemagic secret
         bundle_id: "com.ragtag.ragtag"
+        export_method: app-store
+        # submit_to_testflight: true   # uncomment if you want to auto-submit
+        # upload_dsyms: true          # uncomment if you want to upload dSYMs
+
+    # Automatic code-signing section
+    automatic_code_signing:
+      apple_team_id: $TEAM_ID    # from your environment or codemagic secret
+      sign_apps: true
