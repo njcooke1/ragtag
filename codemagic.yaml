@@ -6,7 +6,7 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: "Precache & Install Pods"
+      - name: "Install Dependencies"
         script: |
           flutter precache --ios
           flutter pub get
@@ -22,22 +22,16 @@ workflows:
       - build/ios/ipa/*.ipa
 
     publishing:
-      # Instruct Codemagic to publish via App Store Connect using
-      # the API key defined in the top-level code_signing block
       app_store_connect:
-        inherit: true
+        inherit: true           # <----- Tells publishing to use credentials from code_signing
         export_method: app-store
 
-# Move code signing credentials to top-level
+# Define code signing credentials at TOP LEVEL
 code_signing:
   app_store_connect:
-    # Instead of apple_id/password, use API key-based auth:
-    # 1) key_id => The Key ID (e.g. "4P3J9NG42Y")
-    # 2) issuer_id => The Issuer ID from App Store Connect
-    # 3) private_key => The entire content of the .p8 file
-    key_id: $APP_STORE_CONNECT_KEY_ID
-    issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-    private_key: $APP_STORE_CONNECT_PRIVATE_KEY
+    key_id: $APP_STORE_CONNECT_KEY_ID          # e.g. "4P3J9NG42Y"
+    issuer_id: $APP_STORE_CONNECT_ISSUER_ID    # e.g. "12ab34cd-5678-90ef-1234-5abc6789de01"
+    private_key: $APP_STORE_CONNECT_PRIVATE_KEY  # Entire .p8 file contents
 
   xcode_project:
     automatic_code_signing: true
