@@ -6,7 +6,7 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: Precache iOS
+      - name: "Precache & Install Pods"
         script: |
           flutter precache --ios
           flutter pub get
@@ -14,10 +14,19 @@ workflows:
           pod install
           cd ..
 
-      - name: Build iOS Release
+      - name: "Build iOS Release"
         script: |
-          # Option A: Build an .xcarchive for iOS
-          # flutter build ios --release
-
-          # Option B: Build a distributable .ipa for iOS
+          # Produces a signed .ipa in build/ios/ipa
           flutter build ipa --release
+
+    # This saves the .ipa to Codemagic artifacts for download
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    # If you want Codemagic to handle code signing for you:
+    publishing:
+      ios:
+        export_method: app-store  # or 'app-store', 'development', etc.
+        automatic_code_signing:
+          apple_id: $APPLE_ID
+          bundle_id: "com.ragtag.ragtag" # Must match your project
