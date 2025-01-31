@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Updated launch_background.xml to reference splash_bg.png with gravity fill -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+    <!-- Set a black background -->
+    <item android:drawable="@android:color/black" />
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <!-- Splash image that fills the screen -->
+    <item>
         <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:gravity="fill"
+            android:src="@drawable/splash_bg"
+            android:antialias="true" />
+    </item>
 </layer-list>

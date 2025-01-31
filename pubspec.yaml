@@ -62,13 +62,27 @@ dev_dependencies:
   clock: ^1.1.1
   fake_async: ^1.3.1
   leak_tracker: ^10.0.7
+  flutter_native_splash: 2.4.4
   leak_tracker_flutter_testing: ^3.0.8
   matcher: ^0.12.16+1
   path: ^1.9.0
   source_span: ^1.10.0
   string_scanner: ^1.3.0
   test_api: ^0.7.3
+  flutter_launcher_icons: ^0.13.1
   vm_service: ^14.0.0
+
+flutter_native_splash:
+  image: assets/splash_bg.png
+  color: "#000000"
+  android: true
+  ios: true
+
+  
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon.png"
 
 flutter:
   uses-material-design: true
@@ -85,6 +99,7 @@ flutter:
     - assets/flatlogo.png
     - assets/flatlogoblack.png
     - assets/creationbadge.png
+    - assets/splash_image.png
     - assets/fomofeedlogo.png
     - assets/fomofeedlogoblack.png
     - assets/fomofeed.png
@@ -97,6 +112,7 @@ flutter:
     - assets/dayonebadge.png
     - assets/ragtaglogoblack.png
     - assets/people.png
+    - assets/splash_bg.png
     - assets/banner.png
     - assets/places.png
     - assets/new.png
