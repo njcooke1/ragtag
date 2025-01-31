@@ -4,8 +4,8 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-
-      # Import the variable group named "Nicholas Cooke"
+      
+      # This pulls in the environment variables from the group "Nicholas Cooke"
       groups:
         - "Nicholas Cooke"
 
@@ -27,20 +27,18 @@ workflows:
 
     publishing:
       app_store_connect:
-        # Tells publishing to inherit the credentials from the top-level code_signing block
+        # 'inherit: true' means “use the API key from the top-level code_signing block”
         inherit: true
         export_method: app-store
 
-# Top-level code signing configuration
+# Code signing credentials at the TOP LEVEL (not inside 'workflows')
 code_signing:
   app_store_connect:
-    # References the environment variables from your "Nicholas Cooke" group
+    # These match environment variables in your "Nicholas Cooke" group
     key_id: $APP_STORE_CONNECT_KEY_ID
     issuer_id: $APP_STORE_CONNECT_ISSUER_ID
     private_key: $APP_STORE_CONNECT_PRIVATE_KEY
 
   xcode_project:
     automatic_code_signing: true
-
-    # Must match your app's bundle identifier in Xcode
     bundle_id: "com.ragtag.ragtag"
