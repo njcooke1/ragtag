@@ -4,24 +4,23 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-      # If using a variable group in Codemagic for your credentials, list it here:
-      groups:
-        - "Nicholas Cooke"
+      
     scripts:
-      - name: "Build iOS"
+      - name: "Just a Test"
         script: |
-          echo "Building iOS..."
-          # or real steps like:
-          # flutter precache --ios
-          # flutter pub get
-          # cd ios
-          # pod install
-          # cd ..
-          # flutter build ipa --release
+          echo "Hello, world!"
+
     publishing:
       app_store_connect:
+        # Everything is inlined here
         api_key:
-          key_id: $APP_STORE_CONNECT_KEY_ID
-          issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-          private_key: $APP_STORE_CONNECT_PRIVATE_KEY
+          key_id: "4P3J9NG42Y"
+          issuer_id: "fdc7b1c2-d82e-45d6-8ade-1d380db54d65"
+          private_key: |
+            -----BEGIN PRIVATE KEY-----
+            MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgfjhltNSaiRRAEADT
+            7Vz9FIDYeUWaY0xq8t86uUBTzeygCgYIKoZIzj0DAQehRANCAASoMAus06DEkKK4
+            zGMW8iVmhvB7lWoGow6/WDNpUhmGwv27Z83t+PCavbvU6ec+1eJvjfzvc5KoLPpR
+            qujhBlmh
+            -----END PRIVATE KEY-----
         export_method: app-store
