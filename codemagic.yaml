@@ -23,8 +23,8 @@ workflows:
     publishing:
       app_store_connect:
         api_key:
-          key_id: "4P3J9NG42Y"  # Codemagic Key ID
-          issuer_id: "fdc7b1c2-d82e-45d6-8ade-1d380db54d65"  # Issuer ID
+          key_id: "4P3J9NG42Y"
+          issuer_id: "fdc7b1c2-d82e-45d6-8ade-1d380db54d65"
           private_key: |
             -----BEGIN PRIVATE KEY-----
             MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgfjhltNSaiRRAEADT
