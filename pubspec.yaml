@@ -3,7 +3,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 version: 1.0.0
-build: 2
+build: 3
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -110,6 +110,7 @@ flutter:
     - assets/events.png
     - assets/newbanner.png
     - assets/news.png
+    - assets/icon.png
     - assets/dayonebadge.png
     - assets/ragtaglogoblack.png
     - assets/people.png
