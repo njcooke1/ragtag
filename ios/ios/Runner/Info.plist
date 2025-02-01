@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- App Icon References -->
+	<key>CFBundleIconFiles</key>
+	<array>
+		<string>Icon-App-20x20</string>
+		<string>Icon-App-29x29</string>
+		<string>Icon-App-40x40</string>
+		<string>Icon-App-60x60</string>
+		<string>Icon-App-76x76</string>
+		<string>Icon-App-83.5x83.5</string>
+		<string>Icon-App-1024x1024</string>
+	</array>
 </dict>
 </plist>

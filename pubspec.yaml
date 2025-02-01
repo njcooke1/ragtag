@@ -55,6 +55,7 @@ dependencies:
   google_fonts: ^6.2.1
   cached_network_image: ^3.2.3
   smooth_page_indicator: ^1.0.0 # Optional: For page indicators
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -79,7 +80,6 @@ flutter_native_splash:
   android: true
   ios: true
 
-  
 flutter_launcher_icons:
   android: true
   ios: true
@@ -140,3 +140,6 @@ flutter:
           weight: 700
         - asset: assets/fonts/Poppins-ExtraLight.ttf
           weight: 200
+
+platforms:
+  ios: '11.0'  # iOS platform version
