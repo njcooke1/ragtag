@@ -42,36 +42,53 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+
+		<!-- App Icon Configuration -->
+		<key>CFBundleIcons</key>
+		<dict>
+			<key>CFBundlePrimaryIcon</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+		</dict>
+
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+
 		<!-- CAMERA PERMISSION -->
 		<key>NSCameraUsageDescription</key>
 		<string>This app needs camera access to let you take photos or videos.</string>
+
 		<!-- LOCATION PERMISSION (When In Use) -->
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>This app needs your location to provide location-specific features.</string>
-		<!-- 
-    OPTIONAL: If you need background location access, 
-    uncomment the next two lines.
-    -->
+
+		<!-- OPTIONAL: Background Location Access -->
 		<!--
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>We use your location even when the app is backgrounded for certain features.</string>
-    -->
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>We use your location even when the app is backgrounded for certain features.</string>
+		-->
+
 		<!-- PUSH NOTIFICATIONS (Background) -->
 		<!-- 
-    If you need background push, uncomment below and also
-    enable "Background Modes -> Remote notifications" in Xcode's 
-    Signing & Capabilities. 
-    -->
+		If you need background push, uncomment below and also
+		enable "Background Modes -> Remote notifications" in Xcode's 
+		Signing & Capabilities. 
+		-->
 		<!--
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>remote-notification</string>
-    </array>
-    -->
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
+		-->
+
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>
