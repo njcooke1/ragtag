@@ -6,7 +6,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Ragtagrevived</string>
+		<string>Ragtag</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -14,7 +14,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>ragtagrevived</string>
+		<string>Ragtag</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -70,6 +70,22 @@
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>This app needs your location to provide location-specific features.</string>
 
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
+        
+		<!-- Push Notifications Permission -->
+       <key>NSUserNotificationsUsageDescription</key>
+       <string>This app needs permission to send you notifications.</string>
+
+        <!-- Background Push Notifications (if needed) -->
+        <key>UIBackgroundModes</key>
+        <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+        </array>
+		
 		<!-- OPTIONAL: Background Location Access -->
 		<!--
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -83,6 +99,7 @@
 		Signing & Capabilities. 
 		-->
 		<!--
+		
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>remote-notification</string>
