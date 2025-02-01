@@ -3,7 +3,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 version: 1.0.0
-build: 3
+build: 4
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -81,7 +81,7 @@ flutter_native_splash:
 
   
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
   image_path: "assets/icon.png"
 
