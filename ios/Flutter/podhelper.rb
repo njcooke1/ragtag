@@ -25,7 +25,6 @@ def depends_on_flutter(target, engine_pod_name)
     if dependency.name == engine_pod_name
       return true
     end
-
     if depends_on_flutter(dependency.target, engine_pod_name)
       return true
     end
@@ -51,14 +50,21 @@ def flutter_additional_ios_build_settings(target)
   # ARC code targeting iOS 8 does not build on Xcode 14.3.
   force_to_arc_supported_min = target.deployment_target[/\d+/].to_i < 9
 
-  # This podhelper script is at $FLUTTER_ROOT/packages/flutter_tools/bin.
-  # Add search paths from $FLUTTER_ROOT/bin/cache/artifacts/engine.
-  artifacts_dir = File.join('..', '..', 'bin', 'cache', 'artifacts', 'engine')
+  # =========================================
+  # UPDATED: Use $FLUTTER_ROOT instead of '../..'
+  # =========================================
+  unless ENV['FLUTTER_ROOT']
+    raise "FLUTTER_ROOT is not set. If you're running pod install manually, "\
+          "make sure 'flutter precache --ios' is executed and FLUTTER_ROOT is exported."
+  end
+
+  artifacts_dir = File.join(ENV['FLUTTER_ROOT'], 'bin', 'cache', 'artifacts', 'engine')
   debug_framework_dir = File.expand_path(File.join(artifacts_dir, 'ios', 'Flutter.xcframework'), __FILE__)
 
   unless Dir.exist?(debug_framework_dir)
     # iOS artifacts have not been downloaded.
-    raise "#{debug_framework_dir} must exist. If you're running pod install manually, make sure \"flutter precache --ios\" is executed first"
+    raise "#{debug_framework_dir} must exist. If you're running pod install manually, " \
+          "make sure 'flutter precache --ios' is executed first and FLUTTER_ROOT is set."
   end
 
   release_framework_dir = File.expand_path(File.join(artifacts_dir, 'ios-release', 'Flutter.xcframework'), __FILE__)
@@ -94,10 +100,11 @@ def flutter_additional_ios_build_settings(target)
     Dir.new(configuration_engine_dir).each_child do |xcframework_file|
       next if xcframework_file.start_with?('.') # Hidden file, possibly on external disk.
       if xcframework_file.end_with?('-simulator') # ios-arm64_x86_64-simulator
-        build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]'] = "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
+        build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]'] =
+          "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
       elsif xcframework_file.start_with?('ios-') # ios-arm64
-        build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]'] = "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
-        # else Info.plist or another platform.
+        build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]'] =
+          "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
       end
     end
     build_configuration.build_settings['OTHER_LDFLAGS'] = '$(inherited) -framework Flutter'
@@ -134,11 +141,18 @@ def flutter_additional_macos_build_settings(target)
     (deployment_target_major.to_i < 10) ||
     (deployment_target_major.to_i == 10 && deployment_target_minor.to_i < 14)
 
-  # This podhelper script is at $FLUTTER_ROOT/packages/flutter_tools/bin.
-  # Add search paths from $FLUTTER_ROOT/bin/cache/artifacts/engine.
-  artifacts_dir = File.join('..', '..', 'bin', 'cache', 'artifacts', 'engine')
+  # =========================================
+  # UPDATED: Use $FLUTTER_ROOT instead of '../..'
+  # =========================================
+  unless ENV['FLUTTER_ROOT']
+    raise "FLUTTER_ROOT is not set. If you're running pod install manually, "\
+          "make sure 'flutter precache --macos' is executed and FLUTTER_ROOT is exported."
+  end
+
+  artifacts_dir = File.join(ENV['FLUTTER_ROOT'], 'bin', 'cache', 'artifacts', 'engine')
   debug_framework_dir = File.expand_path(File.join(artifacts_dir, 'darwin-x64', 'FlutterMacOS.xcframework'), __FILE__)
   release_framework_dir = File.expand_path(File.join(artifacts_dir, 'darwin-x64-release', 'FlutterMacOS.xcframework'), __FILE__)
+
   application_path = File.dirname(defined_in_file.realpath) if respond_to?(:defined_in_file)
   # Find the local engine path, if any.
   local_engine = application_path.nil? ?
@@ -146,7 +160,8 @@ def flutter_additional_macos_build_settings(target)
 
   unless Dir.exist?(debug_framework_dir)
     # macOS artifacts have not been downloaded.
-    raise "#{debug_framework_dir} must exist. If you're running pod install manually, make sure \"flutter precache --macos\" is executed first"
+    raise "#{debug_framework_dir} must exist. If you're running pod install manually, " \
+          "make sure 'flutter precache --macos' is executed first and FLUTTER_ROOT is set."
   end
 
   target.build_configurations.each do |build_configuration|
@@ -162,9 +177,11 @@ def flutter_additional_macos_build_settings(target)
       # Profile can't be derived from the CocoaPods build configuration. Use release framework (for linking only).
       configuration_engine_dir = (build_configuration.type == :debug ? debug_framework_dir : release_framework_dir)
     end
+
     Dir.new(configuration_engine_dir).each_child do |xcframework_file|
-      if xcframework_file.start_with?('macos-') # Could be macos-arm64_x86_64, macos-arm64, macos-x86_64
-        build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS'] = "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
+      if xcframework_file.start_with?('macos-') # Could be macos-arm64_x86_64, macos-arm64, or macos-x86_64
+        build_configuration.build_settings['FRAMEWORK_SEARCH_PATHS'] =
+          "\"#{configuration_engine_dir}/#{xcframework_file}\" $(inherited)"
       end
     end
 
@@ -220,7 +237,6 @@ end
 # @param [String] ios_application_path Path of the iOS directory of the Flutter app.
 #                                      Optional, defaults to the Podfile directory.
 def flutter_install_ios_engine_pod(ios_application_path = nil)
-  # defined_in_file is set by CocoaPods and is a Pathname to the Podfile.
   ios_application_path ||= File.dirname(defined_in_file.realpath) if respond_to?(:defined_in_file)
   raise 'Could not find iOS application path' unless ios_application_path
 
@@ -260,7 +276,6 @@ end
 
 # Same as flutter_install_ios_engine_pod for macOS.
 def flutter_install_macos_engine_pod(mac_application_path = nil)
-  # defined_in_file is set by CocoaPods and is a Pathname to the Podfile.
   mac_application_path ||= File.dirname(defined_in_file.realpath) if respond_to?(:defined_in_file)
   raise 'Could not find macOS application path' unless mac_application_path
 
@@ -302,7 +317,6 @@ end
 # @param [String] application_path Path of the directory of the Flutter app.
 #                                   Optional, defaults to the Podfile directory.
 def flutter_install_plugin_pods(application_path = nil, relative_symlink_dir, platform)
-  # defined_in_file is set by CocoaPods and is a Pathname to the Podfile.
   application_path ||= File.dirname(defined_in_file.realpath) if respond_to?(:defined_in_file)
   raise 'Could not find application path' unless application_path
 
@@ -330,6 +344,7 @@ def flutter_install_plugin_pods(application_path = nil, relative_symlink_dir, pl
     shared_darwin_source = plugin_hash.fetch('shared_darwin_source', false)
     platform_directory = shared_darwin_source ? 'darwin' : platform
     next unless plugin_name && plugin_path && has_native_build
+
     symlink = File.join(symlink_plugins_dir, plugin_name)
     File.symlink(plugin_path, symlink)
 
@@ -360,7 +375,6 @@ end
 # .flutter-plugins-dependencies format documented at
 # https://flutter.dev/go/plugins-list-migration
 def flutter_get_plugins_list(dependencies_hash, platform)
-  # dependencies_hash.dig('plugins', 'ios') not available until Ruby 2.3
   return [] unless dependencies_hash.any?
   return [] unless dependencies_hash.has_key?('plugins')
   return [] unless dependencies_hash['plugins'].has_key?(platform)
@@ -384,33 +398,31 @@ end
 
 def flutter_parse_xcconfig_file(file)
   file_abs_path = File.expand_path(file)
-  if !File.exist? file_abs_path
-    return []
-  end
+  return [] unless File.exist? file_abs_path
+
   entries = Hash.new
   skip_line_start_symbols = ["#", "/"]
-  File.foreach(file_abs_path) { |line|
+  File.foreach(file_abs_path) do |line|
     next if skip_line_start_symbols.any? { |symbol| line =~ /^\s*#{symbol}/ }
     key_value_pair = line.split(pattern = '=')
     if key_value_pair.length == 2
-      entries[key_value_pair[0].strip()] = key_value_pair[1].strip()
+      entries[key_value_pair[0].strip] = key_value_pair[1].strip
     else
       puts "Invalid key/value pair: #{line}"
     end
-  }
-  return entries
+  end
+  entries
 end
 
 def flutter_get_local_engine_dir(xcconfig_file)
   file_abs_path = File.expand_path(xcconfig_file)
-  if !File.exist? file_abs_path
-    return nil
-  end
+  return nil unless File.exist? file_abs_path
+
   config = flutter_parse_xcconfig_file(xcconfig_file)
   local_engine = config['LOCAL_ENGINE']
   base_dir = config['FLUTTER_ENGINE']
   if !local_engine.nil? && !base_dir.nil?
     return File.join(base_dir, 'out', local_engine)
   end
-  return nil
+  nil
 end
