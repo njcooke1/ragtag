@@ -77,7 +77,7 @@ EOL
           flutter pub run flutter_launcher_icons:main
 
           echo "=== [Step 13] Set Build Number ==="
-          FLUTTER_BUILD_NUMBER=16
+          FLUTTER_BUILD_NUMBER=17
           export FLUTTER_BUILD_NUMBER
           echo "Build Number set to: $FLUTTER_BUILD_NUMBER"
 
