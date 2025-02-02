@@ -2,8 +2,7 @@ name: ragtagrevived
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0
-build: 17
+version: 1.0.0+16
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
