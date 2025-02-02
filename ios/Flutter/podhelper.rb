@@ -53,7 +53,7 @@ def flutter_additional_ios_build_settings(target)
 
   # This podhelper script is at $FLUTTER_ROOT/packages/flutter_tools/bin.
   # Add search paths from $FLUTTER_ROOT/bin/cache/artifacts/engine.
-  artifacts_dir = File.join('..', '..', 'bin', 'cache', 'artifacts', 'engine')
+  artifacts_dir = File.join('..', '..', '..', 'bin', 'cache', 'artifacts', 'engine')
   debug_framework_dir = File.expand_path(File.join(artifacts_dir, 'ios', 'Flutter.xcframework'), __FILE__)
 
   unless Dir.exist?(debug_framework_dir)
@@ -136,7 +136,7 @@ def flutter_additional_macos_build_settings(target)
 
   # This podhelper script is at $FLUTTER_ROOT/packages/flutter_tools/bin.
   # Add search paths from $FLUTTER_ROOT/bin/cache/artifacts/engine.
-  artifacts_dir = File.join('..', '..', 'bin', 'cache', 'artifacts', 'engine')
+  artifacts_dir = File.join('..', '..', '..', 'bin', 'cache', 'artifacts', 'engine')
   debug_framework_dir = File.expand_path(File.join(artifacts_dir, 'darwin-x64', 'FlutterMacOS.xcframework'), __FILE__)
   release_framework_dir = File.expand_path(File.join(artifacts_dir, 'darwin-x64-release', 'FlutterMacOS.xcframework'), __FILE__)
   application_path = File.dirname(defined_in_file.realpath) if respond_to?(:defined_in_file)
