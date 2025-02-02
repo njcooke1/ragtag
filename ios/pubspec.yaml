@@ -1,0 +1,146 @@
+name: ragtag
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0
+build: 16
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  font_awesome_flutter: ^10.4.0
+  image_picker: ^1.1.2 # Check for the latest version on pub.dev
+  cupertino_icons: ^1.0.8
+  characters: ^1.3.0
+  url_launcher: ^6.1.9
+  image: ^4.3.0
+  firebase_messaging: ^15.1.6
+  firebase_app_check: ^0.3.2 # Replace with the latest version
+  collection: ^1.19.0
+  material_color_utilities: ^0.11.1
+  firebase_storage: ^12.3.7
+  meta: ^1.15.0
+  share_plus: ^10.1.4
+  firebase_dynamic_links: ^6.1.0
+  firebase_core: ^3.10.1
+  google_sign_in: ^6.2.2
+  flutter_svg: ^1.0.3   
+  carousel_slider: ^5.0.0
+  flutter_staggered_grid_view: ^0.7.0 
+  flutter_slidable: ^3.1.2
+  percent_indicator: ^4.2.2
+  firebase_auth: ^5.3.4
+  email_validator: ^3.0.0
+  cloud_firestore: ^5.5.1
+  rxdart: ^0.27.0
+  pro_image_editor: ^7.6.4
+  flutter_drawing_board: ^0.9.5
+  stories_page_view: ^0.0.5
+  image_editor: 1.6.0
+  confetti: ^0.8.0
+  story_view: 0.16.5
+  shimmer: ^3.0.0
+  text_editor: 0.7.0
+  mailer: ^6.2.1
+  device_calendar: ^4.2.1 
+  intl: ^0.20.1
+  path_provider: ^2.0.11
+  provider: ^6.0.0
+  firebase_analytics: ^11.3.6
+  # **Removed carousel_slider**
+  # **Added Dependencies for Enhanced AllOrganizationsPage**
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.2.3
+  smooth_page_indicator: ^1.0.0 # Optional: For page indicators
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  async: ^2.11.0  # Set this to match the flutter_test requirement
+  boolean_selector: ^2.1.1
+  clock: ^1.1.1
+  fake_async: ^1.3.1
+  leak_tracker: ^10.0.7
+  flutter_native_splash: 2.4.4
+  leak_tracker_flutter_testing: ^3.0.8
+  matcher: ^0.12.16+1
+  path: ^1.9.0
+  source_span: ^1.10.0
+  string_scanner: ^1.3.0
+  test_api: ^0.7.3
+  vm_service: ^14.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_native_splash:
+  image: assets/splash_bg.png
+  color: "#000000"
+  android: true
+  ios: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon.png"
+
+flutter:
+  uses-material-design: true
+
+  assets: 
+    - assets/ragtaglogo.png
+    - assets/welcomepageart.png
+    - assets/back_button_image.png
+    - assets/club1.png
+    - assets/event1.png
+    - assets/background.png
+    - assets/club2.png
+    - assets/newmemberbadge.png
+    - assets/flatlogo.png
+    - assets/flatlogoblack.png
+    - assets/creationbadge.png
+    - assets/splash_image.png
+    - assets/fomofeedlogo.png
+    - assets/fomofeedlogoblack.png
+    - assets/fomofeed.png
+    - assets/fomofeedwhite.png
+    - assets/pfpcut.png
+    - assets/allorganizations.png
+    - assets/events.png
+    - assets/LaunchImage.png
+    - assets/newbanner.png
+    - assets/news.png
+    - assets/icon.png
+    - assets/dayonebadge.png
+    - assets/ragtaglogoblack.png
+    - assets/people.png
+    - assets/splash_bg.png
+    - assets/banner.png
+    - assets/places.png
+    - assets/new.png
+    - assets/gridcard.png
+    - assets/gridcardwhite.png
+    - assets/things.png
+    - assets/challengebadge.png
+    - assets/usersearch.png
+    - assets/commons.png
+    - assets/sadface.png
+    - assets/communities.png
+    - assets/communitieswhite.png
+    - assets/icons/ghost.png
+
+  fonts:
+    - family: Lovelo
+      fonts:
+        - asset: assets/fonts/Lovelo-Black.otf
+          weight: 700
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins-ExtraLight.ttf
+          weight: 200
+
+platforms:
+  ios: '11.0'  # iOS platform version
