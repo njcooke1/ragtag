@@ -2,10 +2,11 @@ workflows:
   ios-build:
     name: Ragtag iOS Build
     environment:
+      flutter: "3.7.0"  # or another version that satisfies Dart >= 3.6.0
       vars:
-        FLUTTER_BUILD_NUMBER: "22"            # Desired build number
-        API_KEY: "4P3J9NG42Y"                   # Codemagic API Key
-        BUNDLE_IDENTIFIER: "com.ragtag.ragtag"  # Bundle Identifier for Ragtag iOS App
+        FLUTTER_BUILD_NUMBER: "22"
+        API_KEY: "4P3J9NG42Y"
+        BUNDLE_IDENTIFIER: "com.ragtag.ragtag"
     scripts:
       - name: Pre-Build Script
         script: |
@@ -32,14 +33,11 @@ workflows:
           cat Podfile || true
 
           echo "=== [Step 5] Remove existing platform lines and post_install block ==="
-          # Remove lines containing 'platform :ios'
           sed -i '' '/platform :ios/d' Podfile
-          # Remove lines from 'post_install do' up through the next standalone 'end'
           sed -i '' -e '/^post_install do/,/^end$/d' Podfile
 
           echo "=== [Step 6] Append New Platform Line and Post-Install Block ==="
           cat >> Podfile <<'EOL'
-
           platform :ios, '13.0'
 
           post_install do |installer|
@@ -74,15 +72,13 @@ workflows:
           flutter pub run flutter_launcher_icons:main
 
           echo "=== [Step 13] Set Build Number ==="
-          # This sets the Flutter build number, which should propagate to your iOS build.
-          FLUTTER_BUILD_NUMBER=22
-          export FLUTTER_BUILD_NUMBER
+          # The environment variable FLUTTER_BUILD_NUMBER is already set,
+          # but this reaffirms it in the script.
           echo "Build Number set to: $FLUTTER_BUILD_NUMBER"
 
           echo "=== [Done] Pre-Build Script Completed Successfully ==="
       - name: Build IPA
         script: |
           echo "=== Building IPA ==="
-          # Build the iOS app in release mode without codesigning. Adjust the command if you need codesigning.
           flutter build ios --release --no-codesign
           echo "=== IPA Build Complete ==="
