@@ -2,7 +2,7 @@ workflows:
   ios-build:
     name: Ragtag iOS Build
     environment:
-      flutter: "3.7.0"  # or another version that satisfies Dart >= 3.6.0
+      flutter: "master"  # or another version that satisfies Dart >= 3.6.0
       vars:
         FLUTTER_BUILD_NUMBER: "22"
         API_KEY: "4P3J9NG42Y"
