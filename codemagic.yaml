@@ -1,15 +1,13 @@
-# codemagic.yaml
 workflows:
-  ios-workflow:
-    name: iOS Workflow
-    max_build_duration: 60
-    instance_type: mac_mini_m1  # or mac_mini_12_cores, etc.
+  ios-build:
+    name: Ragtag iOS Build
     environment:
-      flutter: stable
-      xcode: latest
+      vars:
+        FLUTTER_BUILD_NUMBER: "22"            # Desired build number
+        API_KEY: "4P3J9NG42Y"                   # Codemagic API Key
+        BUNDLE_IDENTIFIER: "com.ragtag.ragtag"  # Bundle Identifier for Ragtag iOS App
     scripts:
-      # Pre-Build script that replaces your old iOS script 
-      - name: Pre-Build Setup
+      - name: Pre-Build Script
         script: |
           #!/usr/bin/env bash
           set -e
@@ -36,26 +34,25 @@ workflows:
           echo "=== [Step 5] Remove existing platform lines and post_install block ==="
           # Remove lines containing 'platform :ios'
           sed -i '' '/platform :ios/d' Podfile
-
           # Remove lines from 'post_install do' up through the next standalone 'end'
           sed -i '' -e '/^post_install do/,/^end$/d' Podfile
 
           echo "=== [Step 6] Append New Platform Line and Post-Install Block ==="
           cat >> Podfile <<'EOL'
 
-platform :ios, '13.0'
+          platform :ios, '13.0'
 
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    flutter_additional_ios_build_settings(target)
-    if target.platform_name == :ios
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      end
-    end
-  end
-end
-EOL
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              flutter_additional_ios_build_settings(target)
+              if target.platform_name == :ios
+                target.build_configurations.each do |config|
+                  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+                end
+              end
+            end
+          end
+          EOL
 
           echo "=== [Step 7] Final Podfile ==="
           cat Podfile
@@ -77,31 +74,15 @@ EOL
           flutter pub run flutter_launcher_icons:main
 
           echo "=== [Step 13] Set Build Number ==="
-          FLUTTER_BUILD_NUMBER=17
+          # This sets the Flutter build number, which should propagate to your iOS build.
+          FLUTTER_BUILD_NUMBER=22
           export FLUTTER_BUILD_NUMBER
           echo "Build Number set to: $FLUTTER_BUILD_NUMBER"
 
-          echo "=== [Done] Pre-Build Setup Completed Successfully ==="
-
-      # Main build script
-      - name: Build iOS .ipa
+          echo "=== [Done] Pre-Build Script Completed Successfully ==="
+      - name: Build IPA
         script: |
-          flutter build ipa --release
-
-    artifacts:
-      - build/ios/ipa/*.ipa
-
-    publishing:
-      app_store_connect:
-        # Everything is inlined here
-        api_key:
-          key_id: "4P3J9NG42Y"
-          issuer_id: "fdc7b1c2-d82e-45d6-8ade-1d380db54d65"
-          private_key: |
-            -----BEGIN PRIVATE KEY-----
-            MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgfjhltNSaiRRAEADT
-            7Vz9FIDYeUWaY0xq8t86uUBTzeygCgYIKoZIzj0DAQehRANCAASoMAus06DEkKK4
-            zGMW8iVmhvB7lWoGow6/WDNpUhmGwv27Z83t+PCavbvU6ec+1eJvjfzvc5KoLPpR
-            qujhBlmh
-            -----END PRIVATE KEY-----
-        export_method: app-store
+          echo "=== Building IPA ==="
+          # Build the iOS app in release mode without codesigning. Adjust the command if you need codesigning.
+          flutter build ios --release --no-codesign
+          echo "=== IPA Build Complete ==="
