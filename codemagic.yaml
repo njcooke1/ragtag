@@ -7,6 +7,8 @@ workflows:
         FLUTTER_BUILD_NUMBER: "22"
         API_KEY: "4P3J9NG42Y"
         BUNDLE_IDENTIFIER: "com.ragtag.ragtag"
+    artifacts:
+      - build/ios/ipa/*.ipa
     scripts:
       - name: Pre-Build Script
         script: |
@@ -84,5 +86,5 @@ workflows:
       - name: Build IPA
         script: |
           echo "=== Building IPA ==="
-          flutter build ios --release --no-codesign
+          flutter build ipa --release --no-codesign
           echo "=== IPA Build Complete ==="
