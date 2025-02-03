@@ -2,7 +2,6 @@ workflows:
   ios-build:
     name: "Ragtag iOS Build"
     macos:
-      xcode: "16.2"
     environment:
       flutter: "3.27.2"
       vars:
