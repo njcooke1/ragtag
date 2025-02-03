@@ -1,7 +1,6 @@
 workflows:
   ios-build:
     name: "Ragtag iOS Build"
-    project: .
     macos:
       xcode: "16.2"
     environment:
