@@ -1,17 +1,12 @@
 workflows:
   ios-build:
     name: "Ragtag iOS Build"
-    macos:
     environment:
       flutter: "3.27.2"
       vars:
         FLUTTER_BUILD_NUMBER: "22"
         API_KEY: "4P3J9NG42Y"
         BUNDLE_IDENTIFIER: "com.ragtag.ragtag"
-    cache:
-      paths:
-        - ~/.pub-cache
-        - ios/Pods
     scripts:
       - name: Pre-Build Script
         script: |
