@@ -82,7 +82,11 @@ workflows:
           export FLUTTER_BUILD_NUMBER
           echo "Build Number set to: $FLUTTER_BUILD_NUMBER"
           
-          echo "=== [Done] Script Completed Successfully ==="
+          echo "=== [Done] Pre-Build Script Completed Successfully ==="
+      - name: Print macOS Version
+        script: |
+          echo "=== macOS Version Info ==="
+          sw_vers
       - name: Build IPA
         script: |
           echo "=== Building IPA ==="
