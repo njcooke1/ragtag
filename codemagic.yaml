@@ -4,7 +4,7 @@ workflows:
     environment:
       flutter: "3.27.2"
       vars:
-        FLUTTER_BUILD_NUMBER: "22"
+        FLUTTER_BUILD_NUMBER: "24"
         API_KEY: "4P3J9NG42Y"
         BUNDLE_IDENTIFIER: "com.ragtag.ragtag"
     artifacts:
