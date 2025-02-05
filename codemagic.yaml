@@ -5,9 +5,7 @@ workflows:
     environment:
       flutter: stable
       vars:
-        # Your development team ID (used for code signing)
         DEVELOPMENT_TEAM: "88KTK78D9T"
-        # (The following variables should be provided securely in your CI environment)
         APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
         APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
         APP_STORE_CONNECT_KEY_ID: $APP_STORE_CONNECT_KEY_ID
