@@ -1,38 +1,94 @@
 workflows:
-  build_and_publish_ios:
-    name: Build and Publish iOS IPA
-    max_build_duration: 60
+  ios-build:
+    name: "Ragtag iOS Build"
     environment:
-      flutter: stable
+      flutter: "3.27.2"
       vars:
-        DEVELOPMENT_TEAM: "88KTK78D9T"
-        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
-        APP_STORE_CONNECT_KEY_ID: $APP_STORE_CONNECT_KEY_ID
-    scripts:
-      - echo "Running Flutter Doctor..."
-      - flutter doctor -v
-      - echo "Pre-caching iOS artifacts..."
-      - flutter precache --ios
-      - echo "Cleaning project..."
-      - flutter clean
-      - flutter pub get
-      - echo "Building iOS release without codesign..."
-      - flutter build ios --release --no-codesign
-      - cd ios
-      - echo "Archiving the app..."
-      # Archive the app; note the DEVELOPMENT_TEAM and flags for allowing provisioning updates
-      - xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -archivePath build/Runner.xcarchive archive DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM -allowProvisioningUpdates -allowProvisioningDeviceRegistration
-      - echo "Removing embedded provisioning profile from App.framework..."
-      # Remove the embedded provisioning profile from the framework to avoid signing errors
-      - rm -f build/Runner.xcarchive/Products/Applications/Runner.app/Frameworks/App.framework/embedded.mobileprovision
-      - echo "Exporting IPA..."
-      - xcodebuild -exportArchive -archivePath build/Runner.xcarchive -exportPath build/ipa -exportOptionsPlist exportOptions.plist DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM -allowProvisioningUpdates
+        FLUTTER_BUILD_NUMBER: "22"
+        API_KEY: "4P3J9NG42Y"
+        BUNDLE_IDENTIFIER: "com.ragtag.ragtag"
     artifacts:
-      - ios/build/ipa/*.ipa
-    publishing:
-      app_store_connect:
-        # The API key for App Store Connect (private key, issuer, and key id are required)
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        api_key_id: $APP_STORE_CONNECT_KEY_ID
+      - build/ios/ipa/*.ipa
+    scripts:
+      - name: Pre-Build Script
+        script: |
+          #!/usr/bin/env bash
+          # Fail script on any error:
+          set -e
+          
+          echo "=== [Step 0] Flutter Doctor Check ==="
+          flutter doctor -v
+          
+          echo "=== [Step 1] Precache iOS Artifacts ==="
+          flutter precache --ios
+          
+          echo "=== Checking if iOS artifacts exist in Flutter cache ==="
+          ls -la "$(dirname "$(which flutter)")"/cache/artifacts/engine/ios || true
+          
+          echo "=== [Step 2] Flutter Clean & Pub Get ==="
+          flutter clean
+          flutter pub get
+          
+          echo "=== [Step 3] Navigate to iOS Folder ==="
+          cd ios
+          
+          echo "=== [Step 4] Show Original Podfile for Debug ==="
+          cat Podfile || true
+          
+          echo "=== [Step 5] Remove existing platform lines and post_install block ==="
+          # Remove lines containing 'platform :ios'
+          sed -i '' '/platform :ios/d' Podfile
+          # Remove lines from 'post_install do' up through the next standalone 'end'
+          sed -i '' -e '/^post_install do/,/^end$/d' Podfile
+          
+          echo "=== [Step 6] Append New Platform Line and Post-Install Block ==="
+          cat >> Podfile <<'EOL'
+          
+          platform :ios, '13.0'
+          
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              flutter_additional_ios_build_settings(target)
+              if target.platform_name == :ios
+                target.build_configurations.each do |config|
+                  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+                end
+              end
+            end
+          end
+          EOL
+          
+          echo "=== [Step 7] Final Podfile ==="
+          cat Podfile
+          
+          echo "=== [Step 8] Remove Old Pods and Lockfile ==="
+          rm -rf Pods Podfile.lock
+          
+          echo "=== [Step 9] Update Repo and Install Pods ==="
+          pod repo update
+          pod install
+          
+          echo "=== [Step 10] Return to Project Root ==="
+          cd ..
+          
+          echo "=== [Step 11] Check App Icon Set ==="
+          ls -l ios/Runner/Assets.xcassets/AppIcon.appiconset/ || true
+          
+          echo "=== [Step 12] Run Flutter Launcher Icons ==="
+          flutter pub run flutter_launcher_icons:main
+          
+          echo "=== [Step 13] Set Build Number ==="
+          FLUTTER_BUILD_NUMBER=22
+          export FLUTTER_BUILD_NUMBER
+          echo "Build Number set to: $FLUTTER_BUILD_NUMBER"
+          
+          echo "=== [Done] Pre-Build Script Completed Successfully ==="
+      - name: Print macOS Version
+        script: |
+          echo "=== macOS Version Info ==="
+          sw_vers
+      - name: Build IPA
+        script: |
+          echo "=== Building IPA ==="
+          flutter build ipa --release
+          echo "=== IPA Build Complete ==="
