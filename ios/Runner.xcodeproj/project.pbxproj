@@ -388,7 +388,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = 88KTK78D9T;
-				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738219519";
+				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738254607";
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 			};
 			name = Debug;
@@ -413,7 +413,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = 88KTK78D9T;
-				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738219519";
+				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738254607";
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 			};
 			name = Release;
@@ -438,7 +438,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = 88KTK78D9T;
-				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738219519";
+				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738254607";
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 			};
 			name = Profile;
