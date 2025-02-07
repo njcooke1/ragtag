@@ -412,7 +412,7 @@
 				/* Keep Release as Manual for Distribution */
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = 88KTK78D9T;
-				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738254607";
+				PROVISIONING_PROFILE_SPECIFIER = "NJC_AppStore";
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 			};
 			name = Release;
