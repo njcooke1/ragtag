@@ -145,7 +145,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
-				9740EEB61CF901F6004384FC /* Run Script */,
+				9740EEB61CF90195004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
@@ -386,10 +386,8 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
-				CODE_SIGN_STYLE = Manual;
-				DEVELOPMENT_TEAM = 88KTK78D9T;
-				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738254607";
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				/* Changed from Manual to Automatic for Debug */
+				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Debug;
 		};
@@ -411,6 +409,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+				/* Keep Release as Manual for Distribution */
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = 88KTK78D9T;
 				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738254607";
@@ -436,10 +435,8 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
-				CODE_SIGN_STYLE = Manual;
-				DEVELOPMENT_TEAM = 88KTK78D9T;
-				PROVISIONING_PROFILE_SPECIFIER = "Ragtag iOS App ios_app_store 1738254607";
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				/* Changed from Manual to Automatic for Profile */
+				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Profile;
 		};
