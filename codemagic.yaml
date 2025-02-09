@@ -13,7 +13,6 @@ workflows:
       - name: Pre-Build Script
         script: |
           #!/usr/bin/env bash
-          # Fail script on any error:
           set -e
           
           echo "=== [Step 0] Flutter Doctor Check ==="
@@ -36,9 +35,7 @@ workflows:
           cat Podfile || true
           
           echo "=== [Step 5] Remove existing platform lines and post_install block ==="
-          # Remove lines containing 'platform :ios'
           sed -i '' '/platform :ios/d' Podfile
-          # Remove lines from 'post_install do' up through the next standalone 'end'
           sed -i '' -e '/^post_install do/,/^end$/d' Podfile
           
           echo "=== [Step 6] Append New Platform Line and Post-Install Block ==="
@@ -78,18 +75,40 @@ workflows:
           flutter pub run flutter_launcher_icons:main
           
           echo "=== [Step 13] Set Build Number ==="
-          FLUTTER_BUILD_NUMBER=22
-          export FLUTTER_BUILD_NUMBER
+          export FLUTTER_BUILD_NUMBER=24
           echo "Build Number set to: $FLUTTER_BUILD_NUMBER"
+          
+          # Optional: Generate export_options.plist if not already present.
+          # Uncomment and modify the following block if you need dynamic generation:
+          # cat > export_options.plist <<EOF
+          # <?xml version="1.0" encoding="UTF-8"?>
+          # <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          # <plist version="1.0">
+          # <dict>
+          #   <key>method</key>
+          #   <string>app-store</string>
+          #   <key>signingStyle</key>
+          #   <string>manual</string>
+          #   <key>provisioningProfiles</key>
+          #   <dict>
+          #     <key>${BUNDLE_IDENTIFIER}</key>
+          #     <string>NJC_AppStore</string>
+          #   </dict>
+          # </dict>
+          # </plist>
+          # EOF
           
           echo "=== [Done] Pre-Build Script Completed Successfully ==="
       - name: Print macOS Version
         script: |
           echo "=== macOS Version Info ==="
           sw_vers
-- name: Build IPA
-  script: |
-    echo "=== Building IPA ==="
-    export XCODE_BUILD_DESTINATION="generic/platform=iOS"
-    flutter build ipa --release --no-codesign --export-options-plist=export_options.plist
-    echo "=== IPA Build Complete ==="
+      - name: Build IPA
+        script: |
+          echo "=== Building IPA ==="
+          # Export the destination so Xcode uses a generic iOS device
+          export XCODE_BUILD_DESTINATION="generic/platform=iOS"
+          echo "Using XCODE_BUILD_DESTINATION: $XCODE_BUILD_DESTINATION"
+          # Build the IPA with no codesigning and using your export_options.plist
+          flutter build ipa --release --no-codesign --export-options-plist=export_options.plist
+          echo "=== IPA Build Complete ==="
