@@ -254,8 +254,12 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
-				/* Changed Debug signing to Automatic */
-				CODE_SIGN_STYLE = Automatic;
+
+				/* === Disable Code Signing for Debug === */
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "";
+				DEVELOPMENT_TEAM = "";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
 		};
@@ -277,6 +281,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+
 				/* Keep Release as Manual for Distribution */
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = 88KTK78D9T;
@@ -303,8 +308,12 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
-				/* Set Profile to Automatic */
-				CODE_SIGN_STYLE = Automatic;
+
+				/* === Disable Code Signing for Profile === */
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "";
+				DEVELOPMENT_TEAM = "";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Profile;
 		};
