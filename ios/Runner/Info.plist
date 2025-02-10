@@ -11,6 +11,13 @@
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		
+		<!-- This key tells Xcode the supported platform for your app -->
+		<key>CFBundleSupportedPlatforms</key>
+		<array>
+			<string>iPhoneOS</string>
+		</array>
+		
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
@@ -42,7 +49,7 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
-
+		
 		<!-- App Icon Configuration -->
 		<key>CFBundleIcons</key>
 		<dict>
@@ -56,56 +63,37 @@
 				<false/>
 			</dict>
 		</dict>
-
+		
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
-
+		
 		<!-- CAMERA PERMISSION -->
 		<key>NSCameraUsageDescription</key>
 		<string>This app needs camera access to let you take photos or videos.</string>
-
+		
 		<!-- LOCATION PERMISSION (When In Use) -->
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>This app needs your location to provide location-specific features.</string>
-
+		
+		<!-- Background Modes -->
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>remote-notification</string>
 		</array>
-        
+		
 		<!-- Push Notifications Permission -->
-       <key>NSUserNotificationsUsageDescription</key>
-       <string>This app needs permission to send you notifications.</string>
-
-        <!-- Background Push Notifications (if needed) -->
-        <key>UIBackgroundModes</key>
-        <array>
-        <string>fetch</string>
-        <string>remote-notification</string>
-        </array>
+		<key>NSUserNotificationsUsageDescription</key>
+		<string>This app needs permission to send you notifications.</string>
 		
-		<!-- OPTIONAL: Background Location Access -->
-		<!--
-		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>We use your location even when the app is backgrounded for certain features.</string>
-		-->
-
-		<!-- PUSH NOTIFICATIONS (Background) -->
-		<!-- 
-		If you need background push, uncomment below and also
-		enable "Background Modes -> Remote notifications" in Xcode's 
-		Signing & Capabilities. 
-		-->
-		<!--
-		
+		<!-- Background Fetch and Push Notifications -->
 		<key>UIBackgroundModes</key>
 		<array>
+			<string>fetch</string>
 			<string>remote-notification</string>
 		</array>
-		-->
-
+		
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>
