@@ -80,23 +80,21 @@ workflows:
           
           echo "=== [Step 14] Generate export_options.plist if not exists ==="
           if [ ! -f export_options.plist ]; then
-            cat > export_options.plist <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>method</key>
-  <string>app-store</string>
-  <key>signingStyle</key>
-  <string>manual</string>
-  <key>provisioningProfiles</key>
-  <dict>
-    <key>${BUNDLE_IDENTIFIER}</key>
-    <string>NJC_AppStore</string>
-  </dict>
-</dict>
-</plist>
-EOF
+            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0">' \
+            '<dict>' \
+            '  <key>method</key>' \
+            '  <string>app-store</string>' \
+            '  <key>signingStyle</key>' \
+            '  <string>manual</string>' \
+            '  <key>provisioningProfiles</key>' \
+            '  <dict>' \
+            "    <key>${BUNDLE_IDENTIFIER}</key>" \
+            '    <string>NJC_AppStore</string>' \
+            '  </dict>' \
+            '</dict>' \
+            '</plist>' > export_options.plist
           fi
           
           echo "=== [Step 15] Pre-Build Script Completed Successfully ==="
@@ -107,7 +105,9 @@ EOF
       - name: Build IPA
         script: |
           echo "=== Building IPA ==="
+          # Force Xcode to use a generic iOS destination
           export XCODE_BUILD_DESTINATION="generic/platform=iOS"
           echo "Using XCODE_BUILD_DESTINATION: $XCODE_BUILD_DESTINATION"
+          # Build the IPA without codesigning using the generated export_options.plist
           flutter build ipa --release --no-codesign --export-options-plist=export_options.plist
           echo "=== IPA Build Complete ==="
