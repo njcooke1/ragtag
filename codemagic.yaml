@@ -78,27 +78,28 @@ workflows:
           export FLUTTER_BUILD_NUMBER=24
           echo "Build Number set to: $FLUTTER_BUILD_NUMBER"
           
-          # Optional: Generate export_options.plist if not already present.
-          # Uncomment and modify the following block if you need dynamic generation:
-          # cat > export_options.plist <<EOF
-          # <?xml version="1.0" encoding="UTF-8"?>
-          # <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          # <plist version="1.0">
-          # <dict>
-          #   <key>method</key>
-          #   <string>app-store</string>
-          #   <key>signingStyle</key>
-          #   <string>manual</string>
-          #   <key>provisioningProfiles</key>
-          #   <dict>
-          #     <key>${BUNDLE_IDENTIFIER}</key>
-          #     <string>NJC_AppStore</string>
-          #   </dict>
-          # </dict>
-          # </plist>
-          # EOF
+          echo "=== [Step 14] Generate export_options.plist if not exists ==="
+          if [ ! -f export_options.plist ]; then
+            cat > export_options.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>app-store</string>
+  <key>signingStyle</key>
+  <string>manual</string>
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>${BUNDLE_IDENTIFIER}</key>
+    <string>NJC_AppStore</string>
+  </dict>
+</dict>
+</plist>
+EOF
+          fi
           
-          echo "=== [Done] Pre-Build Script Completed Successfully ==="
+          echo "=== [Step 15] Pre-Build Script Completed Successfully ==="
       - name: Print macOS Version
         script: |
           echo "=== macOS Version Info ==="
@@ -106,9 +107,9 @@ workflows:
       - name: Build IPA
         script: |
           echo "=== Building IPA ==="
-          # Export the destination so Xcode uses a generic iOS device
+          # Force Xcode to use a generic iOS destination
           export XCODE_BUILD_DESTINATION="generic/platform=iOS"
           echo "Using XCODE_BUILD_DESTINATION: $XCODE_BUILD_DESTINATION"
-          # Build the IPA with no codesigning and using your export_options.plist
+          # Build the IPA using no codesigning and the generated export_options.plist
           flutter build ipa --release --no-codesign --export-options-plist=export_options.plist
           echo "=== IPA Build Complete ==="
