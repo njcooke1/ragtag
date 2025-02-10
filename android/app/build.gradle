@@ -13,7 +13,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.ragtagsocial.ragtag"
+    namespace = "com.ragtag.ragtag"
     
     // Force compileSdk to API 35
     compileSdk = 35
@@ -22,7 +22,7 @@ android {
     buildToolsVersion = "35.0.0"
 
     defaultConfig {
-        applicationId = "com.ragtagsocial.ragtag"
+        applicationId = "com.ragtag.ragtag"
         minSdkVersion 23
         targetSdk = 35
 
