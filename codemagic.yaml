@@ -1,8 +1,6 @@
 workflows:
   ios-build:
     name: "Ragtag iOS Build"
-    agent:
-      image: macos-12
     environment:
       flutter: "3.27.2"
       vars:
@@ -109,7 +107,7 @@ workflows:
           echo "=== Booting iOS Simulator ==="
           # Launch the Simulator app
           open -a Simulator
-          # Attempt to boot a specific simulator (adjust the device name as needed)
+          # Boot a specific simulator (adjust the device name as needed)
           xcrun simctl boot "iPhone 14" || true
           # Allow time for the simulator to boot
           sleep 30
@@ -118,7 +116,7 @@ workflows:
       - name: Build IPA
         script: |
           echo "=== Building IPA ==="
-          # Export destination so Xcode uses a generic iOS device
+          # Export destination so Xcode picks a generic iOS device
           export XCODE_BUILD_DESTINATION="generic/platform=iOS"
           echo "Using XCODE_BUILD_DESTINATION: $XCODE_BUILD_DESTINATION"
           flutter build ipa --release --no-codesign --export-options-plist=export_options.plist
