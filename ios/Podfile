@@ -1,4 +1,5 @@
 platform :ios, '13.0'
+IPHONEOS_DEPLOYMENT_TARGET=13.0
 
 # CocoaPods analytics sends network stats (optional)
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
