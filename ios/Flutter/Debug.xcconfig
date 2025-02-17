@@ -1,5 +1,1 @@
 #include "Generated.xcconfig"
-SDKROOT = iphoneos
-SUPPORTED_PLATFORMS = iphoneos
-SUPPORTS_MACCATALYST = NO
-TARGETED_DEVICE_FAMILY = 1,2
