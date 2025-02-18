@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-// For dynamic links
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
 // Pages
@@ -31,24 +30,41 @@ import 'pages/fomo_feed_page.dart'; // For FOMO feed
 
 // Handle background FCM
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print('Handling a background message: ${message.messageId}');
+  try {
+    await Firebase.initializeApp();
+    print('Handling a background message: ${message.messageId}');
+  } catch (e, stacktrace) {
+    print('Error in background FCM handler: $e\n$stacktrace');
+  }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    print('Initializing Firebase...');
+    await Firebase.initializeApp();
+    print('Firebase initialized.');
+  } catch (e, stacktrace) {
+    print('Error during Firebase.initializeApp(): $e\n$stacktrace');
+  }
 
-  // Optional: Firebase AppCheck
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.playIntegrity,
-    appleProvider: AppleProvider.deviceCheck,
-  );
+  // Activate AppCheck
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.deviceCheck,
+    );
+    print('AppCheck activated.');
+  } catch (e, stacktrace) {
+    print('Error activating AppCheck: $e\n$stacktrace');
+  }
 
   // FCM setup
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  print('FCM background handler set.');
 
   runApp(const RagtagApp());
+  print('App launched.');
 }
 
 class RagtagApp extends StatefulWidget {
@@ -67,28 +83,35 @@ class _RagtagAppState extends State<RagtagApp> {
 
   /// Listen for incoming dynamic links (initial + in-app)
   void _setupDynamicLinks() async {
-    // 1) If the app is opened from a terminated state via a link:
-    final PendingDynamicLinkData? initialLink =
-        await FirebaseDynamicLinks.instance.getInitialLink();
-    if (initialLink != null) {
-      _handleDeepLink(initialLink.link);
-    }
+    try {
+      // 1) If the app is opened from a terminated state via a link:
+      final PendingDynamicLinkData? initialLink =
+          await FirebaseDynamicLinks.instance.getInitialLink();
+      if (initialLink != null) {
+        print('Initial dynamic link detected: ${initialLink.link}');
+        _handleDeepLink(initialLink.link);
+      }
 
-    // 2) If the app is in background/foreground
-    FirebaseDynamicLinks.instance.onLink.listen((dynamicLinkData) {
-      _handleDeepLink(dynamicLinkData.link);
-    }).onError((error) {
-      debugPrint("onLink error: $error");
-    });
+      // 2) If the app is in background/foreground:
+      FirebaseDynamicLinks.instance.onLink.listen((dynamicLinkData) {
+        print('Dynamic link received in-app: ${dynamicLinkData.link}');
+        _handleDeepLink(dynamicLinkData.link);
+      }).onError((error) {
+        debugPrint("Dynamic link onLink error: $error");
+      });
+    } catch (e, stacktrace) {
+      print('Error setting up dynamic links: $e\n$stacktrace');
+    }
   }
 
   /// Decide where to navigate based on the deep link
   void _handleDeepLink(Uri deepLink) {
+    print('Handling deep link: $deepLink');
     // Example: https://ragtag.com/club?c=123
     if (deepLink.path.contains("club")) {
       final clubId = deepLink.queryParameters["c"] ?? "";
       if (clubId.isNotEmpty) {
-        // You can fetch your club data from Firestore if you want
+        print('Navigating to clubs profile with clubId: $clubId');
         Navigator.pushNamed(
           context,
           '/clubs-profile',
@@ -100,45 +123,33 @@ class _RagtagAppState extends State<RagtagApp> {
         );
       }
     }
-    // ...If you have other logic for interest groups, open forums, etc., handle it here.
+    // Add additional deep link handling as needed.
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // 1) Remove banner
       debugShowCheckedModeBanner: false,
       title: 'Ragtag App',
-
-      // 2) Start on '/home'
+      
+      // Start on '/home'
       initialRoute: '/home',
-
-      // 3) Our named routes
+      
+      // Define named routes
       routes: {
-        // Our RootPage decides whether to show OpeningLandingPage or the authenticated path
+        // RootPage decides whether to show OpeningLandingPage or the authenticated path
         '/home': (context) => const RootPage(),
-
-        // User’s profile
         '/profilePage': (context) => const ProfilePage(),
-
-        // Landing & Auth
         '/landing': (context) => const OpeningLandingPage(),
         '/sign-in': (context) => const SignInPage(),
         '/register': (context) => const RegistrationPage(),
-
-        // The two pages for after Google sign-in:
-        // If new => likes/dislikes, if existing => first-choice
         '/first-choice': (context) => const FirstChoicePage(),
         '/likes-dislikes': (context) => const LikesDislikesPage(),
-
-        // For communities
         '/openingLandingPage': (context) => const OpeningLandingPage(),
         '/start-community': (context) => const StartCommunityPage(),
         '/find_community': (context) => const FindCommunityPage(),
         '/explore': (context) => const FindCommunityPage(),
         '/all_organizations': (context) => const AllOrganizationsPage(),
-
-        // Clubs Profile
         '/clubs-profile': (context) {
           final args =
               ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
@@ -161,7 +172,6 @@ class _RagtagAppState extends State<RagtagApp> {
             userId: userId,
           );
         },
-
         '/interest-groups-profile': (context) {
           final args =
               ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
@@ -179,7 +189,6 @@ class _RagtagAppState extends State<RagtagApp> {
           final communityData = args['communityData'] as Map<String, dynamic>? ?? {};
           final userId = args['userId'] as String? ?? '';
           final collectionName = args['collectionName'] as String? ?? 'interestGroups';
-
           return RedesignedInterestGroupsPage(
             communityId: communityId,
             communityData: communityData,
@@ -187,7 +196,6 @@ class _RagtagAppState extends State<RagtagApp> {
             collectionName: collectionName,
           );
         },
-
         '/open-forums-profile': (context) {
           final args =
               ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
@@ -210,13 +218,12 @@ class _RagtagAppState extends State<RagtagApp> {
             userId: userId,
           );
         },
-
         '/admin-dashboard': (context) => const AdminDashboardPage(),
         '/edit_community': (context) => EditCommunityPage(),
         '/fomo_feed': (context) => const FomoFeedPage(),
       },
-
-      // 4) Provide routes that need arguments via onGenerateRoute:
+      
+      // Routes that need arguments are handled here.
       onGenerateRoute: (settings) {
         if (settings.name == '/club-chat') {
           final args = settings.arguments as Map<String, dynamic>;
@@ -245,10 +252,9 @@ class _RagtagAppState extends State<RagtagApp> {
             ),
           );
         }
-        // Fallback if no matches
         return null;
       },
-
+      
       // Basic theming
       theme: ThemeData(
         useMaterial3: true,
@@ -266,20 +272,36 @@ class _RagtagAppState extends State<RagtagApp> {
   }
 }
 
-/// Decides whether to show the user an authenticated screen
-/// or the opening landing page, based on whether user is logged in.
+/// Decides whether to show an authenticated screen or the landing page.
 class RootPage extends StatelessWidget {
   const RootPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    print('RootPage build. Current user: $user');
     if (user != null) {
-      // Already logged in => go to FirstChoice
+      print('User detected. Routing to FirstChoicePage.');
       return const FirstChoicePage();
     } else {
-      // Not logged in => show OpeningLandingPage
+      print('No user detected. Routing to OpeningLandingPage.');
       return const OpeningLandingPage();
     }
   }
 }
+
+/* 
+// Uncomment this fallback widget for diagnostic purposes:
+// Use it as the home widget to check if your Flutter UI loads correctly on iOS.
+
+class TestHomePage extends StatelessWidget {
+  const TestHomePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(child: Text('Hello, iOS Build is working!')),
+    );
+  }
+}
+*/

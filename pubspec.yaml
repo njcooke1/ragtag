@@ -73,13 +73,6 @@ dev_dependencies:
   vm_service: ^14.0.0
   flutter_launcher_icons: ^0.14.3
 
-flutter_native_splash:
-  image: assets/splash_bg.png
-  color: "#000000"
-  fill: true
-  android: true
-  ios: true
-
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
