@@ -99,7 +99,7 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
     // Start the animation
     _controller.forward();
 
-    // Transition to next page on completion
+    // Transition to LandingPage when animation completes
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         Navigator.pushReplacement(
@@ -129,7 +129,6 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
       builder: (context, _) {
         final shimmerWidth = MediaQuery.of(context).size.width / 2;
         final start = _shimmerAnimation.value * MediaQuery.of(context).size.width;
-
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
@@ -248,7 +247,6 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
           ),
           // Faint shimmer overlays
           _buildShimmerOverlays(),
-
           // Centered, rotating/fading/scaling logo
           Center(
             child: FadeTransition(
@@ -275,262 +273,25 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
 }
 
 /// ----------------------------------------------
-/// LANDING PAGE (Sign In / Register)
+/// LANDING PAGE (Test Version)
 /// ----------------------------------------------
-class LandingPage extends StatefulWidget {
+class LandingPage extends StatelessWidget {
   const LandingPage({Key? key}) : super(key: key);
 
   @override
-  State<LandingPage> createState() => _LandingPageState();
-}
-
-class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin {
-  // For the shimmer effect on the button text
-  late AnimationController _shimmerController;
-  late Animation<double> _shimmerAnimation;
-
-  // For the pop (scale) effect on buttons & banner
-  late AnimationController _popController;
-  late Animation<double> _popAnimation;
-
-  // Subtle fade and slide in for the entire column
-  late AnimationController _landingTransitionController;
-  late Animation<double> _landingFadeAnimation;
-  late Animation<Offset> _landingSlideAnimation;
-
-  // For background zoom effect
-  late AnimationController _bgAnimationController;
-  late Animation<double> _bgScaleAnimation;
-
-  // Firestore reference
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // SHIMMER
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
-    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
-      CurvedAnimation(
-        parent: _shimmerController,
-        curve: Curves.linear,
-      ),
-    );
-
-    // POP (SCALE)
-    _popController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..forward();
-    _popAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _popController, curve: Curves.easeOutBack),
-    );
-
-    // FADE + SLIDE
-    _landingTransitionController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..forward();
-    _landingFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _landingTransitionController,
-        curve: Curves.easeInOut,
-      ),
-    );
-    _landingSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _landingTransitionController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    // BACKGROUND ZOOM
-    _bgAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat(reverse: true);
-    _bgScaleAnimation = Tween<double>(begin: 1.0, end: 1.07).animate(
-      CurvedAnimation(parent: _bgAnimationController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _shimmerController.dispose();
-    _popController.dispose();
-    _landingTransitionController.dispose();
-    _bgAnimationController.dispose();
-    super.dispose();
-  }
-
-  /// Shimmer builder for button text
-  Widget _buildButtonShimmer(Widget child) {
-    return AnimatedBuilder(
-      animation: _shimmerAnimation,
-      builder: (context, _) {
-        final width = MediaQuery.of(context).size.width;
-        final shimmerWidth = width / 2;
-        final start = _shimmerAnimation.value * width;
-
-        return ShaderMask(
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              colors: [
-                Colors.white.withOpacity(0.0),
-                Colors.white.withOpacity(0.7),
-                Colors.white.withOpacity(0.0),
-              ],
-              stops: const [0.0, 0.5, 1.0],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ).createShader(
-              Rect.fromLTWH(start, 0, shimmerWidth, bounds.height),
-            );
-          },
-          blendMode: BlendMode.srcATop,
-          child: child,
-        );
-      },
-      child: child,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
-      body: Stack(
-        children: [
-          // Animated background with slow zoom
-          AnimatedBuilder(
-            animation: _bgScaleAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _bgScaleAnimation.value,
-                child: child,
-              );
-            },
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/background.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
+      // Bright background color for easy visibility
+      backgroundColor: Colors.green,
+      body: Center(
+        child: Text(
+          'Landing Page!',
+          style: TextStyle(
+            fontSize: 32,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-
-          // Dark overlay
-          Container(color: Colors.black.withOpacity(0.52)),
-
-          // Animated Column (fade + slide in)
-          FadeTransition(
-            opacity: _landingFadeAnimation,
-            child: SlideTransition(
-              position: _landingSlideAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(height: 12),
-                  // Banner image
-                  ScaleTransition(
-                    scale: _popAnimation,
-                    child: Image.asset(
-                      'assets/ragtaglogo.png',
-                      width: size.width * 0.39,
-                      height: size.height * 0.2,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-
-                  // Sign In / Register
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: ScaleTransition(
-                      scale: _popAnimation,
-                      child: Column(
-                        children: [
-                          // Sign In
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/sign-in');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              minimumSize: const Size(250, 55),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                side: const BorderSide(
-                                  color: Colors.white,
-                                  width: 1.0,
-                                ),
-                              ),
-                            ),
-                            child: const Text(
-                              "Sign In",
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Register (with shimmer text)
-                          SizedBox(
-                            width: 250,
-                            height: 55,
-                            child: _buildButtonShimmer(
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pushNamed(context, '/register');
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Register",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // ~~ Google button removed here ~~
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Keep spacing so elements don't shift
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: ScaleTransition(
-                      scale: _popAnimation,
-                      child: SizedBox(
-                        height: size.height * 0,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
