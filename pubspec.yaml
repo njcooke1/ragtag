@@ -76,6 +76,7 @@ dev_dependencies:
 flutter_native_splash:
   image: assets/splash_bg.png
   color: "#000000"
+  fill: true
   android: true
   ios: true
 
