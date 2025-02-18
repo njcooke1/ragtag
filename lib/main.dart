@@ -132,8 +132,8 @@ class _RagtagAppState extends State<RagtagApp> {
       debugShowCheckedModeBanner: false,
       title: 'Ragtag App',
       
-      // Start on '/home'
-      initialRoute: '/home',
+      // Start on
+      initialRoute: '/landing',
       
       // Define named routes
       routes: {
