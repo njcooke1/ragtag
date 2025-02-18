@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-	<dict>
+<plist version="1.0"	<dict>
 		<!-- Existing Flutter Keys -->
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
@@ -85,4 +84,26 @@
 		<key>NSCalendarsUsageDescription</key>
 		<string>This app needs access to your calendar to schedule events and reminders for your campus life experience.</string>
 	</dict>
+calendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+lendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
+alendar to schedule events and reminders for your campus life experience.</string>
+  </dict>
 </plist>
