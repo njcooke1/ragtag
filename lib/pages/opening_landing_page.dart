@@ -418,8 +418,8 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.5),
+                  Colors.black.withOpacity(0.5),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
