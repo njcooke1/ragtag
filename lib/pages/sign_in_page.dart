@@ -137,9 +137,10 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent, // Explicit background color
       body: Stack(
         children: [
-          // FIRST SHIMMER LAYER (Adjusted opacities)
+          // Single Shimmer Layer Background
           Positioned.fill(
             child: Shimmer.fromColors(
               baseColor: const Color(0xFFD76D77).withOpacity(0.4),
@@ -157,33 +158,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-            ),
-          ),
-          // SECOND SHIMMER LAYER (Adjusted opacities)
-          Positioned.fill(
-            child: Shimmer.fromColors(
-              baseColor: const Color(0xFFD76D77).withOpacity(0.3),
-              highlightColor: const Color(0xFFFFAF7B).withOpacity(0.4),
-              period: const Duration(seconds: 9),
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFFFFAF7B),
-                      Color(0xFFD76D77),
-                      Color(0xFF1C6971),
-                    ],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Optional overlay (lighter opacity to avoid the grey-out issue)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.1),
             ),
           ),
           // App logo at the top
