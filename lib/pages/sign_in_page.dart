@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'first_choice.dart';
 import '../services/token_service.dart';
@@ -41,31 +42,49 @@ class _SignInPageState extends State<SignInPage> {
 
   void _signIn() async {
     setState(() => _isLoading = true);
+
     final String email = _usernameController.text.trim();
     final String password = _passwordController.text;
+
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar('Please enter both email and password.');
       setState(() => _isLoading = false);
       return;
     }
+
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
+
       print("Sign-in successful: ${userCredential.user?.email}");
       await _tokenService.initializeToken();
+
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) {
-            return const FirstChoicePage();
-          },
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const FirstChoicePage(),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 1.0);
             const end = Offset.zero;
-            final tween = Tween(begin: begin, end: end)
-                .chain(CurveTween(curve: Curves.easeInOut));
+            const curve = Curves.easeInOut;
+
+            final tween =
+                Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
             final slideAnimation = animation.drive(tween);
-            return SlideTransition(position: slideAnimation, child: child);
+
+            return Stack(
+              children: [
+                SlideTransition(position: slideAnimation, child: child),
+                SlideTransition(
+                  position: Tween(
+                          begin: Offset.zero, end: const Offset(0.0, -1.0))
+                      .animate(animation),
+                  child: Container(color: Colors.transparent),
+                ),
+              ],
+            );
           },
         ),
       );
@@ -85,203 +104,235 @@ class _SignInPageState extends State<SignInPage> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// Mimics the dual shimmer overlays from your OpeningLandingPage
+  Widget _buildShimmerOverlays() {
+    return Stack(
+      children: [
+        // First shimmer layer
+        Positioned.fill(
+          child: Shimmer.fromColors(
+            baseColor: const Color(0xFFD76D77).withOpacity(0.2),
+            highlightColor: const Color(0xFFFFAF7B).withOpacity(0.3),
+            period: const Duration(seconds: 4),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFFFFAF7B),
+                    Color(0xFFD76D77),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Second shimmer layer
+        Positioned.fill(
+          child: Shimmer.fromColors(
+            baseColor: const Color(0xFFD76D77).withOpacity(0.1),
+            highlightColor: const Color(0xFFFFAF7B).withOpacity(0.2),
+            period: const Duration(seconds: 9),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFFD76D77),
+                    Color(0xFFFFAF7B),
+                  ],
+                  begin: Alignment.bottomRight,
+                  end: Alignment.topLeft,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // We remove backgroundColor from the scaffold
-      body: Container(
-        // This container fills the entire screen and shows the gradient
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFFFFAF7B),
-              Color(0xFFD76D77),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // App logo at the top
-              Align(
-                alignment: Alignment.topCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 98.0),
-                  child: Image.asset(
-                    'assets/ragtaglogo.png',
-                    width: 120,
-                    height: 70,
-                  ),
-                ),
+      // A simple Stack where the black base + shimmer overlays serve as the background
+      body: Stack(
+        children: [
+          Container(color: Colors.black),
+          _buildShimmerOverlays(),
+
+          // App Logo at the top center
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 98.0),
+              child: Image.asset(
+                'assets/ragtaglogo.png',
+                width: 120,
+                height: 70,
               ),
-              // Main form container with semi-transparent background for readability
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+
+          // Main Sign-In Form
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Sign in using your campus email",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                  const SizedBox(height: 30),
+                  TextField(
+                    controller: _usernameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Enter Username (email)',
+                      hintStyle: const TextStyle(color: Colors.white),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.2),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                  ),
+                  const SizedBox(height: 30),
+                  if (_isUsernameEntered)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Sign in using your campus email",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 20, color: Colors.white),
-                        ),
-                        const SizedBox(height: 30),
+                        const Text('Password',
+                            style: TextStyle(color: Colors.white)),
+                        const SizedBox(height: 10),
                         TextField(
-                          controller: _usernameController,
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            hintText: 'Enter Username (email)',
-                            hintStyle: const TextStyle(color: Colors.white70),
+                            hintText: 'Enter Password',
+                            hintStyle: const TextStyle(color: Colors.white),
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.2),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(30),
                               borderSide: BorderSide.none,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        if (_isUsernameEntered)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Password',
-                                  style: TextStyle(color: Colors.white)),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: InputDecoration(
-                                  hintText: 'Enter Password',
-                                  hintStyle:
-                                      const TextStyle(color: Colors.white70),
-                                  filled: true,
-                                  fillColor: Colors.white.withOpacity(0.2),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off
-                                          : Icons.visibility,
-                                      color: Colors.white,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.white,
                               ),
-                            ],
-                          ),
-                        const SizedBox(height: 30),
-                        Container(
-                          width: 250,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            color: Colors.white,
-                          ),
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _signIn,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? const BouncingBallsLoader()
-                                : ShaderMask(
-                                    shaderCallback: (bounds) =>
-                                        const LinearGradient(
-                                          colors: [
-                                            Color(0xFFFFAF7B),
-                                            Color(0xFFD76D77),
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ).createShader(bounds),
-                                    blendMode: BlendMode.srcIn,
-                                    child: const Text(
-                                      "Continue",
-                                      style: TextStyle(
-                                          fontSize: 18, color: Colors.white),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const ChangePasswordPage()),
-                            );
-                          },
-                          child: const Text(
-                            "Forgot your password?",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                              decoration: TextDecoration.underline,
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              // Transparent back button at the bottom left
-              Positioned(
-                bottom: 70,
-                left: 20,
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 40,
-                    height: 40,
+                  const SizedBox(height: 30),
+                  Container(
+                    width: 250,
+                    height: 55,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.chevron_left,
+                      borderRadius: BorderRadius.circular(30),
                       color: Colors.white,
-                      size: 28,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _signIn,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const BouncingBallsLoader()
+                          : ShaderMask(
+                              shaderCallback: (bounds) =>
+                                  const LinearGradient(
+                                colors: [
+                                  Color(0xFFFFAF7B),
+                                  Color(0xFFD76D77),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: const Text(
+                                "Continue",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Forgot your password?",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Modern transparent back button at the bottom left
+          Positioned(
+            bottom: 70,
+            left: 20,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.chevron_left,
+                  color: Colors.white,
+                  size: 28,
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-// BouncingBallsLoader Implementation
+// Loader Animation
 class BouncingBallsLoader extends StatelessWidget {
   const BouncingBallsLoader({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -299,12 +350,14 @@ class BouncingBallsLoader extends StatelessWidget {
 class Ball extends StatefulWidget {
   final int index;
   const Ball({required this.index, super.key});
+
   @override
   State<Ball> createState() => _BallState();
 }
 
 class _BallState extends State<Ball> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+
   @override
   void initState() {
     super.initState();
@@ -312,15 +365,19 @@ class _BallState extends State<Ball> with SingleTickerProviderStateMixin {
       duration: const Duration(milliseconds: 600),
       vsync: this,
     )..repeat(reverse: true);
+
+    // Staggered start for each ball
     Future.delayed(Duration(milliseconds: widget.index * 200), () {
       if (mounted) _controller.forward();
     });
   }
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
