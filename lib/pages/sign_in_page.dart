@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shimmer/shimmer.dart';
 
 import 'first_choice.dart';
 import '../services/token_service.dart';
@@ -13,7 +12,7 @@ class SignInPage extends StatefulWidget {
   State<SignInPage> createState() => _SignInPageState();
 }
 
-class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
+class _SignInPageState extends State<SignInPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -22,13 +21,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
   bool _obscurePassword = true;
 
   final TokenService _tokenService = TokenService();
-
-  // Shimmer controller for background effects
-  late final AnimationController _shimmerController =
-      AnimationController(vsync: this, duration: const Duration(seconds: 4))
-        ..repeat();
-  late final Animation<double> _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0)
-      .animate(CurvedAnimation(parent: _shimmerController, curve: Curves.linear));
 
   @override
   void initState() {
@@ -44,7 +36,6 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _shimmerController.dispose();
     super.dispose();
   }
 
@@ -71,20 +62,10 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 1.0);
             const end = Offset.zero;
-            const curve = Curves.easeInOut;
-            final tween =
-                Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            final tween = Tween(begin: begin, end: end)
+                .chain(CurveTween(curve: Curves.easeInOut));
             final slideAnimation = animation.drive(tween);
-            return Stack(
-              children: [
-                SlideTransition(position: slideAnimation, child: child),
-                SlideTransition(
-                  position: Tween(begin: Offset.zero, end: const Offset(0.0, -1.0))
-                      .animate(animation),
-                  child: Container(color: Colors.transparent),
-                ),
-              ],
-            );
+            return SlideTransition(position: slideAnimation, child: child);
           },
         ),
       );
@@ -104,58 +85,24 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _buildButtonShimmer(Widget child) {
-    return AnimatedBuilder(
-      animation: _shimmerAnimation,
-      builder: (context, _) {
-        final width = MediaQuery.of(context).size.width;
-        final shimmerWidth = width / 2;
-        final start = _shimmerAnimation.value * width;
-        return ShaderMask(
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              colors: [
-                Colors.white.withOpacity(0.0),
-                Colors.white.withOpacity(0.7),
-                Colors.white.withOpacity(0.0),
-              ],
-              stops: const [0.0, 0.5, 1.0],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ).createShader(
-              Rect.fromLTWH(start, 0, shimmerWidth, bounds.height),
-            );
-          },
-          blendMode: BlendMode.srcATop,
-          child: child,
-        );
-      },
-      child: child,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent, // Explicit background color
+      // Force a transparent scaffold so our gradient is fully visible.
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Single Shimmer Layer Background
+          // Simple gradient background (no shimmer)
           Positioned.fill(
-            child: Shimmer.fromColors(
-              baseColor: const Color(0xFFD76D77).withOpacity(0.4),
-              highlightColor: const Color(0xFFFFAF7B).withOpacity(0.5),
-              period: const Duration(seconds: 4),
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFFFFAF7B),
-                      Color(0xFFD76D77),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFFFFAF7B),
+                    Color(0xFFD76D77),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
             ),
@@ -172,7 +119,7 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // Main form container with a semi-transparent background for readability
+          // Main form container with semi-transparent background for readability
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -227,7 +174,9 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                               ),
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
                                   color: Colors.white,
                                 ),
                                 onPressed: () {
@@ -260,15 +209,16 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
                         child: _isLoading
                             ? const BouncingBallsLoader()
                             : ShaderMask(
-                                shaderCallback: (bounds) =>
-                                    const LinearGradient(
-                                      colors: [
-                                        Color(0xFFFFAF7B),
-                                        Color(0xFFD76D77),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ).createShader(bounds),
+                                // Use a simple shader for button text.
+                                shaderCallback: (bounds) => const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFFAF7B),
+                                    Color(0xFFD76D77),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ).createShader(bounds),
+                                blendMode: BlendMode.srcIn,
                                 child: const Text(
                                   "Continue",
                                   style: TextStyle(fontSize: 18, color: Colors.white),
