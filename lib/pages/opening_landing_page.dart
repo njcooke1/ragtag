@@ -76,7 +76,7 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
       ),
     );
 
-    // Animated gradient background
+    // Animated gradient background for the opening page
     _bgColor1Animation = ColorTween(
       begin: const Color(0xFF000000),
       end: const Color(0xFFFFAF7B),
@@ -227,7 +227,7 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Animated gradient background
+          // Animated gradient background for opening page
           AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -273,7 +273,7 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
 }
 
 /// ----------------------------------------------
-/// LANDING PAGE (Updated Version)
+/// LANDING PAGE (Solid Color Debug Version)
 /// ----------------------------------------------
 class LandingPage extends StatefulWidget {
   const LandingPage({Key? key}) : super(key: key);
@@ -296,13 +296,6 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
   late Animation<double> _landingFadeAnimation;
   late Animation<Offset> _landingSlideAnimation;
 
-  // For background zoom effect
-  late AnimationController _bgAnimationController;
-  late Animation<double> _bgScaleAnimation;
-
-  // Firestore reference (if needed)
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   @override
   void initState() {
     super.initState();
@@ -313,10 +306,7 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
       duration: const Duration(seconds: 4),
     )..repeat();
     _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
-      CurvedAnimation(
-        parent: _shimmerController,
-        curve: Curves.linear,
-      ),
+      CurvedAnimation(parent: _shimmerController, curve: Curves.linear),
     );
 
     // POP (SCALE)
@@ -334,28 +324,13 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
       duration: const Duration(seconds: 1),
     )..forward();
     _landingFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _landingTransitionController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _landingTransitionController, curve: Curves.easeInOut),
     );
     _landingSlideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(
-        parent: _landingTransitionController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    // BACKGROUND ZOOM
-    _bgAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat(reverse: true);
-    _bgScaleAnimation = Tween<double>(begin: 1.0, end: 1.07).animate(
-      CurvedAnimation(parent: _bgAnimationController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _landingTransitionController, curve: Curves.easeInOut),
     );
   }
 
@@ -364,7 +339,6 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
     _shimmerController.dispose();
     _popController.dispose();
     _landingTransitionController.dispose();
-    _bgAnimationController.dispose();
     super.dispose();
   }
 
@@ -387,9 +361,7 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
               stops: const [0.0, 0.5, 1.0],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-            ).createShader(
-              Rect.fromLTWH(start, 0, shimmerWidth, bounds.height),
-            );
+            ).createShader(Rect.fromLTWH(start, 0, shimmerWidth, bounds.height));
           },
           blendMode: BlendMode.srcATop,
           child: child,
@@ -401,129 +373,71 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
+    // Using a solid color background for debugging
     return Scaffold(
-      body: Stack(
-        children: [
-          // Animated background with slow zoom
-          AnimatedBuilder(
-            animation: _bgScaleAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _bgScaleAnimation.value,
-                child: child,
-              );
-            },
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/background.png'),
-                  fit: BoxFit.cover,
+      backgroundColor: Colors.red,
+      body: FadeTransition(
+        opacity: _landingFadeAnimation,
+        child: SlideTransition(
+          position: _landingSlideAnimation,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Debug text to verify UI is rendering
+                const Text(
+                  'Landing Page Debug',
+                  style: TextStyle(
+                    fontSize: 32,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ),
-          ),
-
-          // Adjusted overlay (lighter opacity so buttons and text stand out)
-          Container(color: Colors.black.withOpacity(0.3)),
-
-          // Animated Column (fade + slide in)
-          FadeTransition(
-            opacity: _landingFadeAnimation,
-            child: SlideTransition(
-              position: _landingSlideAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(height: 12),
-                  // Banner image
-                  ScaleTransition(
-                    scale: _popAnimation,
-                    child: Image.asset(
-                      'assets/ragtaglogo.png',
-                      width: size.width * 0.39,
-                      height: size.height * 0.2,
-                      fit: BoxFit.cover,
+                const SizedBox(height: 40),
+                // Sign In button
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/sign-in');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    minimumSize: const Size(250, 55),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-
-                  // Sign In / Register buttons
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: ScaleTransition(
-                      scale: _popAnimation,
-                      child: Column(
-                        children: [
-                          // Sign In button
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/sign-in');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue, // Changed to blue for visibility
-                              minimumSize: const Size(250, 55),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              "Sign In",
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Register button with shimmer text
-                          SizedBox(
-                            width: 250,
-                            height: 55,
-                            child: _buildButtonShimmer(
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pushNamed(context, '/register');
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Register",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // ~~ Google button removed here ~~
-                        ],
+                  child: const Text(
+                    "Sign In",
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Register button with shimmer text
+                SizedBox(
+                  width: 250,
+                  height: 55,
+                  child: _buildButtonShimmer(
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/register');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: const Text(
+                        "Register",
+                        style: TextStyle(fontSize: 18, color: Colors.black),
                       ),
                     ),
                   ),
-
-                  // Bottom spacing
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: ScaleTransition(
-                      scale: _popAnimation,
-                      child: SizedBox(
-                        height: size.height * 0.02,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
