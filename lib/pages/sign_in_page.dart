@@ -64,8 +64,7 @@ class _SignInPageState extends State<SignInPage> {
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
               const FirstChoicePage(),
-          transitionsBuilder:
-              (context, animation, secondaryAnimation, child) {
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 1.0);
             const end = Offset.zero;
             const curve = Curves.easeInOut;
@@ -78,9 +77,9 @@ class _SignInPageState extends State<SignInPage> {
               children: [
                 SlideTransition(position: slideAnimation, child: child),
                 SlideTransition(
-                  position: Tween(
-                          begin: Offset.zero, end: const Offset(0.0, -1.0))
-                      .animate(animation),
+                  position:
+                      Tween(begin: Offset.zero, end: const Offset(0.0, -1.0))
+                          .animate(animation),
                   child: Container(color: Colors.transparent),
                 ),
               ],
@@ -155,10 +154,21 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // A simple Stack where the black base + shimmer overlays serve as the background
+      // Instead of solid black, we use a subtle dark gradient:
       body: Stack(
         children: [
-          Container(color: Colors.black),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black87,
+                  Colors.black54,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
           _buildShimmerOverlays(),
 
           // App Logo at the top center
@@ -192,7 +202,7 @@ class _SignInPageState extends State<SignInPage> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Enter Username (email)',
-                      hintStyle: const TextStyle(color: Colors.white),
+                      hintStyle: const TextStyle(color: Colors.white70),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.2),
                       border: OutlineInputBorder(
@@ -215,7 +225,7 @@ class _SignInPageState extends State<SignInPage> {
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             hintText: 'Enter Password',
-                            hintStyle: const TextStyle(color: Colors.white),
+                            hintStyle: const TextStyle(color: Colors.white70),
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.2),
                             border: OutlineInputBorder(
