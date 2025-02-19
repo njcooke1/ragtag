@@ -274,7 +274,7 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
 }
 
 /// ----------------------------------------------
-/// LANDING PAGE (Original UI, Fixed Version)
+/// LANDING PAGE (Original UI, Fixed with Overlay)
 /// ----------------------------------------------
 class LandingPage extends StatefulWidget {
   const LandingPage({Key? key}) : super(key: key);
@@ -311,10 +311,7 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
       duration: const Duration(seconds: 4),
     )..repeat();
     _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
-      CurvedAnimation(
-        parent: _shimmerController,
-        curve: Curves.linear,
-      ),
+      CurvedAnimation(parent: _shimmerController, curve: Curves.linear),
     );
 
     // POP (SCALE)
@@ -332,19 +329,13 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
       duration: const Duration(seconds: 1),
     )..forward();
     _landingFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _landingTransitionController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _landingTransitionController, curve: Curves.easeInOut),
     );
     _landingSlideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(
-        parent: _landingTransitionController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _landingTransitionController, curve: Curves.easeInOut),
     );
 
     // BACKGROUND ZOOM
@@ -415,7 +406,6 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
             },
             child: Container(
               decoration: const BoxDecoration(
-                color: Colors.black,
                 image: DecorationImage(
                   image: AssetImage('assets/background.png'),
                   fit: BoxFit.cover,
@@ -423,8 +413,19 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
               ),
             ),
           ),
-          // Lighter overlay (adjust opacity as needed)
-          Container(color: Colors.black.withOpacity(0.2)),
+          // Reintroduced overlay with a gradient (adjust opacity as desired)
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.3),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
           // Animated Column containing the logo and buttons
           FadeTransition(
             opacity: _landingFadeAnimation,
