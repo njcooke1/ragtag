@@ -288,18 +288,3 @@ class RootPage extends StatelessWidget {
     }
   }
 }
-
-/* 
-// Uncomment this fallback widget for diagnostic purposes:
-// Use it as the home widget to check if your Flutter UI loads correctly on iOS.
-
-class TestHomePage extends StatelessWidget {
-  const TestHomePage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(child: Text('Hello, iOS Build is working!')),
-    );
-  }
-}
