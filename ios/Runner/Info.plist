@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-  <dict>
+<dict>
     <!-- Existing Flutter Keys -->
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
@@ -14,7 +14,7 @@
     <!-- This key tells Xcode the supported platform for your app -->
     <key>CFBundleSupportedPlatforms</key>
     <array>
-      <string>iPhoneOS</string>
+        <string>iPhoneOS</string>
     </array>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
@@ -30,33 +30,37 @@
     <string>$(FLUTTER_BUILD_NUMBER)</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <!-- Specify the launch screen storyboard -->
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
+    <!-- Remove this if not using a main storyboard -->
+    <!-- <key>UIMainStoryboardFile</key>
+    <string>Main</string> -->
     <key>UISupportedInterfaceOrientations</key>
     <array>
-      <string>UIInterfaceOrientationPortrait</string>
-      <string>UIInterfaceOrientationLandscapeLeft</string>
-      <string>UIInterfaceOrientationLandscapeRight</string>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
-      <string>UIInterfaceOrientationPortrait</string>
-      <string>UIInterfaceOrientationPortraitUpsideDown</string>
-      <string>UIInterfaceOrientationLandscapeLeft</string>
-      <string>UIInterfaceOrientationLandscapeRight</string>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <!-- App Icon Configuration -->
     <key>CFBundleIcons</key>
     <dict>
-      <key>CFBundlePrimaryIcon</key>
-      <dict>
-        <key>CFBundleIconFiles</key>
-        <array>
-          <string>AppIcon</string>
-        </array>
-        <key>UIPrerenderedIcon</key>
-        <false/>
-      </dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconFiles</key>
+            <array>
+                <string>AppIcon</string>
+            </array>
+            <key>UIPrerenderedIcon</key>
+            <false/>
+        </dict>
     </dict>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
@@ -74,13 +78,13 @@
     <!-- Background Modes (fetch & remote-notification) -->
     <key>UIBackgroundModes</key>
     <array>
-      <string>fetch</string>
-      <string>remote-notification</string>
+        <string>fetch</string>
+        <string>remote-notification</string>
     </array>
     <key>UIStatusBarHidden</key>
     <false/>
     <!-- CALENDAR PERMISSION -->
     <key>NSCalendarsUsageDescription</key>
     <string>This app needs access to your calendar to schedule events and reminders for your campus life experience.</string>
-  </dict>
+</dict>
 </plist>
