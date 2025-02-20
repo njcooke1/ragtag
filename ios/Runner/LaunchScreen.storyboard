@@ -20,7 +20,8 @@
                         <subviews>
                             <imageView opaque="NO" contentMode="scaleAspectFill" clipsSubviews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Bpe-N8-aEA">
                                 <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
-                                <image key="image" name="splash_bg"/>
+                                <!-- Replace 'LaunchImage' with your asset name if different -->
+                                <image key="image" name="LaunchImage"/>
                             </imageView>
                         </subviews>
                         <constraints>
