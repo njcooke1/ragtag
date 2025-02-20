@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -40,6 +41,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Enable edge-to-edge mode so Flutter draws behind system overlays.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+  ));
+
   try {
     print('Initializing Firebase...');
     await Firebase.initializeApp();
@@ -48,7 +57,7 @@ void main() async {
     print('Error during Firebase.initializeApp(): $e\n$stacktrace');
   }
 
-  // Activate Firebase App Check using DeviceCheck for iOS (and Play Integrity for Android)
+  // Activate Firebase App Check
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.playIntegrity,
@@ -81,18 +90,14 @@ class _RagtagAppState extends State<RagtagApp> {
     _setupDynamicLinks();
   }
 
-  /// Listen for incoming dynamic links (initial + in-app)
   void _setupDynamicLinks() async {
     try {
-      // 1) If the app is opened from a terminated state via a link:
       final PendingDynamicLinkData? initialLink =
           await FirebaseDynamicLinks.instance.getInitialLink();
       if (initialLink != null) {
         print('Initial dynamic link detected: ${initialLink.link}');
         _handleDeepLink(initialLink.link);
       }
-
-      // 2) If the app is in background/foreground:
       FirebaseDynamicLinks.instance.onLink.listen((dynamicLinkData) {
         print('Dynamic link received in-app: ${dynamicLinkData.link}');
         _handleDeepLink(dynamicLinkData.link);
@@ -104,10 +109,8 @@ class _RagtagAppState extends State<RagtagApp> {
     }
   }
 
-  /// Decide where to navigate based on the deep link
   void _handleDeepLink(Uri deepLink) {
     print('Handling deep link: $deepLink');
-    // Example: https://ragtag.com/club?c=123
     if (deepLink.path.contains("club")) {
       final clubId = deepLink.queryParameters["c"] ?? "";
       if (clubId.isNotEmpty) {
@@ -123,7 +126,6 @@ class _RagtagAppState extends State<RagtagApp> {
         );
       }
     }
-    // Add additional deep link handling as needed.
   }
 
   @override
@@ -131,11 +133,7 @@ class _RagtagAppState extends State<RagtagApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ragtag App',
-      
-      // Start on
       initialRoute: '/landing',
-      
-      // Define named routes
       routes: {
         '/home': (context) => const RootPage(),
         '/profilePage': (context) => const ProfilePage(),
@@ -163,7 +161,8 @@ class _RagtagAppState extends State<RagtagApp> {
             );
           }
           final communityId = args['communityId'] as String? ?? '';
-          final communityData = args['communityData'] as Map<String, dynamic>? ?? {};
+          final communityData =
+              args['communityData'] as Map<String, dynamic>? ?? {};
           final userId = args['userId'] as String? ?? '';
           return ClubsProfilePage(
             communityId: communityId,
@@ -185,9 +184,11 @@ class _RagtagAppState extends State<RagtagApp> {
             );
           }
           final communityId = args['communityId'] as String? ?? '';
-          final communityData = args['communityData'] as Map<String, dynamic>? ?? {};
+          final communityData =
+              args['communityData'] as Map<String, dynamic>? ?? {};
           final userId = args['userId'] as String? ?? '';
-          final collectionName = args['collectionName'] as String? ?? 'interestGroups';
+          final collectionName =
+              args['collectionName'] as String? ?? 'interestGroups';
           return RedesignedInterestGroupsPage(
             communityId: communityId,
             communityData: communityData,
@@ -209,7 +210,8 @@ class _RagtagAppState extends State<RagtagApp> {
             );
           }
           final communityId = args['communityId'] as String? ?? '';
-          final communityData = args['communityData'] as Map<String, dynamic>? ?? {};
+          final communityData =
+              args['communityData'] as Map<String, dynamic>? ?? {};
           final userId = args['userId'] as String? ?? '';
           return OpenForumsProfilePage(
             communityId: communityId,
@@ -221,8 +223,6 @@ class _RagtagAppState extends State<RagtagApp> {
         '/edit_community': (context) => EditCommunityPage(),
         '/fomo_feed': (context) => const FomoFeedPage(),
       },
-      
-      // Routes that need arguments are handled here.
       onGenerateRoute: (settings) {
         if (settings.name == '/club-chat') {
           final args = settings.arguments as Map<String, dynamic>;
@@ -253,8 +253,6 @@ class _RagtagAppState extends State<RagtagApp> {
         }
         return null;
       },
-      
-      // Basic theming
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
@@ -271,7 +269,6 @@ class _RagtagAppState extends State<RagtagApp> {
   }
 }
 
-/// Decides whether to show an authenticated screen or the landing page.
 class RootPage extends StatelessWidget {
   const RootPage({Key? key}) : super(key: key);
 
