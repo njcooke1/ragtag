@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-// import 'package:firebase_app_check/firebase_app_check.dart'; // <-- Optionally comment out the import too
+import 'package:firebase_app_check/firebase_app_check.dart'; // App Check import
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
 // Pages
@@ -48,16 +48,16 @@ void main() async {
     print('Error during Firebase.initializeApp(): $e\n$stacktrace');
   }
 
-  // // Commented out AppCheck block:
-  // try {
-  //   await FirebaseAppCheck.instance.activate(
-  //     androidProvider: AndroidProvider.playIntegrity,
-  //     appleProvider: AppleProvider.deviceCheck,
-  //   );
-  //   print('AppCheck activated.');
-  // } catch (e, stacktrace) {
-  //   print('Error activating AppCheck: $e\n$stacktrace');
-  // }
+  // Activate Firebase App Check using DeviceCheck for iOS (and Play Integrity for Android)
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.deviceCheck,
+    );
+    print('AppCheck activated.');
+  } catch (e, stacktrace) {
+    print('Error activating AppCheck: $e\n$stacktrace');
+  }
 
   // FCM setup
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -137,7 +137,6 @@ class _RagtagAppState extends State<RagtagApp> {
       
       // Define named routes
       routes: {
-        // RootPage decides whether to show OpeningLandingPage or the authenticated path
         '/home': (context) => const RootPage(),
         '/profilePage': (context) => const ProfilePage(),
         '/landing': (context) => const OpeningLandingPage(),
@@ -259,9 +258,7 @@ class _RagtagAppState extends State<RagtagApp> {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        // If you declared the family as 'Lovelo' in pubspec.yaml,
-        // make sure to match that here. Otherwise fallback to a system font:
-        fontFamily: 'Lovelo', 
+        fontFamily: 'Lovelo',
         scaffoldBackgroundColor: const Color(0xFF121212),
         textTheme: const TextTheme(
           bodyLarge: TextStyle(color: Colors.white),
@@ -306,5 +303,3 @@ class TestHomePage extends StatelessWidget {
     );
   }
 }
-*/
-
