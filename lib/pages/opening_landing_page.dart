@@ -274,7 +274,7 @@ class _OpeningLandingPageState extends State<OpeningLandingPage>
 }
 
 /// ----------------------------------------------
-/// LANDING PAGE (Original UI, Fixed with Overlay)
+/// LANDING PAGE (Sign In / Register)
 /// ----------------------------------------------
 class LandingPage extends StatefulWidget {
   const LandingPage({Key? key}) : super(key: key);
@@ -292,7 +292,7 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
   late AnimationController _popController;
   late Animation<double> _popAnimation;
 
-  // Subtle fade and slide for the entire column
+  // Subtle fade and slide in for the entire column
   late AnimationController _landingTransitionController;
   late Animation<double> _landingFadeAnimation;
   late Animation<Offset> _landingSlideAnimation;
@@ -300,6 +300,9 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
   // For background zoom effect
   late AnimationController _bgAnimationController;
   late Animation<double> _bgScaleAnimation;
+
+  // Firestore reference
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -311,7 +314,10 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
       duration: const Duration(seconds: 4),
     )..repeat();
     _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
-      CurvedAnimation(parent: _shimmerController, curve: Curves.linear),
+      CurvedAnimation(
+        parent: _shimmerController,
+        curve: Curves.linear,
+      ),
     );
 
     // POP (SCALE)
@@ -329,13 +335,19 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
       duration: const Duration(seconds: 1),
     )..forward();
     _landingFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _landingTransitionController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _landingTransitionController,
+        curve: Curves.easeInOut,
+      ),
     );
     _landingSlideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(parent: _landingTransitionController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _landingTransitionController,
+        curve: Curves.easeInOut,
+      ),
     );
 
     // BACKGROUND ZOOM
@@ -365,6 +377,7 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
         final width = MediaQuery.of(context).size.width;
         final shimmerWidth = width / 2;
         final start = _shimmerAnimation.value * width;
+
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
@@ -395,7 +408,7 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
     return Scaffold(
       body: Stack(
         children: [
-          // Animated background with slow zoom effect using the asset image
+          // Animated background with slow zoom
           AnimatedBuilder(
             animation: _bgScaleAnimation,
             builder: (context, child) {
@@ -413,20 +426,11 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
               ),
             ),
           ),
-          // Reintroduced overlay with a gradient (adjust opacity as desired)
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(0.5),
-                  Colors.black.withOpacity(0.5),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-          // Animated Column containing the logo and buttons
+
+          // Dark overlay
+          Container(color: Colors.black.withOpacity(0.47)),
+
+          // Animated Column (fade + slide in)
           FadeTransition(
             opacity: _landingFadeAnimation,
             child: SlideTransition(
@@ -435,32 +439,38 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const SizedBox(height: 12),
-                  // Banner image/logo
+                  // Banner image
                   ScaleTransition(
                     scale: _popAnimation,
                     child: Image.asset(
                       'assets/ragtaglogo.png',
                       width: size.width * 0.39,
                       height: size.height * 0.2,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                  // Sign In / Register buttons
+
+                  // Sign In / Register
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: ScaleTransition(
                       scale: _popAnimation,
                       child: Column(
                         children: [
+                          // Sign In
                           ElevatedButton(
                             onPressed: () {
                               Navigator.pushNamed(context, '/sign-in');
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
+                              backgroundColor: Colors.black,
                               minimumSize: const Size(250, 55),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 1.0,
+                                ),
                               ),
                             ),
                             child: const Text(
@@ -472,6 +482,8 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
                             ),
                           ),
                           const SizedBox(height: 20),
+
+                          // Register (with shimmer text)
                           SizedBox(
                             width: 250,
                             height: 55,
@@ -497,16 +509,20 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
                             ),
                           ),
                           const SizedBox(height: 20),
+                          // ~~ Google button removed here ~~
                         ],
                       ),
                     ),
                   ),
-                  // Bottom spacing
+
+                  // Keep spacing so elements don't shift
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: ScaleTransition(
                       scale: _popAnimation,
-                      child: SizedBox(height: size.height * 0.02),
+                      child: SizedBox(
+                        height: size.height * 0,
+                      ),
                     ),
                   ),
                 ],

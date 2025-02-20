@@ -311,23 +311,25 @@ class _SignInPageState extends State<SignInPage> {
             ),
           ),
 
-          // 4) Modern transparent back button
+          // 4) Modern transparent back button moved to the top
           Positioned(
-            bottom: 70,
+            top: 40, // Adjust as needed
             left: 20,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.chevron_left, // no stem, just a chevron
-                  color: Colors.white,
-                  size: 28,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.chevron_left, // no stem, just a chevron
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
             ),

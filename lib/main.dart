@@ -256,7 +256,7 @@ class _RagtagAppState extends State<RagtagApp> {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        fontFamily: 'Lovelo',
+        fontFamily: 'Lovelo-Black',
         scaffoldBackgroundColor: const Color(0xFF121212),
         textTheme: const TextTheme(
           bodyLarge: TextStyle(color: Colors.white),
