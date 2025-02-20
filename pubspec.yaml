@@ -136,4 +136,4 @@ flutter:
           weight: 200
 
 platforms:
-  ios: '11.0'  # iOS platform version
+  ios: '13.0'  # iOS platform version
