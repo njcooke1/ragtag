@@ -4,7 +4,6 @@ import 'package:shimmer/shimmer.dart'; // <-- Important
 
 import 'first_choice.dart';
 import '../services/token_service.dart'; // Corrected import path
-
 import 'change_password_page.dart'; // <-- Make sure this import is correct
 
 class SignInPage extends StatefulWidget {
@@ -103,12 +102,15 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Ensure the scaffold resizes to avoid bottom inset
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // -- FIRST SHIMMER --
@@ -167,134 +169,144 @@ class _SignInPageState extends State<SignInPage> {
             ),
           ),
 
-          // 3) Main Form
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Sign in using your campus email",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 20, color: Colors.white),
-                  ),
-                  const SizedBox(height: 30),
-                  TextField(
-                    controller: _usernameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Enter Username (email)',
-                      hintStyle: const TextStyle(color: Colors.white),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.2),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
+          // 3) Main Form wrapped in a scroll view to avoid bunching when the keyboard pops up
+          Positioned.fill(
+            child: SingleChildScrollView(
+              // Use extra top padding so the form doesn't overlap the logo,
+              // and bottom padding based on the keyboard's viewInsets
+              padding: EdgeInsets.only(
+                left: 20.0,
+                right: 20.0,
+                top: 200.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 40.0,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 200.0,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Sign in using your campus email",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 20, color: Colors.white),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-                  if (_isUsernameEntered)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Password',
-                            style: TextStyle(color: Colors.white)),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword, // <-- toggled
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'Enter Password',
-                            hintStyle: const TextStyle(color: Colors.white),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.2),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
-                              borderSide: BorderSide.none,
-                            ),
-                            // <-- Icon toggle
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.white,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 30),
-                  Container(
-                    width: 250,
-                    height: 55,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      color: Colors.white,
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _signIn,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
+                    const SizedBox(height: 30),
+                    TextField(
+                      controller: _usernameController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Enter Username (email)',
+                        hintStyle: const TextStyle(color: Colors.white),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.2),
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
                         ),
                       ),
-                      child: _isLoading
-                          ? const BouncingBallsLoader()
-                          : ShaderMask(
-                              shaderCallback: (bounds) =>
-                                  const LinearGradient(
-                                colors: [
-                                  Color(0xFFFFAF7B),
-                                  Color(0xFFD76D77),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: const Text(
-                                "Continue",
-                                style: TextStyle(
-                                  fontSize: 18,
+                    ),
+                    const SizedBox(height: 30),
+                    if (_isUsernameEntered)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Password',
+                              style: TextStyle(color: Colors.white)),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword, // <-- toggled
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'Enter Password',
+                              hintStyle: const TextStyle(color: Colors.white),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.2),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                              // <-- Icon toggle
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
                                   color: Colors.white,
                                 ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
                               ),
                             ),
-                    ),
-                  ),
-
-                  // Forgot Password Button
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChangePasswordPage(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      "Forgot your password?",
-                      style: TextStyle(
-                        fontSize: 16,
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 30),
+                    Container(
+                      width: 250,
+                      height: 55,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
                         color: Colors.white,
-                        decoration: TextDecoration.underline,
+                      ),
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _signIn,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const BouncingBallsLoader()
+                            : ShaderMask(
+                                shaderCallback: (bounds) =>
+                                    const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFFAF7B),
+                                    Color(0xFFD76D77),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ).createShader(bounds),
+                                child: const Text(
+                                  "Continue",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ChangePasswordPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Forgot your password?",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
