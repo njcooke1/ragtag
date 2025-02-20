@@ -14,23 +14,22 @@
                         <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <!-- Remove or modify the fixed frame and background color if not needed -->
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <!-- Add your splash image as an image view -->
                         <subviews>
                             <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" image="LaunchImage" translatesAutoresizingMaskIntoConstraints="NO" id="splashImageView">
                                 <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                             </imageView>
                         </subviews>
-                        <!-- Pin the image view to all edges -->
                         <constraints>
                             <constraint firstItem="splashImageView" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="constraint-leading"/>
                             <constraint firstItem="splashImageView" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailing" id="constraint-trailing"/>
                             <constraint firstItem="splashImageView" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" id="constraint-top"/>
                             <constraint firstItem="splashImageView" firstAttribute="bottom" secondItem="8bC-Xf-vdC" secondAttribute="bottom" id="constraint-bottom"/>
                         </constraints>
-                        <!-- Optional: remove or adjust the background color if needed -->
-                        <color key="backgroundColor" white="0" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <!-- Option: remove this background color to avoid the black borders -->
+                        <!-- <color key="backgroundColor" white="0" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/> -->
                     </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
