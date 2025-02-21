@@ -19,9 +19,10 @@ class _SignInPageState extends State<SignInPage> {
 
   bool _isLoading = false;
   bool _isUsernameEntered = false;
-
-  /// Added a password visibility toggle
   bool _obscurePassword = true;
+
+  // Error message to display in the UI
+  String? _errorMessage;
 
   final TokenService _tokenService = TokenService();
 
@@ -43,14 +44,19 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   void _signIn() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null; // clear any previous error
+    });
 
     final String email = _usernameController.text.trim();
     final String password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      _showSnackBar('Please enter both email and password.');
-      setState(() => _isLoading = false);
+      setState(() {
+        _errorMessage = 'Please enter both email and password.';
+        _isLoading = false;
+      });
       return;
     }
 
@@ -59,7 +65,9 @@ class _SignInPageState extends State<SignInPage> {
           .signInWithEmailAndPassword(email: email, password: password);
 
       print("Sign-in successful: ${userCredential.user?.email}");
-      await _tokenService.initializeToken();
+
+      // Temporarily comment out token initialization for troubleshooting:
+      // await _tokenService.initializeToken();
 
       Navigator.pushReplacement(
         context,
@@ -92,18 +100,18 @@ class _SignInPageState extends State<SignInPage> {
       );
     } on FirebaseAuthException catch (e) {
       print("FirebaseAuthException: ${e.message}");
-      _showSnackBar(e.message ?? 'Sign-in failed. Please try again.');
-    } catch (e) {
+      setState(() {
+        _errorMessage = e.message ?? 'Sign-in failed. Please try again.';
+      });
+    } catch (e, stacktrace) {
       print("Unknown error: $e");
-      _showSnackBar('An unknown error occurred.');
+      print("Stacktrace: $stacktrace");
+      setState(() {
+        _errorMessage = 'An unknown error occurred: $e';
+      });
     } finally {
       setState(() => _isLoading = false);
     }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -133,7 +141,6 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           ),
-
           // -- SECOND SHIMMER (slightly delayed / offset) --
           Positioned.fill(
             child: Shimmer.fromColors(
@@ -155,8 +162,7 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           ),
-
-          // 2) Your app logo
+          // 2) App logo
           Align(
             alignment: Alignment.topCenter,
             child: Padding(
@@ -168,152 +174,174 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           ),
-
-          // 3) Main Form wrapped in a scroll view to avoid bunching when the keyboard pops up
+          // 3) Main form (with error banner on top)
           Positioned.fill(
             child: SingleChildScrollView(
-              // Use extra top padding so the form doesn't overlap the logo,
-              // and bottom padding based on the keyboard's viewInsets
               padding: EdgeInsets.only(
                 left: 20.0,
                 right: 20.0,
                 top: 200.0,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 40.0,
               ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height - 200.0,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Sign in using your campus email",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20, color: Colors.white),
-                    ),
-                    const SizedBox(height: 30),
-                    TextField(
-                      controller: _usernameController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Enter Username (email)',
-                        hintStyle: const TextStyle(color: Colors.white),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    if (_isUsernameEntered)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                children: [
+                  // Error banner (only shows if _errorMessage is not null)
+                  if (_errorMessage != null)
+                    Container(
+                      padding: const EdgeInsets.all(10.0),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      color: Colors.redAccent,
+                      child: Row(
                         children: [
-                          const Text('Password',
-                              style: TextStyle(color: Colors.white)),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword, // <-- toggled
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Enter Password',
-                              hintStyle: const TextStyle(color: Colors.white),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.2),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30),
-                                borderSide: BorderSide.none,
-                              ),
-                              // <-- Icon toggle
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: Colors.white,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                              ),
+                          const Icon(Icons.error_outline, color: Colors.white),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.white),
                             ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () {
+                              setState(() {
+                                _errorMessage = null;
+                              });
+                            },
                           ),
                         ],
                       ),
-                    const SizedBox(height: 30),
-                    Container(
-                      width: 250,
-                      height: 55,
-                      decoration: BoxDecoration(
+                    ),
+                  // Sign-in prompt text
+                  const Text(
+                    "Sign in using your campus email",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                  const SizedBox(height: 30),
+                  // Email TextField
+                  TextField(
+                    controller: _usernameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Enter Username (email)',
+                      hintStyle: const TextStyle(color: Colors.white),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.2),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
-                        color: Colors.white,
+                        borderSide: BorderSide.none,
                       ),
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _signIn,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  // Password field (only shows if a username is entered)
+                  if (_isUsernameEntered)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Password',
+                            style: TextStyle(color: Colors.white)),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Enter Password',
+                            hintStyle: const TextStyle(color: Colors.white),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.2),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: BorderSide.none,
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
                           ),
                         ),
-                        child: _isLoading
-                            ? const BouncingBallsLoader()
-                            : ShaderMask(
-                                shaderCallback: (bounds) =>
-                                    const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFFAF7B),
-                                    Color(0xFFD76D77),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ).createShader(bounds),
-                                child: const Text(
-                                  "Continue",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                  ),
+                      ],
+                    ),
+                  const SizedBox(height: 30),
+                  // Continue button
+                  Container(
+                    width: 250,
+                    height: 55,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      color: Colors.white,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _signIn,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            )
+                          : ShaderMask(
+                              shaderCallback: (bounds) =>
+                                  const LinearGradient(
+                                colors: [
+                                  Color(0xFFFFAF7B),
+                                  Color(0xFFD76D77),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: const Text(
+                                "Continue",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
                                 ),
                               ),
-                      ),
+                            ),
                     ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ChangePasswordPage(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Forgot your password?",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          decoration: TextDecoration.underline,
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordPage(),
                         ),
+                      );
+                    },
+                    child: const Text(
+                      "Forgot your password?",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-
-          // 4) Modern transparent back button moved to the top
+          // 4) Transparent back button at the top
           Positioned(
-            top: 40, // Adjust as needed
+            top: 40,
             left: 20,
             child: SafeArea(
               child: GestureDetector(
@@ -326,7 +354,7 @@ class _SignInPageState extends State<SignInPage> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.chevron_left, // no stem, just a chevron
+                    Icons.chevron_left,
                     color: Colors.white,
                     size: 28,
                   ),
@@ -336,82 +364,6 @@ class _SignInPageState extends State<SignInPage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// BouncingBallsLoader Implementation
-class BouncingBallsLoader extends StatelessWidget {
-  const BouncingBallsLoader({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Ball(index: index),
-        );
-      }),
-    );
-  }
-}
-
-class Ball extends StatefulWidget {
-  final int index;
-  const Ball({required this.index, super.key});
-
-  @override
-  State<Ball> createState() => _BallState();
-}
-
-class _BallState extends State<Ball> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    // Give each ball a slight delay so they bounce in a staggered fashion
-    Future.delayed(Duration(milliseconds: widget.index * 200), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (_, __) {
-        return Transform.translate(
-          offset: Offset(0, -10 * _controller.value),
-          child: Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFFFFAF7B),
-                  Color(0xFFD76D77),
-                  Color(0xFF1C6971),
-                ],
-              ),
-              shape: BoxShape.circle,
-            ),
-          ),
-        );
-      },
     );
   }
 }
