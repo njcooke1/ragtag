@@ -104,7 +104,8 @@ class _RegistrationPageState extends State<RegistrationPage>
 
       // Show success message
       _showSnackBar(
-        message: 'Registration successful! Check your .edu email to verify.',
+        message:
+            'Registration successful! Check your .edu email to verify.',
         backgroundColor: Colors.green,
       );
 
@@ -174,7 +175,9 @@ class _RegistrationPageState extends State<RegistrationPage>
               suffixIcon: toggleVisibility != null
                   ? IconButton(
                       icon: Icon(
-                        obscureText ? Icons.visibility_off : Icons.visibility,
+                        obscureText
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: Colors.white70,
                       ),
                       onPressed: toggleVisibility,
@@ -194,7 +197,8 @@ class _RegistrationPageState extends State<RegistrationPage>
       children: [
         const Text(
           "Institution",
-          style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500),
+          style:
+              TextStyle(color: Colors.white70, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         Container(
@@ -217,7 +221,8 @@ class _RegistrationPageState extends State<RegistrationPage>
                 borderRadius: BorderRadius.circular(12),
                 value: _selectedInstitution,
                 dropdownColor: Colors.black87,
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                icon: const Icon(Icons.arrow_drop_down,
+                    color: Colors.white70),
                 style: const TextStyle(color: Colors.white),
                 hint: const Text(
                   'Select Institution',
@@ -237,7 +242,7 @@ class _RegistrationPageState extends State<RegistrationPage>
                   DropdownMenuItem(
                     value: 'University of North Carolina at Chapel Hill',
                     child: Text(
-                      'University of North Carolina Chapel Hill',
+                      'University of North Carolina at Chapel Hill',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -286,7 +291,8 @@ class _RegistrationPageState extends State<RegistrationPage>
               alignment: Alignment.center,
               child: _isLoading
                   ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white),
                     )
                   : const Text(
                       "Register",
@@ -302,9 +308,6 @@ class _RegistrationPageState extends State<RegistrationPage>
     );
   }
 
-  // ------------------------------------------------
-  // UPDATED WAIT SCREEN USING THE BOUNCING LOGO
-  // ------------------------------------------------
   /// Minimal waiting-for-verification screen
   Widget _buildVerificationWaitView() {
     return Container(
@@ -323,11 +326,10 @@ class _RegistrationPageState extends State<RegistrationPage>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
                   Text(
-                    "We sent a verification link to your campus email.\n\n"
-                    "Verify to continue!",
+                    "We sent a verification link to your campus email.\n\nVerify to continue!",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Lovelo', // Lovelo font
+                      fontFamily: 'Lovelo',
                       color: Colors.white,
                       fontSize: 20,
                     ),
@@ -390,7 +392,6 @@ class _RegistrationPageState extends State<RegistrationPage>
             ),
           ),
         ),
-
         // Blur effect over shimmer
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -398,10 +399,10 @@ class _RegistrationPageState extends State<RegistrationPage>
             color: Colors.black.withOpacity(0.1),
           ),
         ),
-
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24),
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -426,7 +427,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                     ),
                   ),
                   const SizedBox(height: 40),
-
                   // Title
                   const Text(
                     "Create Your Account",
@@ -444,7 +444,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
-
                   // Registration form container
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -493,7 +492,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                             ],
                           ),
                           const SizedBox(height: 20),
-
                           // Email
                           _buildTextFormField(
                             label: 'Email',
@@ -514,7 +512,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                             },
                           ),
                           const SizedBox(height: 20),
-
                           // Password
                           _buildTextFormField(
                             label: 'Set Password',
@@ -536,7 +533,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                             },
                           ),
                           const SizedBox(height: 20),
-
                           // Confirm Password
                           _buildTextFormField(
                             label: 'Confirm Password',
@@ -560,11 +556,9 @@ class _RegistrationPageState extends State<RegistrationPage>
                             },
                           ),
                           const SizedBox(height: 20),
-
                           // Institution dropdown
                           _buildDropdownField(),
                           const SizedBox(height: 30),
-
                           // Register button
                           _buildRegisterButton(),
                         ],
@@ -577,7 +571,7 @@ class _RegistrationPageState extends State<RegistrationPage>
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -589,7 +583,6 @@ class _RegistrationPageState extends State<RegistrationPage>
         body: _buildVerificationWaitView(),
       );
     }
-
     // Otherwise, show the registration form
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -598,9 +591,6 @@ class _RegistrationPageState extends State<RegistrationPage>
   }
 }
 
-// --------------------------------------------------------------------
-// BOUNCING LOGO WIDGET - SLOW, MULTI-ANGLE BOUNCE, RAINBOW COLOR FILTER
-// --------------------------------------------------------------------
 class BouncingLogoWidget extends StatefulWidget {
   const BouncingLogoWidget({Key? key}) : super(key: key);
 
@@ -630,7 +620,6 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
   @override
   void initState() {
     super.initState();
-
     // 1) Multiple color transitions (rainbow effect)
     _colorController = AnimationController(
       vsync: this,
@@ -663,7 +652,7 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
         tween: ColorTween(begin: Colors.indigo, end: Colors.purple),
         weight: 1,
       ),
-      // Add more if you want an even longer sequence...
+      // Add more if desired...
     ]).animate(_colorController);
 
     // 2) Ticker for bouncing
@@ -671,10 +660,8 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
       setState(() {
         _xPos += _xVel;
         _yPos += _yVel;
-
         final screenWidth = MediaQuery.of(context).size.width;
         final screenHeight = MediaQuery.of(context).size.height;
-
         // Bounce horizontally
         if (_xPos < 0) {
           _xPos = 0;
@@ -683,7 +670,6 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
           _xPos = screenWidth - _logoWidth;
           _xVel = -_xVel;
         }
-
         // Bounce vertically
         if (_yPos < 0) {
           _yPos = 0;
@@ -706,11 +692,9 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
 
   @override
   Widget build(BuildContext context) {
-    // Animate color changes with an AnimatedBuilder
     return AnimatedBuilder(
       animation: _colorAnimation,
       builder: (context, child) {
-        // Move the logo to the current position
         return Positioned(
           left: _xPos,
           top: _yPos,
@@ -723,9 +707,85 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
                 BlendMode.srcATop,
               ),
               child: Image.asset(
-                'assets/ragtaglogo.png', // Make sure path is correct
+                'assets/ragtaglogo.png',
                 fit: BoxFit.contain,
               ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class BouncingBallsLoader extends StatelessWidget {
+  const BouncingBallsLoader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(3, (index) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.0),
+          child: Ball(index: 0), // We'll update below
+        );
+      }).map((widget) {
+        // Use index properly: this is a workaround for List.generate with const.
+        return widget;
+      }).toList(),
+    );
+  }
+}
+
+class Ball extends StatefulWidget {
+  final int index;
+  const Ball({required this.index, super.key});
+
+  @override
+  State<Ball> createState() => _BallState();
+}
+
+class _BallState extends State<Ball> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    )..repeat(reverse: true);
+    // Give each ball a slight delay so they bounce in a staggered fashion
+    Future.delayed(Duration(milliseconds: widget.index * 200), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, __) {
+        return Transform.translate(
+          offset: Offset(0, -10 * _controller.value),
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFFFAF7B),
+                  Color(0xFFD76D77),
+                  Color(0xFF1C6971),
+                ],
+              ),
+              shape: BoxShape.circle,
             ),
           ),
         );
