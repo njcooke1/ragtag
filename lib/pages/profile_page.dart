@@ -283,7 +283,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     _originalUsername = username;
 
     // Gather communities
-    final collections = ['clubs', 'openForums', 'interestGroups', 'ragtagSparks'];
+    final collections = ['clubs', 'openForums', 'interestGroups', 'ragtagSparks', 'classGroups'];
     final futures =
         collections.map((c) => _fetchMembershipFromOneCollection(c, uid));
     final results = await Future.wait(futures);
@@ -2266,61 +2266,71 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  void _goToCommunity(String type, String docId, Map<String, dynamic> docData) {
-    final userId = _currentUser?.uid ?? 'noUser';
+void _goToCommunity(String type, String docId, Map<String, dynamic> docData) {
+  final userId = _currentUser?.uid ?? 'noUser';
 
-    if (type.toLowerCase().contains('forum')) {
-      Navigator.pushNamed(
-        context,
-        '/open-forums-profile',
-        arguments: {
-          'communityId': docId,
-          'communityData': docData,
-          'userId': userId,
-        },
-      );
-    } else if (type.toLowerCase().contains('interest')) {
-      Navigator.pushNamed(
-        context,
-        '/interest-groups-profile',
-        arguments: {
-          'communityId': docId,
-          'communityData': docData,
-          'userId': userId,
-        },
-      );
-    } else if (type.toLowerCase().contains('club')) {
-      Navigator.pushNamed(
-        context,
-        '/clubs-profile',
-        arguments: {
-          'communityId': docId,
-          'communityData': docData,
-          'userId': userId,
-        },
-      );
-    } else if (type.toLowerCase().contains('spark')) {
-      Navigator.pushNamed(
-        context,
-        '/ragtag-sparks-profile',
-        arguments: {
-          'communityId': docId,
-          'communityData': docData,
-          'userId': userId,
-        },
-      );
-    } else {
-      Navigator.pushNamed(
-        context,
-        '/community_detail',
-        arguments: {
-          'communityId': docId,
-          'communityData': docData,
-          'userId': userId,
-        },
-      );
-    }
+  if (type.toLowerCase().contains('forum')) {
+    Navigator.pushNamed(
+      context,
+      '/open-forums-profile',
+      arguments: {
+        'communityId': docId,
+        'communityData': docData,
+        'userId': userId,
+      },
+    );
+  } else if (type.toLowerCase().contains('interest')) {
+    Navigator.pushNamed(
+      context,
+      '/interest-groups-profile',
+      arguments: {
+        'communityId': docId,
+        'communityData': docData,
+        'userId': userId,
+      },
+    );
+  } else if (type.toLowerCase().contains('club')) {
+    Navigator.pushNamed(
+      context,
+      '/clubs-profile',
+      arguments: {
+        'communityId': docId,
+        'communityData': docData,
+        'userId': userId,
+      },
+    );
+  } else if (type.toLowerCase().contains('spark')) {
+    Navigator.pushNamed(
+      context,
+      '/ragtag-sparks-profile',
+      arguments: {
+        'communityId': docId,
+        'communityData': docData,
+        'userId': userId,
+      },
+    );
+  } else if (type.toLowerCase().contains('classgroup')) { // <-- NEW branch for class groups
+    Navigator.pushNamed(
+      context,
+      '/class-groups-profile',
+      arguments: {
+        'communityId': docId,
+        'communityData': docData,
+        'userId': userId,
+      },
+    );
+  } else {
+    Navigator.pushNamed(
+      context,
+      '/community_detail',
+      arguments: {
+        'communityId': docId,
+        'communityData': docData,
+        'userId': userId,
+      },
+    );
   }
+}
 
   // ----------------------------------------------------------------
   // The fancy loading screen (ONLY the animation changed to mimic

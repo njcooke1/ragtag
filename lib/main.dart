@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_app_check/firebase_app_check.dart'; // App Check import
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Added secure storage
 
 // Pages
 import 'pages/sign_in_page.dart';
@@ -28,6 +29,9 @@ import 'pages/story_view_page.dart';
 import 'widgets/story_editor.dart';
 import 'pages/profile_page.dart'; // Example profile page
 import 'pages/fomo_feed_page.dart'; // For FOMO feed
+
+// Create a global instance of secure storage
+final FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
 // Handle background FCM
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -57,8 +61,12 @@ Future<void> getAPNSTokenAndPrint() async {
   print('APNs token: $token');
 }
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Attempt to read any stored auth token.
+  String? storedToken = await secureStorage.read(key: 'auth_token');
+  print("Retrieved stored auth token: $storedToken");
 
   // Enable edge-to-edge mode so Flutter draws behind system overlays.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -73,6 +81,16 @@ void main() async {
     print('Firebase initialized.');
   } catch (e, stacktrace) {
     print('Error during Firebase.initializeApp(): $e\n$stacktrace');
+  }
+
+  // Optionally sign in using the stored token (if using custom token authentication)
+  if (storedToken != null && FirebaseAuth.instance.currentUser == null) {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(storedToken);
+      print("Signed in with stored token.");
+    } catch (e) {
+      print("Error signing in with stored token: $e");
+    }
   }
 
   // Activate Firebase App Check

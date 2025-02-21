@@ -218,9 +218,7 @@ class _ContactUsPageState extends State<ContactUsPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ///
                 /// Top bar/back button
-                ///
                 Row(
                   children: [
                     Container(
@@ -267,9 +265,7 @@ class _ContactUsPageState extends State<ContactUsPage>
                 ),
                 const SizedBox(height: 30),
 
-                ///
                 /// Top-right reveal icon for Support Email
-                ///
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -320,9 +316,7 @@ class _ContactUsPageState extends State<ContactUsPage>
                 ),
                 const SizedBox(height: 8),
 
-                ///
                 /// Name
-                ///
                 _buildInputCard(
                   child: _buildTextField(
                     controller: _nameController,
@@ -332,9 +326,7 @@ class _ContactUsPageState extends State<ContactUsPage>
                 ),
                 const SizedBox(height: 16),
 
-                ///
                 /// Email
-                ///
                 _buildInputCard(
                   child: _buildTextField(
                     controller: _emailController,
@@ -345,9 +337,7 @@ class _ContactUsPageState extends State<ContactUsPage>
                 ),
                 const SizedBox(height: 16),
 
-                ///
                 /// Subject
-                ///
                 _buildInputCard(
                   child: _buildTextField(
                     controller: _subjectController,
@@ -357,9 +347,7 @@ class _ContactUsPageState extends State<ContactUsPage>
                 ),
                 const SizedBox(height: 16),
 
-                ///
                 /// Message
-                ///
                 _buildInputCard(
                   child: _buildMultilineField(
                     controller: _messageController,
@@ -368,9 +356,7 @@ class _ContactUsPageState extends State<ContactUsPage>
                   ),
                 ),
 
-                ///
                 /// Shimmering "Send" button, only appears after user typed message
-                ///
                 const SizedBox(height: 20),
                 if (_showSendButton)
                   _buildShimmeringGradientOutline(
@@ -400,21 +386,15 @@ class _ContactUsPageState extends State<ContactUsPage>
                   ),
                 const SizedBox(height: 40),
 
-                ///
                 /// Nicholas photo section
-                ///
                 Center(child: _buildNicholasPhotoSection()),
                 const SizedBox(height: 24),
 
-                ///
                 /// Minimalist icon for personal email
-                /// Now the text appears ABOVE the icon
-                ///
                 Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Show the text above the icon
                       AnimatedCrossFade(
                         crossFadeState: _showPersonalEmail
                             ? CrossFadeState.showFirst
@@ -423,7 +403,7 @@ class _ContactUsPageState extends State<ContactUsPage>
                         firstChild: Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Text(
-                            "nicholasjcooke03@gmail.com\n(For Business Inquiries)",
+                            "nicholasjcooke03@gmail.com (For Business Inquiries)",
                             style: TextStyle(
                               fontSize: 13,
                               color: _isDarkMode ? Colors.white70 : Colors.black87,
@@ -433,7 +413,6 @@ class _ContactUsPageState extends State<ContactUsPage>
                         ),
                         secondChild: const SizedBox.shrink(),
                       ),
-                      // The icon, now color changes with dark mode
                       GestureDetector(
                         onTap: () {
                           setState(() {
@@ -457,9 +436,7 @@ class _ContactUsPageState extends State<ContactUsPage>
     );
   }
 
-  ///
   /// Container for text fields
-  ///
   Widget _buildInputCard({required Widget child}) {
     return Container(
       decoration: BoxDecoration(
@@ -478,9 +455,7 @@ class _ContactUsPageState extends State<ContactUsPage>
     );
   }
 
-  ///
   /// Single-line text field
-  ///
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -508,9 +483,7 @@ class _ContactUsPageState extends State<ContactUsPage>
     );
   }
 
-  ///
   /// Multi-line text field
-  ///
   Widget _buildMultilineField({
     required TextEditingController controller,
     required String hint,
@@ -541,12 +514,9 @@ class _ContactUsPageState extends State<ContactUsPage>
     );
   }
 
-  ///
   /// Display Nicholas's photo from Firestore & a short paragraph
-  ///
   Widget _buildNicholasPhotoSection() {
     if (_nicholasPhotoUrl == null) {
-      // Still loading from Firestore
       return Text(
         "Loading user photo...",
         style: TextStyle(
@@ -576,7 +546,6 @@ class _ContactUsPageState extends State<ContactUsPage>
             ),
           ),
           const SizedBox(height: 6),
-          // CEO & Founder directly under the name
           Text(
             "CEO & Founder",
             style: TextStyle(
@@ -586,10 +555,7 @@ class _ContactUsPageState extends State<ContactUsPage>
           ),
           const SizedBox(height: 12),
           Text(
-            "I believe in creating an open, inclusive space where people\n"
-            "can innovate, share ideas, and build something truly amazing\n"
-            "together. I'd love to hear your thoughts and suggestions\n"
-            "as we shape the future of this platform.\n",
+            "I believe in creating an inclusive space where people can innovate, share ideas, and build something truly amazing together. I'd love to hear your thoughts and suggestions as we shape the future of this platform.",
             style: TextStyle(
               color: _isDarkMode ? Colors.white70 : Colors.black87,
               fontSize: 14,
@@ -611,9 +577,7 @@ class _ContactUsPageState extends State<ContactUsPage>
     }
   }
 
-  ///
   /// Draws a shimmering gradient border around [child]
-  ///
   Widget _buildShimmeringGradientOutline({required Widget child}) {
     return AnimatedBuilder(
       animation: _shimmerAnimation,
@@ -641,9 +605,7 @@ class _ContactUsPageState extends State<ContactUsPage>
   }
 }
 
-///
 /// Custom painter for the shimmering gradient border
-///
 class _ShimmerBorderPainter extends CustomPainter {
   final double animationValue;
 

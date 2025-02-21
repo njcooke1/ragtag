@@ -2,7 +2,7 @@ name: ragtagrevived
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.1+35
+version: 1.0.1+36
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -54,6 +54,7 @@ dependencies:
   google_fonts: ^6.2.1
   cached_network_image: ^3.2.3
   smooth_page_indicator: ^1.0.0 # Optional: For page indicators
+  flutter_secure_storage: 9.2.4
 
 dev_dependencies:
   flutter_test:

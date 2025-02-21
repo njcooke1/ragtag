@@ -151,7 +151,8 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
         if (message.notification != null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(message.notification!.title ?? 'New Notification'),
+              content:
+                  Text(message.notification!.title ?? 'New Notification'),
               backgroundColor: Colors.blueAccent,
             ),
           );
@@ -185,7 +186,8 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
 
   Future<String?> _uploadProfileImage(File imageFile, String orgId) async {
     try {
-      final String timeStamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final String timeStamp =
+          DateTime.now().millisecondsSinceEpoch.toString();
       final firebase_storage.Reference ref = firebase_storage
           .FirebaseStorage.instance
           .ref()
@@ -210,7 +212,6 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
         crossAxisCount: 5,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        // You can tweak childAspectRatio to adjust card height/width
         childAspectRatio: 0.9,
       ),
       itemBuilder: (ctx, i) {
@@ -283,7 +284,6 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
                       ),
                     ),
                   ),
-                  // Optionally omit or show a truncated description if you want
                 ],
               ),
             ),
@@ -291,6 +291,14 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
         );
       },
     );
+  }
+
+  // ---------- Check if the form is complete ----------
+  bool get isFormComplete {
+    return selectedTypeIndex != null &&
+        nameController.text.trim().isNotEmpty &&
+        selectedCategories.isNotEmpty &&
+        _profileImageFile != null;
   }
 
   // ---------- Create Community ----------
@@ -382,7 +390,7 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
           FirebaseFirestore.instance.collection(collectionName).doc();
       final orgId = docRef.id;
 
-      // Upload the chosen pfp image
+      // Upload the chosen profile image
       final pfpUrl = await _uploadProfileImage(_profileImageFile!, orgId);
       if (pfpUrl == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -396,15 +404,13 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
       }
       setState(() => _profileImageUrl = pfpUrl);
 
-      // Build the doc data
+      // Build the document data
       final Map<String, dynamic> communityData = {
         'name': name,
         'description': description,
         'type': typeTitle,
         'creatorId': userId,
-        'members': {
-          userId: 'admin',
-        },
+        'members': { userId: 'admin' },
         'admins': [userId],
         'createdAt': FieldValue.serverTimestamp(),
         'institution': userInstitution,
@@ -415,31 +421,28 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
       // Save to Firestore
       await docRef.set(communityData);
 
-      // Save admin doc with FCM token
+      // Save admin document with FCM token
       String? fcmToken = await _getFcmToken();
       await docRef.collection('admins').doc(userId).set({
         'joinedAt': FieldValue.serverTimestamp(),
         'fcmToken': fcmToken ?? '',
       });
 
-      // Update user doc => organizations
+      // Update user document with organizations
       if (userDoc.exists) {
         await userDocRef.update({
           'organizations.$orgId': 'admin',
         });
       } else {
-        // Very unlikely path but for completeness
         await userDocRef.set({
           'username': currentUser.displayName ?? 'Unnamed User',
           'email': currentUser.email ?? 'No Email',
           'institution': userInstitution,
-          'organizations': {
-            orgId: 'admin',
-          },
+          'organizations': { orgId: 'admin' },
         });
       }
 
-      // Now route the user based on the type
+      // Navigate based on the community type
       if (typeTitle == 'Club') {
         Navigator.push(
           context,
@@ -550,14 +553,12 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
               color: Colors.cyanAccent,
               size: 18,
             ),
-            label: const Text(
-              " ",
-              style: TextStyle(
-                color: Colors.cyanAccent,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            label: const Text(" ",
+                style: TextStyle(
+                  color: Colors.cyanAccent,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                )),
           ),
         ),
         title: const Text(
@@ -572,7 +573,7 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 30, 24, 40),
+            padding: const EdgeInsets.fromLTRB(24, 30, 24, 80),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -651,7 +652,8 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
                             color: const Color(0xFF1A1A1A),
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(
-                              color: isSelected ? accentColor : cardBorderColor,
+                              color:
+                                  isSelected ? accentColor : cardBorderColor,
                               width: 1.5,
                             ),
                             boxShadow: isSelected
@@ -754,35 +756,21 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
             ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        color: Colors.black,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            ElevatedButton(
-              onPressed: _isLoading ? null : start_community,
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                backgroundColor: Colors.cyanAccent,
-                elevation: 8,
-                shadowColor: Colors.cyanAccent.withOpacity(0.5),
-              ),
-              child: const Text(
-                'Create',
-                style: TextStyle(
-                  color: Color(0xFF0A0A0A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isLoading ? null : start_community,
+        icon: const Icon(
+          Icons.arrow_forward,
+          color: Color(0xFF0A0A0A),
         ),
+        label: Text(
+          isFormComplete ? 'Finish' : 'Next',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: Colors.cyanAccent,
       ),
     );
   }
