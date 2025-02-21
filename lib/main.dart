@@ -51,6 +51,12 @@ Future<void> requestNotificationPermission() async {
   print('Notification permission status: ${settings.authorizationStatus}');
 }
 
+/// Retrieve and print the APNs token.
+Future<void> getAPNSTokenAndPrint() async {
+  String? token = await FirebaseMessaging.instance.getAPNSToken();
+  print('APNs token: $token');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -86,6 +92,8 @@ void main() async {
 
   // Request push notification permission (make sure to test on a real device)
   await requestNotificationPermission();
+  // Retrieve and print the APNs token
+  await getAPNSTokenAndPrint();
 
   runApp(const RagtagApp());
   print('App launched.');
