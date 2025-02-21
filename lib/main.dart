@@ -92,8 +92,12 @@ void main() async {
 
   // Request push notification permission (make sure to test on a real device)
   await requestNotificationPermission();
-  // Retrieve and print the APNs token
+  // Retrieve and print the APNs token immediately
   await getAPNSTokenAndPrint();
+  // Listen for token refresh to capture the APNs token when it becomes available
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    print('New APNs token (onTokenRefresh): $newToken');
+  });
 
   runApp(const RagtagApp());
   print('App launched.');
@@ -171,8 +175,7 @@ class _RagtagAppState extends State<RagtagApp> {
         '/explore': (context) => const FindCommunityPage(),
         '/all_organizations': (context) => const AllOrganizationsPage(),
         '/clubs-profile': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
               body: Center(
@@ -184,8 +187,7 @@ class _RagtagAppState extends State<RagtagApp> {
             );
           }
           final communityId = args['communityId'] as String? ?? '';
-          final communityData =
-              args['communityData'] as Map<String, dynamic>? ?? {};
+          final communityData = args['communityData'] as Map<String, dynamic>? ?? {};
           final userId = args['userId'] as String? ?? '';
           return ClubsProfilePage(
             communityId: communityId,
@@ -194,8 +196,7 @@ class _RagtagAppState extends State<RagtagApp> {
           );
         },
         '/interest-groups-profile': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
               body: Center(
@@ -207,11 +208,9 @@ class _RagtagAppState extends State<RagtagApp> {
             );
           }
           final communityId = args['communityId'] as String? ?? '';
-          final communityData =
-              args['communityData'] as Map<String, dynamic>? ?? {};
+          final communityData = args['communityData'] as Map<String, dynamic>? ?? {};
           final userId = args['userId'] as String? ?? '';
-          final collectionName =
-              args['collectionName'] as String? ?? 'interestGroups';
+          final collectionName = args['collectionName'] as String? ?? 'interestGroups';
           return RedesignedInterestGroupsPage(
             communityId: communityId,
             communityData: communityData,
@@ -220,8 +219,7 @@ class _RagtagAppState extends State<RagtagApp> {
           );
         },
         '/open-forums-profile': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
               body: Center(
@@ -233,8 +231,7 @@ class _RagtagAppState extends State<RagtagApp> {
             );
           }
           final communityId = args['communityId'] as String? ?? '';
-          final communityData =
-              args['communityData'] as Map<String, dynamic>? ?? {};
+          final communityData = args['communityData'] as Map<String, dynamic>? ?? {};
           final userId = args['userId'] as String? ?? '';
           return OpenForumsProfilePage(
             communityId: communityId,
