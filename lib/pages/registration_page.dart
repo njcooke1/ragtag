@@ -96,8 +96,8 @@ class _RegistrationPageState extends State<RegistrationPage>
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Initialize token service (if relevant to your app)
-      await _tokenService.initializeToken();
+      // Temporarily comment out token initialization for troubleshooting:
+      // await _tokenService.initializeToken();
 
       // Send verification email
       await user.sendEmailVerification();
@@ -416,7 +416,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
-
                         ),
                         child: const Icon(
                           Icons.chevron_left,
@@ -578,7 +577,7 @@ class _RegistrationPageState extends State<RegistrationPage>
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 
