@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ragtagrevived/pages/all_organizations.dart';
 
 /// A redesigned interest (or class) groups page showing group details, events, resources, etc.
 class RedesignedInterestGroupsPage extends StatefulWidget {
@@ -759,7 +760,14 @@ class _RedesignedInterestGroupsPageState
       child: Row(
         children: [
           InkWell(
-            onTap: () => Navigator.pop(context),
+            // Modified back button to navigate to AllOrganizationsPage instead of simply popping.
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => AllOrganizationsPage()),
+              );
+            },
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(

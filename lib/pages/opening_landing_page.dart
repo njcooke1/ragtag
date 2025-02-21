@@ -428,7 +428,7 @@ class _LandingPageState extends State<LandingPage> with TickerProviderStateMixin
           ),
 
           // Dark overlay
-          Container(color: Colors.black.withOpacity(0.47)),
+          Container(color: Colors.black.withOpacity(0.01)),
 
           // Animated Column (fade + slide in)
           FadeTransition(

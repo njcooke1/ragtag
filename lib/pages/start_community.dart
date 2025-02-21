@@ -19,7 +19,7 @@ class StartCommunityPage extends StatefulWidget {
   State<StartCommunityPage> createState() => _StartCommunityPageState();
 }
 
-class _StartCommunityPageState extends State<StartCommunityPage> {
+class _StartCommunityPageState extends State<StartCommunityPage> with SingleTickerProviderStateMixin {
   // Common fields
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -121,11 +121,33 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
 
   bool _isLoading = false;
 
+  // Animation Controller for the shimmering effect
+  late AnimationController _fabAnimationController;
+  late Animation<Color?> _borderColorAnimation;
+
   @override
   void initState() {
     super.initState();
     _initializeFirebase();
     _initializeFCM();
+
+    // Initialize animation controller for FAB shimmer
+    _fabAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _borderColorAnimation = ColorTween(
+      begin: Colors.white.withOpacity(0.5),
+      end: Colors.white,
+    ).animate(_fabAnimationController);
+  }
+
+  @override
+  void dispose() {
+    _fabAnimationController.dispose();
+    nameController.dispose();
+    descriptionController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeFirebase() async {
@@ -410,7 +432,7 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
         'description': description,
         'type': typeTitle,
         'creatorId': userId,
-        'members': { userId: 'admin' },
+        'members': {userId: 'admin'},
         'admins': [userId],
         'createdAt': FieldValue.serverTimestamp(),
         'institution': userInstitution,
@@ -438,7 +460,7 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
           'username': currentUser.displayName ?? 'Unnamed User',
           'email': currentUser.email ?? 'No Email',
           'institution': userInstitution,
-          'organizations': { orgId: 'admin' },
+          'organizations': {orgId: 'admin'},
         });
       }
 
@@ -756,22 +778,34 @@ class _StartCommunityPageState extends State<StartCommunityPage> {
             ),
         ],
       ),
+      // Show FAB only when the form is complete
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isLoading ? null : start_community,
-        icon: const Icon(
-          Icons.arrow_forward,
-          color: Color(0xFF0A0A0A),
-        ),
-        label: Text(
-          isFormComplete ? 'Finish' : 'Next',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: Colors.cyanAccent,
-      ),
+      floatingActionButton: isFormComplete
+          ? AnimatedBuilder(
+              animation: _borderColorAnimation,
+              builder: (context, child) {
+                return FloatingActionButton.extended(
+                  onPressed: _isLoading ? null : start_community,
+                  label: Text(
+                    'Finish',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(
+                      color: _borderColorAnimation.value!,
+                      width: 1.0,
+                    ),
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                );
+              },
+            )
+          : null,
     );
   }
 }
