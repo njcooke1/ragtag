@@ -67,7 +67,7 @@ class _SignInPageState extends State<SignInPage> {
       print("Sign-in successful: ${userCredential.user?.email}");
 
       // Temporarily comment out token initialization for troubleshooting:
-      // await _tokenService.initializeToken();
+      await _tokenService.initializeToken();
 
       Navigator.pushReplacement(
         context,
