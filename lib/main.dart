@@ -39,6 +39,18 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+/// Request notification permissions from the user.
+Future<void> requestNotificationPermission() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+    provisional: false,
+  );
+  print('Notification permission status: ${settings.authorizationStatus}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -71,6 +83,9 @@ void main() async {
   // FCM setup
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   print('FCM background handler set.');
+
+  // Request push notification permission (make sure to test on a real device)
+  await requestNotificationPermission();
 
   runApp(const RagtagApp());
   print('App launched.');
@@ -148,8 +163,8 @@ class _RagtagAppState extends State<RagtagApp> {
         '/explore': (context) => const FindCommunityPage(),
         '/all_organizations': (context) => const AllOrganizationsPage(),
         '/clubs-profile': (context) {
-          final args =
-              ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)!.settings.arguments
+              as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
               body: Center(
@@ -171,8 +186,8 @@ class _RagtagAppState extends State<RagtagApp> {
           );
         },
         '/interest-groups-profile': (context) {
-          final args =
-              ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)!.settings.arguments
+              as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
               body: Center(
@@ -197,8 +212,8 @@ class _RagtagAppState extends State<RagtagApp> {
           );
         },
         '/open-forums-profile': (context) {
-          final args =
-              ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)!.settings.arguments
+              as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
               body: Center(
