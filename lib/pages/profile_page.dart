@@ -1931,8 +1931,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         physics: const BouncingScrollPhysics(),
         itemBuilder: (ctx, index) {
           final doc = comms[index];
-          final d = doc.data() as Map<String, dynamic>;
-
+          final Map<String, dynamic> d = {
+            ...doc.data() as Map<String, dynamic>,
+            'collectionName': doc.reference.parent.id,
+          };
           final docId = doc.id;
           final name = d['name'] ?? 'Unnamed';
           final description = d['description'] ?? 'No desc.';
@@ -2108,8 +2110,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         physics: const BouncingScrollPhysics(),
         itemBuilder: (ctx, index) {
           final doc = comms[index];
-          final d = doc.data() as Map<String, dynamic>;
-
+          final Map<String, dynamic> d = {
+            ...doc.data() as Map<String, dynamic>,
+            'collectionName': doc.reference.parent.id,
+          };
           final docId = doc.id;
           final name = d['name'] ?? 'Unnamed';
           final description = d['description'] ?? 'No desc.';
@@ -2267,12 +2271,25 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   }
 
   // ----------------------------------------------------------------
-  // Here’s the ONLY change: class groups route exactly like interest groups.
+  // HERE’S THE FIX:
+  // We check if the document came from the "classGroups" collection.
+  // If so, we navigate to the interest-groups-profile route.
   // ----------------------------------------------------------------
   void _goToCommunity(String type, String docId, Map<String, dynamic> docData) {
     final userId = _currentUser?.uid ?? 'noUser';
 
-    if (type.toLowerCase().contains('forum')) {
+    // Check if this document came from the "classGroups" collection
+    if (docData['collectionName'] == 'classGroups') {
+      Navigator.pushNamed(
+        context,
+        '/interest-groups-profile',
+        arguments: {
+          'communityId': docId,
+          'communityData': docData,
+          'userId': userId,
+        },
+      );
+    } else if (type.toLowerCase().contains('forum')) {
       Navigator.pushNamed(
         context,
         '/open-forums-profile',
@@ -2312,9 +2329,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'userId': userId,
         },
       );
-    }
-    // <<-- HERE WE MADE CLASS GROUPS BEHAVE EXACTLY LIKE INTEREST GROUPS
-    else if (type.toLowerCase().contains('classgroup')) {
+    } else if (type.toLowerCase().contains('classgroup')) {
+      // Fallback check if type contains classgroup (if for some reason collectionName wasn’t added)
       Navigator.pushNamed(
         context,
         '/interest-groups-profile',

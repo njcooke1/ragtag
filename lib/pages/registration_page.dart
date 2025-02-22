@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // <-- Added shared_preferences import
 import '../services/token_service.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -96,8 +97,16 @@ class _RegistrationPageState extends State<RegistrationPage>
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Initialize token service (if relevant to your app)
+      // Initialize token service if needed (comment out if not used)
       await _tokenService.initializeToken();
+
+      // Get the Firebase auth token and save it using shared_preferences
+      String? token = await user.getIdToken();
+      if (token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('authToken', token);
+        print("Token saved in shared preferences: $token");
+      }
 
       // Send verification email
       await user.sendEmailVerification();
@@ -401,7 +410,8 @@ class _RegistrationPageState extends State<RegistrationPage>
 
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24),
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -416,7 +426,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
-
                         ),
                         child: const Icon(
                           Icons.chevron_left,
@@ -664,7 +673,6 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
         tween: ColorTween(begin: Colors.indigo, end: Colors.purple),
         weight: 1,
       ),
-      // Add more if you want an even longer sequence...
     ]).animate(_colorController);
 
     // 2) Ticker for bouncing

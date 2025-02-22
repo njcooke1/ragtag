@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shimmer/shimmer.dart'; // <-- Important
+import 'package:shimmer/shimmer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'first_choice.dart';
-import '../services/token_service.dart'; // Corrected import path
-import 'change_password_page.dart'; // <-- Make sure this import is correct
+import '../services/token_service.dart';
+import 'change_password_page.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -66,8 +67,13 @@ class _SignInPageState extends State<SignInPage> {
 
       print("Sign-in successful: ${userCredential.user?.email}");
 
-      // Temporarily comment out token initialization for troubleshooting:
-      await _tokenService.initializeToken();
+      // Get the Firebase auth token and save it using shared_preferences
+      String? token = await userCredential.user?.getIdToken();
+      if (token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('authToken', token);
+        print("Token saved in shared preferences: $token");
+      }
 
       Navigator.pushReplacement(
         context,
@@ -88,9 +94,8 @@ class _SignInPageState extends State<SignInPage> {
               children: [
                 SlideTransition(position: slideAnimation, child: child),
                 SlideTransition(
-                  position:
-                      Tween(begin: Offset.zero, end: const Offset(0.0, -1.0))
-                          .animate(animation),
+                  position: Tween(begin: Offset.zero, end: const Offset(0.0, -1.0))
+                      .animate(animation),
                   child: Container(color: Colors.transparent),
                 ),
               ],
@@ -117,7 +122,7 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Ensure the scaffold resizes to avoid bottom inset
+      // Ensures the scaffold resizes when the keyboard appears
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
@@ -162,7 +167,7 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           ),
-          // 2) App logo
+          // 2) App logo remains at the top center
           Align(
             alignment: Alignment.topCenter,
             child: Padding(
@@ -174,172 +179,182 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           ),
-          // 3) Main form (with error banner on top)
+          // 3) Main form: centered content that moves up with the keyboard
           Positioned.fill(
             child: SingleChildScrollView(
+              // The bottom padding ensures content isn't hidden by the keyboard.
               padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 40.0,
                 left: 20.0,
                 right: 20.0,
-                top: 200.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 40.0,
               ),
-              child: Column(
-                children: [
-                  // Error banner (only shows if _errorMessage is not null)
-                  if (_errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(10.0),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      color: Colors.redAccent,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.white),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            onPressed: () {
-                              setState(() {
-                                _errorMessage = null;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  // Sign-in prompt text
-                  const Text(
-                    "Sign in using your campus email",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 20, color: Colors.white),
-                  ),
-                  const SizedBox(height: 30),
-                  // Email TextField
-                  TextField(
-                    controller: _usernameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Enter Username (email)',
-                      hintStyle: const TextStyle(color: Colors.white),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.2),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  // Password field (only shows if a username is entered)
-                  if (_isUsernameEntered)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Password',
-                            style: TextStyle(color: Colors.white)),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'Enter Password',
-                            hintStyle: const TextStyle(color: Colors.white),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.2),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
-                              borderSide: BorderSide.none,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.white,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  // Ensure the content takes at least the full height of the screen minus any keyboard insets.
+                  minHeight: MediaQuery.of(context).size.height -
+                      MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Error banner (only shows if _errorMessage is not null)
+                      if (_errorMessage != null)
+                        Container(
+                          padding: const EdgeInsets.all(10.0),
+                          margin: const EdgeInsets.only(bottom: 20),
+                          color: Colors.redAccent,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.white),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
+                              IconButton(
+                                icon: const Icon(Icons.close, color: Colors.white),
+                                onPressed: () {
+                                  setState(() {
+                                    _errorMessage = null;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  const SizedBox(height: 30),
-                  // Continue button
-                  Container(
-                    width: 250,
-                    height: 55,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      color: Colors.white,
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _signIn,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                      // Sign-in prompt text
+                      const Text(
+                        "Sign in using your campus email",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 20, color: Colors.white),
+                      ),
+                      const SizedBox(height: 30),
+                      // Email TextField
+                      TextField(
+                        controller: _usernameController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Enter Username (email)',
+                          hintStyle: const TextStyle(color: Colors.white),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.2),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            )
-                          : ShaderMask(
-                              shaderCallback: (bounds) =>
-                                  const LinearGradient(
-                                colors: [
-                                  Color(0xFFFFAF7B),
-                                  Color(0xFFD76D77),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: const Text(
-                                "Continue",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
+                      const SizedBox(height: 30),
+                      // Password field (only shows if a username is entered)
+                      if (_isUsernameEntered)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Password',
+                                style: TextStyle(color: Colors.white)),
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Enter Password',
+                                hintStyle: const TextStyle(color: Colors.white),
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.2),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  borderSide: BorderSide.none,
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
                                 ),
                               ),
                             ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChangePasswordPage(),
+                          ],
                         ),
-                      );
-                    },
-                    child: const Text(
-                      "Forgot your password?",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        decoration: TextDecoration.underline,
+                      const SizedBox(height: 30),
+                      // Continue button
+                      Container(
+                        width: 250,
+                        height: 55,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          color: Colors.white,
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _signIn,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                )
+                              : ShaderMask(
+                                  shaderCallback: (bounds) =>
+                                      const LinearGradient(
+                                    colors: [
+                                      Color(0xFFFFAF7B),
+                                      Color(0xFFD76D77),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ).createShader(bounds),
+                                  child: const Text(
+                                    "Continue",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ChangePasswordPage(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Forgot your password?",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-          // 4) Transparent back button at the top
+          // 4) Transparent back button at the top remains unchanged
           Positioned(
             top: 40,
             left: 20,
