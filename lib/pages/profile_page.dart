@@ -17,7 +17,7 @@ import 'change_password_page.dart';
 import 'chat_page.dart';
 import 'user_directory_page.dart';
 import 'find_community.dart';
-import 'redesigned_interest_groups_page.dart';
+import 'interest_groups_profile_page.dart';
 // ADD THIS IMPORT IF YOU WANT THE "CONTACT US" PAGE:
 import 'contact_us_page.dart';
 
