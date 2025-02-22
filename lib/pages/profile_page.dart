@@ -1,4 +1,4 @@
-import 'dart:async'; 
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -250,6 +250,37 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       return defaultColor ?? Colors.grey;
     }
   }
+
+  // ---------- New Helper Methods for ClassGroup Color Logic ----------
+  Color _generateAllowedRandomColor() {
+    const maxTries = 50;
+    for (int i = 0; i < maxTries; i++) {
+      final int randomColorValue = (math.Random().nextDouble() * 0xFFFFFF).toInt();
+      final color = Color(0xFF000000 | randomColorValue);
+      if (!_isDisallowedColor(color)) {
+        return color;
+      }
+    }
+    return Colors.blue; // fallback
+  }
+
+  String _colorToFirestoreHex(Color color) {
+    final int argb = color.value;
+    final hex = argb.toRadixString(16).toUpperCase().padLeft(8, '0');
+    return '0x$hex';
+  }
+
+  bool _isDisallowedColor(Color c) {
+    final hsl = HSLColor.fromColor(c);
+    final h = hsl.hue;
+    final s = hsl.saturation;
+    final l = hsl.lightness;
+    if (l > 0.9) return true; // near-white
+    if (s < 0.1) return true; // grey
+    if (h >= 50 && h <= 70 && s > 0.5 && l > 0.4) return true; // bright yellow
+    return false;
+  }
+  // ----------------------------------------------------------------------
 
   Future<Map<String, dynamic>> _loadAllData() async {
     final profile = await _fetchProfileAndCommunities();
@@ -1661,6 +1692,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     return _isGridView ? _buildHorizontalRectangleGrid(filtered) : _buildBigCardList(filtered);
   }
 
+  // ---------- Updated: Big Card List for Communities ----------
   Widget _buildBigCardList(List<QueryDocumentSnapshot> comms) {
     return SizedBox(
       height: 700,
@@ -1677,18 +1709,34 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           };
           final docId = doc.id;
           final name = d['name'] ?? 'Unnamed';
-          final description = d['description'] ?? 'No desc.';
-          final imageUrl = d['pfpUrl'] ?? d['imageUrl'] ?? '';
+          final originalDescription = d['description'] ?? 'No desc.';
           final type = d['type'] ?? 'Unknown';
           Color? bgColor;
+          // If this is a class group, use the same color logic as in AllOrganizationsPage.
           if (d['collectionName'] == 'classGroups') {
-            bgColor = _parseColor(d['backgroundColor'], defaultColor: Colors.primaries[name.hashCode % Colors.primaries.length]);
+            if (d['backgroundColor'] == null || (d['backgroundColor'] as String).isEmpty) {
+              final Color randomColor = _generateAllowedRandomColor();
+              final String colorHex = _colorToFirestoreHex(randomColor);
+              d['backgroundColor'] = colorHex;
+              // Persist the generated color in Firestore so it remains the same.
+              doc.reference.update({'backgroundColor': colorHex});
+              bgColor = randomColor;
+            } else {
+              bgColor = _parseColor(d['backgroundColor'], defaultColor: Colors.primaries[name.hashCode % Colors.primaries.length]);
+            }
+          }
+          // For class groups, update the description to include displayName.
+          String finalDescription = originalDescription;
+          if (d['collectionName'] == 'classGroups') {
+            final displayName = d['displayName'] ?? name;
+            final formattedInfo = _formatClassInfo(originalDescription);
+            finalDescription = '$displayName\n$formattedInfo';
           }
           return _buildBigCardCommunityItem(
             docId: docId,
             name: name,
-            description: description,
-            imageUrl: imageUrl,
+            description: finalDescription,
+            imageUrl: d['pfpUrl'] ?? d['imageUrl'] ?? '',
             communityType: type,
             collectionName: d['collectionName'],
             onTap: () => _goToCommunity(type, docId, d),
@@ -1698,6 +1746,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       ),
     );
   }
+  // --------------------------------------------------------------
 
   Widget _buildBigCardCommunityItem({
     required String docId,
@@ -1767,7 +1816,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (!isClassGroup)
-                        Text(name,
+                        Text(
+                          name,
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w600,
@@ -1797,7 +1847,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                           style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
                         )
                       else
-                        Text(description,
+                        Text(
+                          description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
@@ -1840,6 +1891,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
+  // ---------- Updated: Horizontal Rectangle Grid for Communities ----------
   Widget _buildHorizontalRectangleGrid(List<QueryDocumentSnapshot> comms) {
     return SizedBox(
       height: 700,
@@ -1860,17 +1912,32 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           };
           final docId = doc.id;
           final name = d['name'] ?? 'Unnamed';
-          final description = d['description'] ?? 'No desc.';
+          final originalDescription = d['description'] ?? 'No desc.';
           final imageUrl = d['pfpUrl'] ?? d['imageUrl'] ?? '';
           final type = d['type'] ?? 'Unknown';
           Color? bgColor;
           if (d['collectionName'] == 'classGroups') {
-            bgColor = _parseColor(d['backgroundColor'], defaultColor: Colors.primaries[name.hashCode % Colors.primaries.length]);
+            if (d['backgroundColor'] == null || (d['backgroundColor'] as String).isEmpty) {
+              final Color randomColor = _generateAllowedRandomColor();
+              final String colorHex = _colorToFirestoreHex(randomColor);
+              d['backgroundColor'] = colorHex;
+              doc.reference.update({'backgroundColor': colorHex});
+              bgColor = randomColor;
+            } else {
+              bgColor = _parseColor(d['backgroundColor'], defaultColor: Colors.primaries[name.hashCode % Colors.primaries.length]);
+            }
+          }
+          // For class groups, update description to include displayName.
+          String finalDescription = originalDescription;
+          if (d['collectionName'] == 'classGroups') {
+            final displayName = d['displayName'] ?? name;
+            final formattedInfo = _formatClassInfo(originalDescription);
+            finalDescription = '$displayName\n$formattedInfo';
           }
           return _buildHorizontalRectCommunityCard(
             docId: docId,
             name: name,
-            description: description,
+            description: finalDescription,
             imageUrl: imageUrl,
             communityType: type,
             collectionName: d['collectionName'],
@@ -1881,6 +1948,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       ),
     );
   }
+  // ------------------------------------------------------------------------------
 
   Widget _buildHorizontalRectCommunityCard({
     required String docId,
