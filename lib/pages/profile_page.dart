@@ -233,6 +233,24 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     super.dispose();
   }
 
+  // Helper method to parse a hex color string (e.g. "#FF0000") into a Color.
+  // If the string is null or invalid, it returns the provided defaultColor.
+  Color _parseColor(String? colorString, {Color? defaultColor}) {
+    if (colorString == null || colorString.isEmpty) {
+      return defaultColor ?? Colors.grey;
+    }
+    try {
+      String valueString = colorString.replaceFirst('#', '');
+      if (valueString.length == 6) {
+        valueString = 'FF$valueString';
+      }
+      int value = int.parse(valueString, radix: 16);
+      return Color(value);
+    } catch (e) {
+      return defaultColor ?? Colors.grey;
+    }
+  }
+
   Future<Map<String, dynamic>> _loadAllData() async {
     final profile = await _fetchProfileAndCommunities();
     final chats = await _fetchUserChats();
@@ -1662,7 +1680,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           final description = d['description'] ?? 'No desc.';
           final imageUrl = d['pfpUrl'] ?? d['imageUrl'] ?? '';
           final type = d['type'] ?? 'Unknown';
-
+          Color? bgColor;
+          if (d['collectionName'] == 'classGroups') {
+            bgColor = _parseColor(d['backgroundColor'], defaultColor: Colors.primaries[name.hashCode % Colors.primaries.length]);
+          }
           return _buildBigCardCommunityItem(
             docId: docId,
             name: name,
@@ -1671,6 +1692,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             communityType: type,
             collectionName: d['collectionName'],
             onTap: () => _goToCommunity(type, docId, d),
+            bgColor: bgColor,
           );
         },
       ),
@@ -1685,6 +1707,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     required String communityType,
     required String collectionName,
     required VoidCallback onTap,
+    Color? bgColor,
   }) {
     final bool isClassGroup = collectionName == 'classGroups';
     return InkWell(
@@ -1712,7 +1735,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     aspectRatio: 16 / 9,
                     child: isClassGroup
                         ? Container(
-                            color: Colors.primaries[name.hashCode % Colors.primaries.length],
+                            color: bgColor ?? Colors.primaries[name.hashCode % Colors.primaries.length],
                             child: Center(
                               child: Text(
                                 name,
@@ -1840,7 +1863,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           final description = d['description'] ?? 'No desc.';
           final imageUrl = d['pfpUrl'] ?? d['imageUrl'] ?? '';
           final type = d['type'] ?? 'Unknown';
-
+          Color? bgColor;
+          if (d['collectionName'] == 'classGroups') {
+            bgColor = _parseColor(d['backgroundColor'], defaultColor: Colors.primaries[name.hashCode % Colors.primaries.length]);
+          }
           return _buildHorizontalRectCommunityCard(
             docId: docId,
             name: name,
@@ -1849,6 +1875,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             communityType: type,
             collectionName: d['collectionName'],
             onTap: () => _goToCommunity(type, docId, d),
+            bgColor: bgColor,
           );
         },
       ),
@@ -1863,6 +1890,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     required String communityType,
     required String collectionName,
     required VoidCallback onTap,
+    Color? bgColor,
   }) {
     final bool isClassGroup = collectionName == 'classGroups';
     return InkWell(
@@ -1888,7 +1916,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     aspectRatio: 16 / 10,
                     child: isClassGroup
                         ? Container(
-                            color: Colors.primaries[name.hashCode % Colors.primaries.length],
+                            color: bgColor ?? Colors.primaries[name.hashCode % Colors.primaries.length],
                             child: Center(
                               child: Text(
                                 name,
