@@ -17,7 +17,6 @@ import 'change_password_page.dart';
 import 'chat_page.dart';
 import 'user_directory_page.dart';
 import 'find_community.dart';
-import 'interest_groups_profile_page.dart';
 // ADD THIS IMPORT IF YOU WANT THE "CONTACT US" PAGE:
 import 'contact_us_page.dart';
 
@@ -2267,77 +2266,79 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-void _goToCommunity(String type, String docId, Map<String, dynamic> docData) {
-  final userId = _currentUser?.uid ?? 'noUser';
+  // ----------------------------------------------------------------
+  // Here’s the ONLY change: class groups route exactly like interest groups.
+  // ----------------------------------------------------------------
+  void _goToCommunity(String type, String docId, Map<String, dynamic> docData) {
+    final userId = _currentUser?.uid ?? 'noUser';
 
-  if (type.toLowerCase().contains('forum')) {
-    Navigator.pushNamed(
-      context,
-      '/open-forums-profile',
-      arguments: {
-        'communityId': docId,
-        'communityData': docData,
-        'userId': userId,
-      },
-    );
-  } else if (type.toLowerCase().contains('interest')) {
-    Navigator.pushNamed(
-      context,
-      '/interest-groups-profile',
-      arguments: {
-        'communityId': docId,
-        'communityData': docData,
-        'userId': userId,
-      },
-    );
-  } else if (type.toLowerCase().contains('club')) {
-    Navigator.pushNamed(
-      context,
-      '/clubs-profile',
-      arguments: {
-        'communityId': docId,
-        'communityData': docData,
-        'userId': userId,
-      },
-    );
-  } else if (type.toLowerCase().contains('spark')) {
-    Navigator.pushNamed(
-      context,
-      '/ragtag-sparks-profile',
-      arguments: {
-        'communityId': docId,
-        'communityData': docData,
-        'userId': userId,
-      },
-    );
-  } else if (type.toLowerCase().contains('classgroup')) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RedesignedInterestGroupsPage(
-          communityId: docId,
-          communityData: docData,
-          userId: userId,
-          collectionName: 'classGroups', // indicates it's a class group
-        ),
-      ),
-    );
-  } else {
-    Navigator.pushNamed(
-      context,
-      '/community_detail',
-      arguments: {
-        'communityId': docId,
-        'communityData': docData,
-        'userId': userId,
-      },
-    );
+    if (type.toLowerCase().contains('forum')) {
+      Navigator.pushNamed(
+        context,
+        '/open-forums-profile',
+        arguments: {
+          'communityId': docId,
+          'communityData': docData,
+          'userId': userId,
+        },
+      );
+    } else if (type.toLowerCase().contains('interest')) {
+      Navigator.pushNamed(
+        context,
+        '/interest-groups-profile',
+        arguments: {
+          'communityId': docId,
+          'communityData': docData,
+          'userId': userId,
+        },
+      );
+    } else if (type.toLowerCase().contains('club')) {
+      Navigator.pushNamed(
+        context,
+        '/clubs-profile',
+        arguments: {
+          'communityId': docId,
+          'communityData': docData,
+          'userId': userId,
+        },
+      );
+    } else if (type.toLowerCase().contains('spark')) {
+      Navigator.pushNamed(
+        context,
+        '/ragtag-sparks-profile',
+        arguments: {
+          'communityId': docId,
+          'communityData': docData,
+          'userId': userId,
+        },
+      );
+    }
+    // <<-- HERE WE MADE CLASS GROUPS BEHAVE EXACTLY LIKE INTEREST GROUPS
+    else if (type.toLowerCase().contains('classgroup')) {
+      Navigator.pushNamed(
+        context,
+        '/interest-groups-profile',
+        arguments: {
+          'communityId': docId,
+          'communityData': docData,
+          'userId': userId,
+        },
+      );
+    } else {
+      Navigator.pushNamed(
+        context,
+        '/community_detail',
+        arguments: {
+          'communityId': docId,
+          'communityData': docData,
+          'userId': userId,
+        },
+      );
+    }
   }
-}
 
   // ----------------------------------------------------------------
-  // The fancy loading screen (ONLY the animation changed to mimic
-  // the OpeningLandingPage shimmer, fade, scale, & gradient overlays)
+  // The fancy loading screen (like the OpeningLandingPage’s animation)
   // ----------------------------------------------------------------
   Widget _buildFancyLoading() {
     return AnimatedBuilder(

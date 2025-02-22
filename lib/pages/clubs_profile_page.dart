@@ -2271,41 +2271,40 @@ Widget _buildImagesCarousel() {
     );
   }
 
-  Widget _buildBottomActionCard({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final bgColor = _isDarkMode ? Colors.white : Colors.black;
-    final contentColor = _isDarkMode ? Colors.black : Colors.white;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 110,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 30, color: contentColor),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: TextStyle(
-                color: contentColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
+Widget _buildBottomActionCard({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(12),
+      // no width property
+      decoration: BoxDecoration(
+        color: _isDarkMode ? Colors.white : Colors.black,
+        borderRadius: BorderRadius.circular(10),
       ),
-    );
-  }
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 30, color: _isDarkMode ? Colors.black : Colors.white),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: _isDarkMode ? Colors.black : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   // ---------------------------------------------------------
   //  POLLS LOGIC

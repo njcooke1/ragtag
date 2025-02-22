@@ -19,7 +19,7 @@ import 'pages/start_community.dart';
 import 'pages/find_community.dart';
 import 'pages/all_organizations.dart';
 import 'pages/clubs_profile_page.dart';
-import 'pages/interest_groups_profile_page.dart';
+import 'pages/interest_groups_profile_page.dart'; // Ensure this contains RedesignedInterestGroupsPage if that’s the class name
 import 'pages/open_forums_profile_page.dart';
 import 'pages/admin_dashboard_page.dart';
 import 'pages/edit_community_page.dart';
@@ -33,7 +33,7 @@ import 'pages/fomo_feed_page.dart'; // For FOMO feed
 // Create a global instance of secure storage
 final FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
-// Handle background FCM
+/// Handles background FCM messages.
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     await Firebase.initializeApp();
@@ -86,14 +86,15 @@ Future<void> main() async {
   // Optionally sign in using the stored token (if using custom token authentication)
   if (storedToken != null && FirebaseAuth.instance.currentUser == null) {
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(storedToken);
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCustomToken(storedToken);
       print("Signed in with stored token.");
     } catch (e) {
       print("Error signing in with stored token: $e");
     }
   }
 
-  // Activate Firebase App Check
+  // Activate Firebase App Check.
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.playIntegrity,
@@ -104,15 +105,15 @@ Future<void> main() async {
     print('Error activating AppCheck: $e\n$stacktrace');
   }
 
-  // FCM setup
+  // FCM setup.
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   print('FCM background handler set.');
 
-  // Request push notification permission (make sure to test on a real device)
+  // Request push notification permission (test on a real device)
   await requestNotificationPermission();
-  // Retrieve and print the APNs token immediately
+  // Retrieve and print the APNs token immediately.
   await getAPNSTokenAndPrint();
-  // Listen for token refresh to capture the APNs token when it becomes available
+  // Listen for token refresh.
   FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
     print('New APNs token (onTokenRefresh): $newToken');
   });
