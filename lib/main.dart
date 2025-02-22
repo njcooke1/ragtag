@@ -4,9 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_app_check/firebase_app_check.dart'; // App Check import
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Added secure storage
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // Pages
 import 'pages/sign_in_page.dart';
@@ -19,7 +19,7 @@ import 'pages/start_community.dart';
 import 'pages/find_community.dart';
 import 'pages/all_organizations.dart';
 import 'pages/clubs_profile_page.dart';
-import 'pages/interest_groups_profile_page.dart'; // Ensure this contains RedesignedInterestGroupsPage if that’s the class name
+import 'pages/interest_groups_profile_page.dart';
 import 'pages/open_forums_profile_page.dart';
 import 'pages/admin_dashboard_page.dart';
 import 'pages/edit_community_page.dart';
@@ -27,10 +27,10 @@ import 'pages/club_chat_page.dart';
 import 'pages/club_events_page.dart';
 import 'pages/story_view_page.dart';
 import 'widgets/story_editor.dart';
-import 'pages/profile_page.dart'; // Example profile page
-import 'pages/fomo_feed_page.dart'; // For FOMO feed
+import 'pages/profile_page.dart';
+import 'pages/fomo_feed_page.dart';
 
-// Create a global instance of secure storage
+// Create a global instance of secure storage (if needed for other uses)
 final FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
 /// Handles background FCM messages.
@@ -64,10 +64,6 @@ Future<void> getAPNSTokenAndPrint() async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Attempt to read any stored auth token.
-  String? storedToken = await secureStorage.read(key: 'auth_token');
-  print("Retrieved stored auth token: $storedToken");
-
   // Enable edge-to-edge mode so Flutter draws behind system overlays.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -83,16 +79,8 @@ Future<void> main() async {
     print('Error during Firebase.initializeApp(): $e\n$stacktrace');
   }
 
-  // Optionally sign in using the stored token (if using custom token authentication)
-  if (storedToken != null && FirebaseAuth.instance.currentUser == null) {
-    try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCustomToken(storedToken);
-      print("Signed in with stored token.");
-    } catch (e) {
-      print("Error signing in with stored token: $e");
-    }
-  }
+  // Firebase Auth automatically persists the user session.
+  // No need to manually re-sign in using a stored custom token.
 
   // Activate Firebase App Check.
   try {
@@ -109,11 +97,9 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   print('FCM background handler set.');
 
-  // Request push notification permission (test on a real device)
   await requestNotificationPermission();
-  // Retrieve and print the APNs token immediately.
   await getAPNSTokenAndPrint();
-  // Listen for token refresh.
+
   FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
     print('New APNs token (onTokenRefresh): $newToken');
   });

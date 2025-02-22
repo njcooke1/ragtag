@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async'; 
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -1669,6 +1669,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             description: description,
             imageUrl: imageUrl,
             communityType: type,
+            collectionName: d['collectionName'],
             onTap: () => _goToCommunity(type, docId, d),
           );
         },
@@ -1682,8 +1683,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     required String description,
     required String imageUrl,
     required String communityType,
+    required String collectionName,
     required VoidCallback onTap,
   }) {
+    final bool isClassGroup = collectionName == 'classGroups';
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -1702,21 +1705,37 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // PFP area: if classGroup, show colored container with name
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: (imageUrl.isNotEmpty)
-                        ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (ctx, error, stack) {
-                            return Container(
-                              color: Colors.grey.shade800,
-                              child: Icon(Icons.broken_image, color: _isDarkMode ? Colors.white54 : Colors.black54, size: 40),
-                            );
-                          })
-                        : Container(
-                            color: Colors.grey.shade800,
-                            child: Icon(Icons.photo_camera_back, color: _isDarkMode ? Colors.white54 : Colors.black54, size: 40),
-                          ),
+                    child: isClassGroup
+                        ? Container(
+                            color: Colors.primaries[name.hashCode % Colors.primaries.length],
+                            child: Center(
+                              child: Text(
+                                name,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          )
+                        : (imageUrl.isNotEmpty
+                            ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (ctx, error, stack) {
+                                return Container(
+                                  color: Colors.grey.shade800,
+                                  child: Icon(Icons.broken_image, color: _isDarkMode ? Colors.white54 : Colors.black54, size: 40),
+                                );
+                              })
+                            : Container(
+                                color: Colors.grey.shade800,
+                                child: Icon(Icons.photo_camera_back, color: _isDarkMode ? Colors.white54 : Colors.black54, size: 40),
+                              )),
                   ),
                 ),
                 Padding(
@@ -1724,22 +1743,42 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: _isDarkMode ? Colors.white : Colors.black87,
+                      if (!isClassGroup)
+                        Text(name,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: _isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      if (isClassGroup)
+                        Text(
+                          name,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                            color: _isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                        ),
                       const SizedBox(height: 6),
-                      Text(description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
-                      ),
+                      // For class groups, format the description info (e.g. "Professor, Section, Days")
+                      if (isClassGroup)
+                        Text(
+                          _formatClassInfo(description),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
+                        )
+                      else
+                        Text(description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
+                        ),
                       const SizedBox(height: 12),
                     ],
                   ),
@@ -1808,6 +1847,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             description: description,
             imageUrl: imageUrl,
             communityType: type,
+            collectionName: d['collectionName'],
             onTap: () => _goToCommunity(type, docId, d),
           );
         },
@@ -1821,8 +1861,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     required String description,
     required String imageUrl,
     required String communityType,
+    required String collectionName,
     required VoidCallback onTap,
   }) {
+    final bool isClassGroup = collectionName == 'classGroups';
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -1844,17 +1886,32 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                   borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
                   child: AspectRatio(
                     aspectRatio: 16 / 10,
-                    child: (imageUrl.isNotEmpty)
-                        ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (ctx, error, stack) {
-                            return Container(
-                              color: Colors.grey.shade800,
-                              child: Icon(Icons.broken_image, color: _isDarkMode ? Colors.white54 : Colors.black54),
-                            );
-                          })
-                        : Container(
-                            color: Colors.grey.shade800,
-                            child: Icon(Icons.photo_camera_back, color: _isDarkMode ? Colors.white54 : Colors.black54),
-                          ),
+                    child: isClassGroup
+                        ? Container(
+                            color: Colors.primaries[name.hashCode % Colors.primaries.length],
+                            child: Center(
+                              child: Text(
+                                name,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          )
+                        : (imageUrl.isNotEmpty
+                            ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (ctx, error, stack) {
+                                return Container(
+                                  color: Colors.grey.shade800,
+                                  child: Icon(Icons.broken_image, color: _isDarkMode ? Colors.white54 : Colors.black54),
+                                );
+                              })
+                            : Container(
+                                color: Colors.grey.shade800,
+                                child: Icon(Icons.photo_camera_back, color: _isDarkMode ? Colors.white54 : Colors.black54),
+                              )),
                   ),
                 ),
                 Expanded(
@@ -1863,22 +1920,43 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: _isDarkMode ? Colors.white : Colors.black87,
+                        if (!isClassGroup)
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: _isDarkMode ? Colors.white : Colors.black87,
+                            ),
                           ),
-                        ),
+                        if (isClassGroup)
+                          Text(
+                            name,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                              color: _isDarkMode ? Colors.white : Colors.black87,
+                            ),
+                          ),
                         const SizedBox(height: 4),
-                        Text(description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12, color: _isDarkMode ? Colors.white70 : Colors.black87),
-                        ),
+                        if (isClassGroup)
+                          Text(
+                            _formatClassInfo(description),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: _isDarkMode ? Colors.white70 : Colors.black87),
+                          )
+                        else
+                          Text(
+                            description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: _isDarkMode ? Colors.white70 : Colors.black87),
+                          ),
                         const Spacer(),
                         Align(
                           alignment: Alignment.bottomRight,
@@ -1914,6 +1992,18 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         ],
       ),
     );
+  }
+
+  // ----------------------------------------------------------------
+  // Helper method to format class info from a comma-separated string.
+  // E.g. "Prof. Smith, Section A, MWF" becomes:
+  // Prof. Smith
+  // Section A
+  // MWF
+  // ----------------------------------------------------------------
+  String _formatClassInfo(String info) {
+    final parts = info.split(',');
+    return parts.map((s) => s.trim()).join('\n');
   }
 
   // ----------------------------------------------------------------
