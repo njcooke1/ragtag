@@ -97,8 +97,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
 
   // Emojis
   final List<String> _availableEmojis = [
-    '🎓','📚','✏️','📝','💻','🧮','⚗️','🔬','🔭','📐','📏','🏫',
-    '🎨','🏆','🥇','🥈','🥉','🚀','🌏','📸','☕','🎧','👾','🤓'
+    '🎓', '📚', '✏️', '📝', '💻', '🧮', '⚗️', '🔬', '🔭', '📐', '📏', '🏫',
+    '🎨', '🏆', '🥇', '🥈', '🥉', '🚀', '🌏', '📸', '☕', '🎧', '👾', '🤓'
   ];
   String _tempEmoji1 = '🎓';
   String _tempEmoji2 = '📚';
@@ -152,41 +152,36 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       systemNavigationBarIconBrightness: Brightness.light,
     ));
 
-    // Loading animation controller (SAME intervals & curves as the opening page)
+    // Loading animation controller
     _loadingController = AnimationController(
       duration: const Duration(seconds: 4),
       vsync: this,
     )..forward();
 
-    // Fade in from 0 to 1
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _loadingController,
         curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       ),
     );
-    // Scale from 0.8 to 1.0
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
         parent: _loadingController,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
       ),
     );
-    // Shimmer sweep
     _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
       CurvedAnimation(
         parent: _loadingController,
         curve: const Interval(0.3, 0.8, curve: Curves.easeInOut),
       ),
     );
-    // Slight rotation
     _rotationAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(
       CurvedAnimation(
         parent: _loadingController,
         curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
       ),
     );
-    // Animated gradient background
     _bgColor1Animation = ColorTween(
       begin: const Color(0xFF000000),
       end: const Color(0xFFFFAF7B),
@@ -206,7 +201,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       ),
     );
 
-    // Loading text cycle
     _loadingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       setState(() {
         _loadingMessageIndex =
@@ -214,10 +208,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       });
     });
 
-    // Combine data
     _combinedFuture = _loadAllData();
 
-    // Neon X (trash) animations
     _trashController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -235,15 +227,12 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     _loadingTimer.cancel();
     _loadingController.dispose();
     _trashController.dispose();
-
     _nameController.dispose();
     _usernameController.dispose();
     _gradYearController.dispose();
-
     super.dispose();
   }
 
-  /// Load profile + chats
   Future<Map<String, dynamic>> _loadAllData() async {
     final profile = await _fetchProfileAndCommunities();
     final chats = await _fetchUserChats();
@@ -272,17 +261,14 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         .map((b) => b.toString())
         .toList();
 
-    // Prefill editing controllers
     _nameController.text = fullName;
     _usernameController.text = username;
     _gradYearController.text = graduationYear.toString();
     _tempEmoji1 = emoji1;
     _tempEmoji2 = emoji2;
 
-    // Store the original username so we know if user changed it
     _originalUsername = username;
 
-    // Gather communities
     final collections = ['clubs', 'openForums', 'interestGroups', 'ragtagSparks', 'classGroups'];
     final futures =
         collections.map((c) => _fetchMembershipFromOneCollection(c, uid));
@@ -302,17 +288,11 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  Future<List<QueryDocumentSnapshot>> _fetchMembershipFromOneCollection(
-    String coll,
-    String uid,
-  ) async {
+  Future<List<QueryDocumentSnapshot>> _fetchMembershipFromOneCollection(String coll, String uid) async {
     final collRef = FirebaseFirestore.instance.collection(coll);
-
-    // membership array
     final arraySnap = await collRef.where('members', arrayContains: uid).get();
     final allSnap = await collRef.get();
 
-    // membership subcollection
     final subcollectionDocs = <QueryDocumentSnapshot>[];
     for (final doc in allSnap.docs) {
       final memberDoc = await doc.reference.collection('members').doc(uid).get();
@@ -320,7 +300,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         subcollectionDocs.add(doc);
       }
     }
-
     final combinedSet = <QueryDocumentSnapshot>{};
     combinedSet.addAll(arraySnap.docs);
     combinedSet.addAll(subcollectionDocs);
@@ -348,10 +327,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         }
       }
       if (otherUserId.isNotEmpty) {
-        final otherUserDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(otherUserId)
-            .get();
+        final otherUserDoc = await FirebaseFirestore.instance.collection('users').doc(otherUserId).get();
         final otherUserData = otherUserDoc.data() ?? {};
         chats.add(ChatConversation(
           chatId: doc.id,
@@ -364,14 +340,11 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     return chats;
   }
 
-  // Toggle between “display” and “edit” profile
   void _toggleEditProfile() {
     setState(() {
       if (_isEditingAll) {
-        // User clicked "Save Edits"
         _saveAllEdits();
       } else {
-        // Enter editing mode
         _isEditingAll = true;
       }
     });
@@ -381,25 +354,17 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     final uid = _currentUser?.uid;
     if (uid == null) return;
 
-    final newName = _nameController.text.trim().isEmpty
-        ? 'No Name'
-        : _nameController.text.trim();
-
+    final newName = _nameController.text.trim().isEmpty ? 'No Name' : _nameController.text.trim();
     final newUsername = _usernameController.text.trim();
 
-    // 1) Must start with '@'
     if (!newUsername.startsWith('@')) {
       _showSnack('Username must start with @');
       return;
     }
-
-    // 2) Must not be just '@'
     if (newUsername.length <= 1) {
       _showSnack('Please enter a username after @');
       return;
     }
-
-    // 3) If you want to ensure exactly one '@', check that too
     final countAt = '@'.allMatches(newUsername).length;
     if (countAt > 1) {
       _showSnack('Username can only contain one @');
@@ -408,23 +373,18 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
 
     final newGradYear = int.tryParse(_gradYearController.text) ?? 2025;
 
-    // 1) If user changed username, check if it’s taken
     if (newUsername != _originalUsername) {
-      // Query for an existing doc with same username
       final userQuery = await FirebaseFirestore.instance
           .collection('users')
           .where('username', isEqualTo: newUsername)
           .limit(1)
           .get();
-
-      // If found a different doc with that username => bail out
       if (userQuery.docs.isNotEmpty && userQuery.docs.first.id != uid) {
         _showSnack('Sorry, that username is taken.');
         return;
       }
     }
 
-    // 2) If not taken (or user didn’t change username), proceed
     await _updateUserData({
       'fullName': newName,
       'username': newUsername,
@@ -433,10 +393,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       'emoji2': _tempEmoji2,
     });
 
-    // If user never did "introchallenge" step 1, mark it
     await _markIntroStep1IfAppropriate();
-
-    // Update local references
     _originalUsername = newUsername;
 
     setState(() {
@@ -446,14 +403,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   }
 
   Future<void> _editPhoto() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
     final imageFile = File(pickedFile.path);
-    final storageRef = FirebaseStorage.instance
-        .ref()
-        .child('profilePics')
-        .child('${_currentUser!.uid}.png');
+    final storageRef = FirebaseStorage.instance.ref().child('profilePics').child('${_currentUser!.uid}.png');
 
     await storageRef.putFile(imageFile);
     final downloadUrl = await storageRef.getDownloadURL();
@@ -467,10 +420,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   Future<void> _updateUserData(Map<String, dynamic> data) async {
     final uid = _currentUser?.uid;
     if (uid == null) return;
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .update(data);
+    await FirebaseFirestore.instance.collection('users').doc(uid).update(data);
   }
 
   Future<void> _markIntroStep1IfAppropriate() async {
@@ -494,7 +444,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     setState(() => _isDarkMode = !_isDarkMode);
   }
 
-  // Show day-one badge only once
   void _checkDayOneBadge(List<String> badges) {
     if (!badges.contains('dayonebadge') && !_hasShownDayOneBadgeDialog) {
       _hasShownDayOneBadgeDialog = true;
@@ -527,7 +476,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // radial glow
                   Stack(
                     alignment: Alignment.center,
                     children: [
@@ -552,7 +500,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                           ],
                         ),
                       ),
-                      // The badge image
                       Image.asset(
                         'assets/dayonebadge.png',
                         height: 160,
@@ -574,8 +521,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    "We’re thrilled that you hopped in from Day One.\n"
-                    "Enjoy this exclusive badge on your profile!",
+                    "We’re thrilled that you hopped in from Day One.\nEnjoy this exclusive badge on your profile!",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -592,10 +538,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                       elevation: 2,
                     ),
                     onPressed: () {
@@ -622,16 +565,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     }, SetOptions(merge: true));
   }
 
-  // Deletion method for chats
   Future<void> _deleteChat(String chatId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('chats')
-          .doc(chatId)
-          .delete();
-
+      await FirebaseFirestore.instance.collection('chats').doc(chatId).delete();
       setState(() {
-        // Clear the selected chat so the X disappears
         _selectedChatId = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -644,7 +581,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     }
   }
 
-  // A helper for quick SnackBars
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -655,12 +591,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       future: _combinedFuture,
       builder: (ctx, snapshot) {
         if (!snapshot.hasData && !snapshot.hasError) {
-          // LOADING
           _isLoadingPage = true;
-          return _buildFancyLoading(); // Updated animation
+          return _buildFancyLoading();
         }
         if (snapshot.hasError) {
-          // ERROR
           return Scaffold(
             backgroundColor: Colors.red,
             body: Center(
@@ -685,7 +619,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         final profileData = snapshot.data!["profile"] as _ProfileAndCommunities;
         final chatData = snapshot.data!["chats"] as List<ChatConversation>;
 
-        // Show day-one badge if needed
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _checkDayOneBadge(profileData.badges);
         });
@@ -694,14 +627,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           key: _scaffoldKey,
           backgroundColor: _bgColor,
           endDrawer: _buildMinimalSettingsDrawer(context),
-          bottomNavigationBar:
-              _isLoadingPage ? null : _buildFloatingFooter(context, profileData),
-
-          // 1) Entire body in a GestureDetector to close neon X if tapped outside
+          bottomNavigationBar: _isLoadingPage ? null : _buildFloatingFooter(context, profileData),
           body: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () {
-              // If a chat is selected & user taps anywhere else -> close the neon X
               if (_selectedChatId != null) {
                 setState(() => _selectedChatId = null);
               }
@@ -709,7 +638,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             child: SafeArea(
               child: Column(
                 children: [
-                  // Minimal row of icons at top
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -730,8 +658,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                       const SizedBox(width: 6),
                     ],
                   ),
-
-                  // The rest
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -760,7 +686,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  // Minimal settings drawer
   Widget _buildMinimalSettingsDrawer(BuildContext context) {
     return Container(
       width: MediaQuery.of(context).size.width * 0.75,
@@ -768,7 +693,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       child: SafeArea(
         child: Column(
           children: [
-            // top row
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               child: Row(
@@ -792,7 +716,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 ],
               ),
             ),
-            // Body
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -812,11 +735,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     title: "Change Password",
                     onTap: () => _openPage(const ChangePasswordPage()),
                   ),
-
-                  // SPACER to place "Contact Us" far below change password
                   const SizedBox(height: 35),
-
-                  // "CONTACT US" BUTTON (OPTIONAL)
                   _buildDrawerTile(
                     icon: Icons.email_outlined,
                     title: "Contact Us",
@@ -825,7 +744,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 ],
               ),
             ),
-            // sign out
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               child: ListTile(
@@ -855,25 +773,12 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildDrawerTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildDrawerTile({required IconData icon, required String title, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: _isDarkMode ? Colors.white70 : Colors.black87,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: _isDarkMode ? Colors.white70 : Colors.black87,
-            fontSize: 15,
-          ),
-        ),
+        leading: Icon(icon, color: _isDarkMode ? Colors.white70 : Colors.black87),
+        title: Text(title, style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 15)),
       ),
     );
   }
@@ -883,11 +788,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
 
-  // The bottom nav bar
-  Widget _buildFloatingFooter(
-    BuildContext context,
-    _ProfileAndCommunities profileData,
-  ) {
+  Widget _buildFloatingFooter(BuildContext context, _ProfileAndCommunities profileData) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       margin: const EdgeInsets.symmetric(horizontal: 30),
@@ -910,7 +811,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Admin
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: GestureDetector(
@@ -924,20 +824,16 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 ),
               ),
             ),
-            // Explore => replaced with FOMO Feed logo @ height 34
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/fomo_feed'),
                 child: Image.asset(
-                  _isDarkMode
-                      ? 'assets/fomofeedlogo.png'
-                      : 'assets/fomofeedlogoblack.png',
+                  _isDarkMode ? 'assets/fomofeedlogo.png' : 'assets/fomofeedlogoblack.png',
                   height: 34,
                 ),
               ),
             ),
-            // Middle: Ragtag Logo => navigates to FindCommunityPage
             GestureDetector(
               onTap: () {
                 Navigator.pushReplacementNamed(context, '/find_community');
@@ -948,7 +844,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 color: _isDarkMode ? Colors.white : null,
               ),
             ),
-            // plus
             _buildFooterIcon(
               Icons.add,
               color: _isDarkMode ? Colors.white : Colors.black,
@@ -956,7 +851,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 Navigator.pushNamed(context, '/start-community');
               },
             ),
-            // user pfp
             _buildShimmeringUserPfp(profileData.photoUrl),
           ],
         ),
@@ -964,11 +858,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildFooterIcon(
-    IconData icon, {
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildFooterIcon(IconData icon, {required Color color, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -990,7 +880,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // The shimmering ring
             Shimmer.fromColors(
               baseColor: const Color(0xFFFFAF7B),
               highlightColor: const Color(0xFFD76D77),
@@ -999,21 +888,16 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
               ),
             ),
-            // The actual circle avatar
             CircleAvatar(
               radius: 18,
               backgroundColor: Colors.black,
-              backgroundImage:
-                  (photoUrl != null && photoUrl.isNotEmpty)
-                      ? NetworkImage(photoUrl)
-                      : null,
+              backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                  ? NetworkImage(photoUrl)
+                  : null,
               child: (photoUrl == null || photoUrl.isEmpty)
                   ? const Icon(Icons.person, color: Colors.white)
                   : null,
@@ -1043,12 +927,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  // ---------------------------------------------------------
-  // TOP container: stats + PFP + user info + “Edit Profile”
-  // ---------------------------------------------------------
   Widget _buildTopProfileContainer(_ProfileAndCommunities data) {
     final totalCommunities = data.communityDocs.length;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -1080,9 +960,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 ],
               ),
               const SizedBox(height: 16),
-              _isEditingAll
-                  ? _buildAllFieldsEditor(data)
-                  : _buildAllFieldsDisplay(data),
+              _isEditingAll ? _buildAllFieldsEditor(data) : _buildAllFieldsDisplay(data),
               const SizedBox(height: 46),
             ],
           ),
@@ -1094,15 +972,11 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               style: TextButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
-                // “Slimmer & less round” button
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(100),
                   side: const BorderSide(color: Colors.white, width: 1),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
               child: Text(_isEditingAll ? "Save Edits" : "Edit Profile"),
             ),
@@ -1124,10 +998,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(color: _subTextColor, fontSize: 14),
-        ),
+        Text(label, style: TextStyle(color: _subTextColor, fontSize: 14)),
       ],
     );
   }
@@ -1173,21 +1044,13 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                       errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey.shade700,
                         alignment: Alignment.center,
-                        child: Icon(
-                          Icons.error,
-                          color: _isDarkMode ? Colors.white : Colors.black,
-                        ),
+                        child: Icon(Icons.error, color: _isDarkMode ? Colors.white : Colors.black),
                       ),
                     )
-                  : Icon(
-                      Icons.person,
-                      color: _isDarkMode ? Colors.white : Colors.black,
-                      size: 56,
-                    ),
+                  : Icon(Icons.person, color: _isDarkMode ? Colors.white : Colors.black, size: 56),
             ),
           ),
         ),
-        // Emojis
         Positioned(
           top: -10,
           left: -10,
@@ -1211,10 +1074,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   Widget _buildCloutBar(String label, int totalCommunities) {
     const double barWidth = 80;
     const double barHeight = 10;
-
     double fillFraction;
     Widget fillWidget;
-
     if (totalCommunities >= 5) {
       fillFraction = 1.0;
       fillWidget = _buildShimmerGradientBar(barWidth, barHeight);
@@ -1249,13 +1110,9 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         ),
       );
     }
-
     return Column(
       children: [
-        Text(
-          label,
-          style: TextStyle(color: _subTextColor, fontSize: 14),
-        ),
+        Text(label, style: TextStyle(color: _subTextColor, fontSize: 14)),
         const SizedBox(height: 4),
         Stack(
           children: [
@@ -1279,7 +1136,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       animation: _shimmerAnimation,
       builder: (context, child) {
         final shimmerOffset = _shimmerAnimation.value * width;
-
         return ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: SizedBox(
@@ -1330,40 +1186,21 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           data.fullName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 22,
-            color: _textColor,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 22, color: _textColor, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        Text(
-          data.username,
-          style: TextStyle(fontSize: 16, color: _subTextColor),
-        ),
+        Text(data.username, style: TextStyle(fontSize: 16, color: _subTextColor)),
         const SizedBox(height: 8),
-        Text(
-          data.institution,
-          style: TextStyle(fontSize: 15, color: _subTextColor),
-        ),
+        Text(data.institution, style: TextStyle(fontSize: 15, color: _subTextColor)),
         const SizedBox(height: 2),
-        Text(
-          'Class of ${data.graduationYear}',
-          style: TextStyle(fontSize: 15, color: _subTextColor),
-        ),
+        Text('Class of ${data.graduationYear}', style: TextStyle(fontSize: 15, color: _subTextColor)),
         const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              "Vibes:",
-              style: TextStyle(fontSize: 15, color: _subTextColor),
-            ),
+            Text("Vibes:", style: TextStyle(fontSize: 15, color: _subTextColor)),
             const SizedBox(width: 6),
-            Text(
-              "${data.emoji1}  ${data.emoji2}",
-              style: const TextStyle(fontSize: 18),
-            ),
+            Text("${data.emoji1}  ${data.emoji2}", style: const TextStyle(fontSize: 18)),
           ],
         ),
       ],
@@ -1372,7 +1209,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
 
   Widget _buildAllFieldsEditor(_ProfileAndCommunities data) {
     final color = _isDarkMode ? Colors.white : Colors.black87;
-
     return Column(
       children: [
         TextField(
@@ -1383,9 +1219,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             hintText: 'Full name',
             hintStyle: TextStyle(color: color.withOpacity(0.4)),
             border: const UnderlineInputBorder(),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.pinkAccent.shade100),
-            ),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.pinkAccent.shade100)),
           ),
         ),
         const SizedBox(height: 6),
@@ -1397,16 +1231,11 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             hintText: 'username',
             hintStyle: TextStyle(color: color.withOpacity(0.4)),
             border: const UnderlineInputBorder(),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.pinkAccent.shade100),
-            ),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.pinkAccent.shade100)),
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          data.institution,
-          style: TextStyle(fontSize: 15, color: _subTextColor),
-        ),
+        Text(data.institution, style: TextStyle(fontSize: 15, color: _subTextColor)),
         const SizedBox(height: 2),
         SizedBox(
           width: 80,
@@ -1419,17 +1248,12 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               hintText: 'Year',
               hintStyle: TextStyle(color: color.withOpacity(0.4)),
               border: const UnderlineInputBorder(),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.pinkAccent.shade100),
-              ),
+              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.pinkAccent.shade100)),
             ),
           ),
         ),
         const SizedBox(height: 10),
-        Text(
-          "Pick your vibe icons:",
-          style: TextStyle(fontSize: 15, color: color),
-        ),
+        Text("Pick your vibe icons:", style: TextStyle(fontSize: 15, color: color)),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1469,10 +1293,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  /// One “emoji vibe” slot
   Widget _buildVibeSlot(int slotNumber, String currentEmoji) {
     final isSelected = (_selectedEmojiSlot == slotNumber);
-
     return GestureDetector(
       onTap: () => setState(() {
         _selectedEmojiSlot = slotNumber;
@@ -1481,15 +1303,9 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? Colors.pinkAccent : Colors.transparent,
-            width: 2,
-          ),
+          border: Border.all(color: isSelected ? Colors.pinkAccent : Colors.transparent, width: 2),
         ),
-        child: Text(
-          currentEmoji,
-          style: const TextStyle(fontSize: 32),
-        ),
+        child: Text(currentEmoji, style: const TextStyle(fontSize: 32)),
       ),
     );
   }
@@ -1497,12 +1313,8 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   // ------------------------------
   // PRIVATE MESSAGES SECTION
   // ------------------------------
-  Widget _buildPrivateMessagesSection(
-    _ProfileAndCommunities data,
-    List<ChatConversation> chats,
-  ) {
+  Widget _buildPrivateMessagesSection(_ProfileAndCommunities data, List<ChatConversation> chats) {
     final myInstitution = data.institution;
-
     return SizedBox(
       height: 80,
       child: Row(
@@ -1511,14 +1323,11 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           const SizedBox(width: 16),
           _buildBadgeTrophy(data.badges),
           const SizedBox(width: 8),
-          // The red chat circle => go to user directory
           GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => UserDirectoryPage(institution: myInstitution),
-                ),
+                MaterialPageRoute(builder: (_) => UserDirectoryPage(institution: myInstitution)),
               );
             },
             child: Container(
@@ -1537,16 +1346,11 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 ],
               ),
               child: const Center(
-                child: Icon(
-                  Icons.chat_bubble_outline,
-                  color: Colors.white,
-                  size: 30,
-                ),
+                child: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 30),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          // The row of chat avatars
           Expanded(
             child: ListView(
               scrollDirection: Axis.horizontal,
@@ -1559,33 +1363,27 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  /// Single chat avatar with neon red X animation
   Widget _buildChatAvatar(ChatConversation chat) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onLongPress: () {
-        // Show the neon X
         setState(() {
           _selectedChatId = chat.chatId;
         });
         _trashController.forward(from: 0);
       },
       onTap: () {
-        // If user taps a different avatar while one is selected, clear the neon X first.
         if (_selectedChatId != null && _selectedChatId != chat.chatId) {
           setState(() => _selectedChatId = null);
         }
-        // Then open the chat normally
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => ChatPage(
-              chatId: chat.chatId,
-              otherUserId: chat.otherUserId,
-              otherUserName: chat.otherUserName,
-              otherUserPhotoUrl: chat.otherUserPhotoUrl,
-            ),
-          ),
+          MaterialPageRoute(builder: (_) => ChatPage(
+            chatId: chat.chatId,
+            otherUserId: chat.otherUserId,
+            otherUserName: chat.otherUserName,
+            otherUserPhotoUrl: chat.otherUserPhotoUrl,
+          )),
         );
       },
       child: Container(
@@ -1595,23 +1393,12 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Chat avatar image or placeholder
             CircleAvatar(
               radius: 35,
               backgroundColor: Colors.grey.shade300,
-              backgroundImage: chat.otherUserPhotoUrl.isNotEmpty
-                  ? NetworkImage(chat.otherUserPhotoUrl)
-                  : null,
-              child: chat.otherUserPhotoUrl.isEmpty
-                  ? Icon(
-                      Icons.person,
-                      color: _isDarkMode ? Colors.white70 : Colors.black54,
-                      size: 35,
-                    )
-                  : null,
+              backgroundImage: chat.otherUserPhotoUrl.isNotEmpty ? NetworkImage(chat.otherUserPhotoUrl) : null,
+              child: chat.otherUserPhotoUrl.isEmpty ? Icon(Icons.person, color: _isDarkMode ? Colors.white70 : Colors.black54, size: 35) : null,
             ),
-
-            // Neon red X overlay
             if (_selectedChatId == chat.chatId)
               AnimatedBuilder(
                 animation: _trashScale,
@@ -1625,7 +1412,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                         height: 70,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          // Neon Glow
                           boxShadow: [
                             BoxShadow(
                               color: Colors.redAccent.withOpacity(0.6),
@@ -1639,11 +1425,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.close_rounded,
-                          color: Colors.redAccent,
-                          size: 50,
-                        ),
+                        child: const Icon(Icons.close_rounded, color: Colors.redAccent, size: 50),
                       ),
                     ),
                   );
@@ -1655,7 +1437,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  // A minimal bottom-sheet for user badges
   Widget _buildBadgeTrophy(List<String> badges) {
     return GestureDetector(
       onTap: () => _showUltraMinimalBadgeSheet(badges),
@@ -1674,15 +1455,11 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               color: Colors.amberAccent.withOpacity(0.5),
               blurRadius: 12,
               spreadRadius: 1,
-              offset: const Offset(0, 3),
+              offset: Offset(0, 3),
             ),
           ],
         ),
-        child: const Icon(
-          Icons.emoji_events,
-          color: Colors.white,
-          size: 34,
-        ),
+        child: const Icon(Icons.emoji_events, color: Colors.white, size: 34),
       ),
     );
   }
@@ -1705,7 +1482,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // The minimal drag handle
                 Container(
                   width: 40,
                   height: 4,
@@ -1718,21 +1494,14 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 if (badges.isEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Text(
-                      "No badges yet...",
-                      style: TextStyle(
-                        color: _isDarkMode ? Colors.white54 : Colors.black54,
-                      ),
-                    ),
+                    child: Text("No badges yet...", style: TextStyle(color: _isDarkMode ? Colors.white54 : Colors.black54)),
                   )
                 else
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
-                      children: badges
-                          .map((b) => _buildSingleUltraMinimalBadge(b))
-                          .toList(growable: false),
+                      children: badges.map((b) => _buildSingleUltraMinimalBadge(b)).toList(growable: false),
                     ),
                   ),
               ],
@@ -1746,7 +1515,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   Widget _buildSingleUltraMinimalBadge(String badgeStr) {
     bool isCreationBadge = false;
     bool isChallengeBadge = false;
-
     if (badgeStr == 'introbadge') {
       badgeStr = 'assets/newmemberbadge.png';
     } else if (badgeStr == 'creationbadge') {
@@ -1758,51 +1526,30 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       badgeStr = 'assets/challengebadge.png';
       isChallengeBadge = true;
     }
-
     final isAsset = badgeStr.startsWith('assets/');
-    final imageProvider =
-        isAsset ? AssetImage(badgeStr) as ImageProvider : NetworkImage(badgeStr);
-
-    final glowColor = isChallengeBadge
-        ? Colors.amber
-        : (isCreationBadge ? Colors.blueAccent : Colors.orangeAccent);
-
+    final imageProvider = isAsset ? AssetImage(badgeStr) as ImageProvider : NetworkImage(badgeStr);
+    final glowColor = isChallengeBadge ? Colors.amber : (isCreationBadge ? Colors.blueAccent : Colors.orangeAccent);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: glowColor.withOpacity(0.3),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
+        boxShadow: [BoxShadow(color: glowColor.withOpacity(0.3), blurRadius: 10, spreadRadius: 1)],
       ),
       child: ClipOval(
         child: Container(
           color: Colors.transparent,
           width: 70,
           height: 70,
-          child: Image(
-            image: imageProvider,
-            fit: BoxFit.contain,
-          ),
+          child: Image(image: imageProvider, fit: BoxFit.contain),
         ),
       ),
     );
   }
 
-  // The label + search for communities
   Widget _buildCommunitiesLabelAndSearch() {
-    // Switch icons for list vs. grid
-    final String iconName;
-    if (_isDarkMode) {
-      iconName = _isGridView ? 'communitieswhite.png' : 'gridcardwhite.png';
-    } else {
-      iconName = _isGridView ? 'communities.png' : 'gridcard.png';
-    }
-
+    final String iconName = _isDarkMode
+        ? (_isGridView ? 'communitieswhite.png' : 'gridcardwhite.png')
+        : (_isGridView ? 'communities.png' : 'gridcard.png');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
@@ -1817,10 +1564,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               },
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
-                child: Image.asset(
-                  'assets/$iconName',
-                  height: 22,
-                ),
+                child: Image.asset('assets/$iconName', height: 22),
               ),
             ),
           ),
@@ -1844,11 +1588,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 children: [
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(
-                      Icons.search,
-                      color: Colors.black54,
-                      size: 18,
-                    ),
+                    child: Icon(Icons.search, color: Colors.black54, size: 18),
                   ),
                   if (_searchActive)
                     Expanded(
@@ -1856,17 +1596,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                         onChanged: (value) {
                           setState(() => _searchQuery = value);
                         },
-                        style: TextStyle(
-                          color: _isDarkMode ? Colors.white : Colors.black87,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87, fontSize: 12),
                         decoration: InputDecoration(
                           hintText: "Search…",
-                          hintStyle: TextStyle(
-                            color:
-                                _isDarkMode ? Colors.white54 : Colors.black38,
-                            fontSize: 12,
-                          ),
+                          hintStyle: TextStyle(color: _isDarkMode ? Colors.white54 : Colors.black38, fontSize: 12),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.only(left: 2),
                           suffixIcon: GestureDetector(
@@ -1876,11 +1609,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                                 _searchActive = false;
                               });
                             },
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.black54,
-                            ),
+                            child: const Icon(Icons.close, size: 16, color: Colors.black54),
                           ),
                         ),
                       ),
@@ -1894,7 +1623,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  // The communities section => calls either list or grid
   Widget _buildCommunitiesSection(_ProfileAndCommunities data) {
     final comms = data.communityDocs;
     final filtered = comms.where((doc) {
@@ -1907,20 +1635,14 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       return SizedBox(
         height: 120,
         child: Center(
-          child: Text(
-            "No communities yet... What are you waiting on! :)",
-            style: TextStyle(color: _subTextColor, fontSize: 16),
-          ),
+          child: Text("No communities yet... What are you waiting on! :)", style: TextStyle(color: _subTextColor, fontSize: 16)),
         ),
       );
     }
 
-    return _isGridView
-        ? _buildHorizontalRectangleGrid(filtered)
-        : _buildBigCardList(filtered);
+    return _isGridView ? _buildHorizontalRectangleGrid(filtered) : _buildBigCardList(filtered);
   }
 
-  // “LIST MODE” => big vertical 16:9 cards
   Widget _buildBigCardList(List<QueryDocumentSnapshot> comms) {
     return SizedBox(
       height: 700,
@@ -1970,63 +1692,39 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         children: [
           Container(
             decoration: BoxDecoration(
-              color: _isDarkMode
-                  ? Colors.white.withOpacity(0.06)
-                  : Colors.black.withOpacity(0.06),
+              color: _isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _isDarkMode
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.1),
+                color: _isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
                 width: 1,
               ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // top 16:9 image
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
                     child: (imageUrl.isNotEmpty)
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, error, stack) {
-                              return Container(
-                                color: Colors.grey.shade800,
-                                child: Icon(
-                                  Icons.broken_image,
-                                  color: _isDarkMode
-                                      ? Colors.white54
-                                      : Colors.black54,
-                                  size: 40,
-                                ),
-                              );
-                            },
-                          )
+                        ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (ctx, error, stack) {
+                            return Container(
+                              color: Colors.grey.shade800,
+                              child: Icon(Icons.broken_image, color: _isDarkMode ? Colors.white54 : Colors.black54, size: 40),
+                            );
+                          })
                         : Container(
                             color: Colors.grey.shade800,
-                            child: Icon(
-                              Icons.photo_camera_back,
-                              color: _isDarkMode
-                                  ? Colors.white54
-                                  : Colors.black54,
-                              size: 40,
-                            ),
+                            child: Icon(Icons.photo_camera_back, color: _isDarkMode ? Colors.white54 : Colors.black54, size: 40),
                           ),
                   ),
                 ),
-                // name + desc
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
+                      Text(name,
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w600,
@@ -2037,20 +1735,15 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        description,
+                      Text(description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _isDarkMode ? Colors.white70 : Colors.black87,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
                       ),
                       const SizedBox(height: 12),
                     ],
                   ),
                 ),
-                // bottom icon
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Center(
@@ -2064,30 +1757,20 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                           width: 1.4,
                         ),
                       ),
-                      child: Icon(
-                        Icons.open_in_new,
-                        color: _isDarkMode
-                            ? Colors.white.withOpacity(0.9)
-                            : Colors.black.withOpacity(0.9),
-                        size: 18,
-                      ),
+                      child: Icon(Icons.open_in_new, color: _isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black.withOpacity(0.9), size: 18),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          // White circle in top-left corner
           Positioned(
             top: 8,
             left: 8,
             child: Container(
               width: 24,
               height: 24,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
             ),
           ),
         ],
@@ -2095,7 +1778,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  // “GRID MODE” => single-column horizontal rectangles
   Widget _buildHorizontalRectangleGrid(List<QueryDocumentSnapshot> comms) {
     return SizedBox(
       height: 700,
@@ -2149,60 +1831,39 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         children: [
           Container(
             decoration: BoxDecoration(
-              color: _isDarkMode
-                  ? Colors.white.withOpacity(0.06)
-                  : Colors.black.withOpacity(0.06),
+              color: _isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _isDarkMode
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.1),
+                color: _isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
                 width: 1,
               ),
             ),
             child: Row(
               children: [
-                // Left image
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.horizontal(left: Radius.circular(12)),
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
                   child: AspectRatio(
                     aspectRatio: 16 / 10,
                     child: (imageUrl.isNotEmpty)
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, error, stack) {
-                              return Container(
-                                color: Colors.grey.shade800,
-                                child: Icon(
-                                  Icons.broken_image,
-                                  color: _isDarkMode
-                                      ? Colors.white54
-                                      : Colors.black54,
-                                ),
-                              );
-                            },
-                          )
+                        ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (ctx, error, stack) {
+                            return Container(
+                              color: Colors.grey.shade800,
+                              child: Icon(Icons.broken_image, color: _isDarkMode ? Colors.white54 : Colors.black54),
+                            );
+                          })
                         : Container(
                             color: Colors.grey.shade800,
-                            child: Icon(
-                              Icons.photo_camera_back,
-                              color:
-                                  _isDarkMode ? Colors.white54 : Colors.black54,
-                            ),
+                            child: Icon(Icons.photo_camera_back, color: _isDarkMode ? Colors.white54 : Colors.black54),
                           ),
                   ),
                 ),
-                // Right side: name, desc, bottom-right icon
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          name,
+                        Text(name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -2213,15 +1874,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          description,
+                        Text(description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                _isDarkMode ? Colors.white70 : Colors.black87,
-                          ),
+                          style: TextStyle(fontSize: 12, color: _isDarkMode ? Colors.white70 : Colors.black87),
                         ),
                         const Spacer(),
                         Align(
@@ -2236,13 +1892,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                                 width: 1.2,
                               ),
                             ),
-                            child: Icon(
-                              Icons.open_in_new,
-                              size: 14,
-                              color: _isDarkMode
-                                  ? Colors.white.withOpacity(0.9)
-                                  : Colors.black.withOpacity(0.9),
-                            ),
+                            child: Icon(Icons.open_in_new, size: 14, color: _isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black.withOpacity(0.9)),
                           ),
                         ),
                       ],
@@ -2252,17 +1902,13 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               ],
             ),
           ),
-          // White circle in top-left corner
           Positioned(
             top: 8,
             left: 8,
             child: Container(
               width: 24,
               height: 24,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
             ),
           ),
         ],
@@ -2272,14 +1918,14 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
 
   // ----------------------------------------------------------------
   // HERE’S THE FIX:
-  // We check if the document came from the "classGroups" collection.
-  // If so, we navigate to the interest-groups-profile route.
+  // Check if the document came from the "classGroups" collection (via the added collectionName field)
+  // and pass along the collection name in the arguments.
   // ----------------------------------------------------------------
   void _goToCommunity(String type, String docId, Map<String, dynamic> docData) {
     final userId = _currentUser?.uid ?? 'noUser';
+    final collectionName = docData['collectionName'] ?? 'interestGroups';
 
-    // Check if this document came from the "classGroups" collection
-    if (docData['collectionName'] == 'classGroups') {
+    if (collectionName == 'classGroups') {
       Navigator.pushNamed(
         context,
         '/interest-groups-profile',
@@ -2287,6 +1933,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'communityId': docId,
           'communityData': docData,
           'userId': userId,
+          'collectionName': collectionName,
         },
       );
     } else if (type.toLowerCase().contains('forum')) {
@@ -2297,6 +1944,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'communityId': docId,
           'communityData': docData,
           'userId': userId,
+          'collectionName': collectionName,
         },
       );
     } else if (type.toLowerCase().contains('interest')) {
@@ -2307,6 +1955,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'communityId': docId,
           'communityData': docData,
           'userId': userId,
+          'collectionName': collectionName,
         },
       );
     } else if (type.toLowerCase().contains('club')) {
@@ -2317,6 +1966,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'communityId': docId,
           'communityData': docData,
           'userId': userId,
+          'collectionName': collectionName,
         },
       );
     } else if (type.toLowerCase().contains('spark')) {
@@ -2327,10 +1977,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'communityId': docId,
           'communityData': docData,
           'userId': userId,
+          'collectionName': collectionName,
         },
       );
     } else if (type.toLowerCase().contains('classgroup')) {
-      // Fallback check if type contains classgroup (if for some reason collectionName wasn’t added)
       Navigator.pushNamed(
         context,
         '/interest-groups-profile',
@@ -2338,6 +1988,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'communityId': docId,
           'communityData': docData,
           'userId': userId,
+          'collectionName': collectionName,
         },
       );
     } else {
@@ -2348,6 +1999,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           'communityId': docId,
           'communityData': docData,
           'userId': userId,
+          'collectionName': collectionName,
         },
       );
     }
@@ -2362,24 +2014,15 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       builder: (ctx, child) {
         final color1 = _bgColor1Animation.value ?? Colors.black;
         final color2 = _bgColor2Animation.value ?? Colors.black;
-
         return Stack(
           fit: StackFit.expand,
           children: [
-            // Animated gradient background
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color1, color2],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: LinearGradient(colors: [color1, color2], begin: Alignment.topLeft, end: Alignment.bottomRight),
               ),
             ),
-            // Faint shimmer overlays
             _buildShimmerOverlays(),
-
-            // Centered logo + loading text
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -2388,10 +2031,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     opacity: _fadeAnimation,
                     child: ScaleTransition(
                       scale: _scaleAnimation,
-                      child: Transform.rotate(
-                        angle: _rotationAnimation.value,
-                        child: _buildShimmerLogo(),
-                      ),
+                      child: Transform.rotate(angle: _rotationAnimation.value, child: _buildShimmerLogo()),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -2400,11 +2040,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                     child: Text(
                       _loadingMessages[_loadingMessageIndex],
                       key: ValueKey(_loadingMessageIndex),
-                      style: const TextStyle(
-                        fontFamily: 'Lovelo',
-                        color: Colors.white,
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(fontFamily: 'Lovelo', color: Colors.white, fontSize: 18),
                     ),
                   ),
                 ],
@@ -2416,11 +2052,9 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  /// Same faint shimmer overlays from OpeningLandingPage
   Widget _buildShimmerOverlays() {
     return Stack(
       children: [
-        // First shimmer layer
         Positioned.fill(
           child: Shimmer.fromColors(
             baseColor: const Color(0xFFD76D77).withOpacity(0.2),
@@ -2429,10 +2063,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFFFAF7B),
-                    Color(0xFFD76D77),
-                  ],
+                  colors: [Color(0xFFFFAF7B), Color(0xFFD76D77)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -2440,7 +2071,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             ),
           ),
         ),
-        // Second shimmer layer
         Positioned.fill(
           child: Shimmer.fromColors(
             baseColor: const Color(0xFFD76D77).withOpacity(0.1),
@@ -2449,10 +2079,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFD76D77),
-                    Color(0xFFFFAF7B),
-                  ],
+                  colors: [Color(0xFFD76D77), Color(0xFFFFAF7B)],
                   begin: Alignment.bottomRight,
                   end: Alignment.topLeft,
                 ),
@@ -2464,28 +2091,20 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  /// The shimmering, gradient-filled logo
   Widget _buildShimmerLogo() {
     return AnimatedBuilder(
       animation: _shimmerAnimation,
       builder: (ctx, child) {
         final shimmerWidth = MediaQuery.of(context).size.width / 2;
         final start = _shimmerAnimation.value * MediaQuery.of(context).size.width;
-
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
-              colors: [
-                Colors.white.withOpacity(0.0),
-                Colors.white.withOpacity(0.4),
-                Colors.white.withOpacity(0.0),
-              ],
+              colors: [Colors.white.withOpacity(0.0), Colors.white.withOpacity(0.4), Colors.white.withOpacity(0.0)],
               stops: const [0.0, 0.5, 1.0],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-            ).createShader(
-              Rect.fromLTWH(start, 0, shimmerWidth, bounds.height),
-            );
+            ).createShader(Rect.fromLTWH(start, 0, shimmerWidth, bounds.height));
           },
           blendMode: BlendMode.srcATop,
           child: _buildGradientLogo(),
@@ -2498,20 +2117,13 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     return ShaderMask(
       shaderCallback: (bounds) {
         return const LinearGradient(
-          colors: [
-            Color(0xFFFFAF7B),
-            Color(0xFFD76D77),
-          ],
+          colors: [Color(0xFFFFAF7B), Color(0xFFD76D77)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ).createShader(bounds);
       },
       blendMode: BlendMode.srcATop,
-      child: Image.asset(
-        'assets/ragtaglogoblack.png',
-        width: 200,
-        height: 200,
-      ),
+      child: Image.asset('assets/ragtaglogoblack.png', width: 200, height: 200),
     );
   }
 }

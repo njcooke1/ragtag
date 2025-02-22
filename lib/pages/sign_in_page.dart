@@ -179,20 +179,17 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           ),
-          // 3) Main form: centered content that moves up with the keyboard
+          // 3) Main form: centered content without keyboard movement
           Positioned.fill(
             child: SingleChildScrollView(
-              // The bottom padding ensures content isn't hidden by the keyboard.
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 40.0,
+              padding: const EdgeInsets.only(
+                bottom: 40.0,
                 left: 20.0,
                 right: 20.0,
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  // Ensure the content takes at least the full height of the screen minus any keyboard insets.
-                  minHeight: MediaQuery.of(context).size.height -
-                      MediaQuery.of(context).viewInsets.bottom,
+                  minHeight: MediaQuery.of(context).size.height,
                 ),
                 child: Center(
                   child: Column(
