@@ -17,6 +17,7 @@ import 'change_password_page.dart';
 import 'chat_page.dart';
 import 'user_directory_page.dart';
 import 'find_community.dart';
+import 'redesigned_interest_groups_page.dart';
 // ADD THIS IMPORT IF YOU WANT THE "CONTACT US" PAGE:
 import 'contact_us_page.dart';
 
@@ -2309,15 +2310,17 @@ void _goToCommunity(String type, String docId, Map<String, dynamic> docData) {
         'userId': userId,
       },
     );
-  } else if (type.toLowerCase().contains('classgroup')) { // <-- NEW branch for class groups
-    Navigator.pushNamed(
+  } else if (type.toLowerCase().contains('classgroup')) {
+    Navigator.push(
       context,
-      '/class-groups-profile',
-      arguments: {
-        'communityId': docId,
-        'communityData': docData,
-        'userId': userId,
-      },
+      MaterialPageRoute(
+        builder: (_) => RedesignedInterestGroupsPage(
+          communityId: docId,
+          communityData: docData,
+          userId: userId,
+          collectionName: 'classGroups', // indicates it's a class group
+        ),
+      ),
     );
   } else {
     Navigator.pushNamed(
