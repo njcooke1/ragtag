@@ -71,13 +71,10 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
- Future<List<String>> _fetchBlockedUserIds() async {
+  Future<List<String>> _fetchBlockedUserIds() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return [];
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .get();
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
     final blockedList = userDoc.data()?['Blocked'] as List<dynamic>? ?? [];
     return blockedList.map((e) => e.toString()).toList();
   }
@@ -148,8 +145,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   Color get _bgColor => _isDarkMode ? Colors.black : Colors.white;
   Color get _textColor => _isDarkMode ? Colors.white : Colors.black87;
   Color get _subTextColor => _isDarkMode ? Colors.white70 : Colors.black54;
-  Color get _searchBgColor =>
-      _isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05);
+  Color get _searchBgColor => _isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05);
 
   @override
   void initState() {
@@ -170,52 +166,33 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     )..forward();
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _loadingController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
-      ),
+      CurvedAnimation(parent: _loadingController, curve: const Interval(0.0, 0.5, curve: Curves.easeIn)),
     );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _loadingController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
-      ),
+      CurvedAnimation(parent: _loadingController, curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack)),
     );
     _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
-      CurvedAnimation(
-        parent: _loadingController,
-        curve: const Interval(0.3, 0.8, curve: Curves.easeInOut),
-      ),
+      CurvedAnimation(parent: _loadingController, curve: const Interval(0.3, 0.8, curve: Curves.easeInOut)),
     );
     _rotationAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(
-      CurvedAnimation(
-        parent: _loadingController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
-      ),
+      CurvedAnimation(parent: _loadingController, curve: const Interval(0.0, 0.5, curve: Curves.easeInOut)),
     );
     _bgColor1Animation = ColorTween(
       begin: const Color(0xFF000000),
       end: const Color(0xFFFFAF7B),
     ).animate(
-      CurvedAnimation(
-        parent: _loadingController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
-      ),
+      CurvedAnimation(parent: _loadingController, curve: const Interval(0.0, 0.5, curve: Curves.easeInOut)),
     );
     _bgColor2Animation = ColorTween(
       begin: const Color(0xFF000000),
       end: const Color(0xFFD76D77),
     ).animate(
-      CurvedAnimation(
-        parent: _loadingController,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
-      ),
+      CurvedAnimation(parent: _loadingController, curve: const Interval(0.5, 1.0, curve: Curves.easeInOut)),
     );
 
     _loadingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       setState(() {
-        _loadingMessageIndex =
-            (_loadingMessageIndex + 1) % _loadingMessages.length;
+        _loadingMessageIndex = (_loadingMessageIndex + 1) % _loadingMessages.length;
       });
     });
 
@@ -305,8 +282,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   Future<_ProfileAndCommunities> _fetchProfileAndCommunities() async {
     final uid = _currentUser?.uid;
     if (uid == null) throw Exception("No user logged in!");
-    final userDocSnap =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final userDocSnap = await FirebaseFirestore.instance.collection('users').doc(uid).get();
     final data = userDocSnap.data() ?? {};
 
     Future<void> _refreshPage() async {
@@ -324,9 +300,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     final emoji1 = data['emoji1'] as String? ?? '🎓';
     final emoji2 = data['emoji2'] as String? ?? '📚';
 
-    final badges = (data['badges'] as List<dynamic>? ?? [])
-        .map((b) => b.toString())
-        .toList();
+    final badges = (data['badges'] as List<dynamic>? ?? []).map((b) => b.toString()).toList();
 
     _nameController.text = fullName;
     _usernameController.text = username;
@@ -337,8 +311,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     _originalUsername = username;
 
     final collections = ['clubs', 'openForums', 'interestGroups', 'ragtagSparks', 'classGroups'];
-    final futures =
-        collections.map((c) => _fetchMembershipFromOneCollection(c, uid));
+    final futures = collections.map((c) => _fetchMembershipFromOneCollection(c, uid));
     final results = await Future.wait(futures);
     final allDocs = results.expand((x) => x).toSet().toList();
 
@@ -378,10 +351,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     if (currentUser == null) return [];
     final blockedUserIds = await _fetchBlockedUserIds();
     final uid = currentUser.uid;
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('chats')
-        .where('participants', arrayContains: uid)
-        .get();
+    final querySnapshot = await FirebaseFirestore.instance.collection('chats').where('participants', arrayContains: uid).get();
 
     List<ChatConversation> chats = [];
     for (var doc in querySnapshot.docs) {
@@ -444,11 +414,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     final newGradYear = int.tryParse(_gradYearController.text) ?? 2025;
 
     if (newUsername != _originalUsername) {
-      final userQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('username', isEqualTo: newUsername)
-          .limit(1)
-          .get();
+      final userQuery = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: newUsername).limit(1).get();
       if (userQuery.docs.isNotEmpty && userQuery.docs.first.id != uid) {
         _showSnack('Sorry, that username is taken.');
         return;
@@ -706,67 +672,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               }
             },
             child: SafeArea(
-  child: Column(
-    children: [
-      // New top row with dark mode toggle and settings button
-      Padding(@override
-Widget build(BuildContext context) {
-  return FutureBuilder<Map<String, dynamic>>(
-    future: _combinedFuture,
-    builder: (ctx, snapshot) {
-      if (!snapshot.hasData && !snapshot.hasError) {
-        _isLoadingPage = true;
-        return _buildFancyLoading();
-      }
-      if (snapshot.hasError) {
-        return Scaffold(
-          backgroundColor: Colors.red,
-          body: Center(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                "Error: ${snapshot.error}\nStack: ${snapshot.stackTrace}",
-                style: const TextStyle(
-                  color: Colors.yellow,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        );
-      }
-
-      _isLoadingPage = false;
-      final profileData = snapshot.data!["profile"] as _ProfileAndCommunities;
-      final chatData = snapshot.data!["chats"] as List<ChatConversation>;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkDayOneBadge(profileData.badges);
-      });
-
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: _bgColor,
-        endDrawer: _buildMinimalSettingsDrawer(context),
-        bottomNavigationBar: _isLoadingPage ? null : _buildFloatingFooter(context, profileData),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            setState(() {
-              _combinedFuture = _loadAllData();
-            });
-            await _combinedFuture;
-          },
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (_selectedChatId != null) {
-                setState(() => _selectedChatId = null);
-              }
-            },
-            child: SafeArea(
               child: Column(
                 children: [
                   // New top row with dark mode toggle and settings button
@@ -802,79 +707,42 @@ Widget build(BuildContext context) {
               ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
-
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            _buildDarkModeToggle(),
-            const SizedBox(width: 8),
-            _buildSettingsButton(),
-          ],
-        ),
-      ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        children: [
-                          _buildTopProfileContainer(profileData),
-                          _buildPrivateMessagesSection(profileData, chatData),
-                          _buildShadowDivider(),
-                          const SizedBox(height: 20),
-                          _buildCommunitiesLabelAndSearch(),
-                          const SizedBox(height: 16),
-                          _buildCommunitiesSection(profileData),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         );
       },
     );
   }
 
-Widget _buildDarkModeToggle() {
-  return Container(
-    decoration: BoxDecoration(
-      color: _isDarkMode ? Colors.black54 : Colors.white,
-      borderRadius: BorderRadius.circular(15),
-    ),
-    child: IconButton(
-      icon: Icon(
-        _isDarkMode ? Icons.nights_stay : Icons.wb_sunny,
-        color: _isDarkMode ? Colors.white : Colors.black87,
+  Widget _buildDarkModeToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _isDarkMode ? Colors.black54 : Colors.white,
+        borderRadius: BorderRadius.circular(15),
       ),
-      onPressed: _toggleDarkMode,
-    ),
-  );
-}
+      child: IconButton(
+        icon: Icon(
+          _isDarkMode ? Icons.nights_stay : Icons.wb_sunny,
+          color: _isDarkMode ? Colors.white : Colors.black87,
+        ),
+        onPressed: _toggleDarkMode,
+      ),
+    );
+  }
 
-Widget _buildSettingsButton() {
-  return Container(
-    decoration: BoxDecoration(
-      color: _isDarkMode ? Colors.black54 : Colors.white,
-      borderRadius: BorderRadius.circular(15),
-    ),
-    child: IconButton(
-      icon: Icon(
-        Icons.settings,
-        color: _isDarkMode ? Colors.white : Colors.black87,
+  Widget _buildSettingsButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _isDarkMode ? Colors.black54 : Colors.white,
+        borderRadius: BorderRadius.circular(15),
       ),
-      onPressed: _openSettings,
-    ),
-  );
-}
+      child: IconButton(
+        icon: Icon(
+          Icons.settings,
+          color: _isDarkMode ? Colors.white : Colors.black87,
+        ),
+        onPressed: _openSettings,
+      ),
+    );
+  }
 
   Widget _buildMinimalSettingsDrawer(BuildContext context) {
     return Container(
@@ -1568,12 +1436,14 @@ Widget _buildSettingsButton() {
         }
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => ChatPage(
-            chatId: chat.chatId,
-            otherUserId: chat.otherUserId,
-            otherUserName: chat.otherUserName,
-            otherUserPhotoUrl: chat.otherUserPhotoUrl,
-          )),
+          MaterialPageRoute(
+            builder: (_) => ChatPage(
+              chatId: chat.chatId,
+              otherUserId: chat.otherUserId,
+              otherUserName: chat.otherUserName,
+              otherUserPhotoUrl: chat.otherUserPhotoUrl,
+            ),
+          ),
         );
       },
       child: Container(
@@ -1978,21 +1848,20 @@ Widget _buildSettingsButton() {
                             color: _isDarkMode ? Colors.white : Colors.black87,
                           ),
                         ),
-                      const SizedBox(height: 6),
-                      // For class groups, format the description info (e.g. "Professor, Section, Days")
+                      const SizedBox(height: 4),
                       if (isClassGroup)
                         Text(
                           _formatClassInfo(description),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
+                          style: TextStyle(fontSize: 12, color: _isDarkMode ? Colors.white70 : Colors.black87),
                         )
                       else
                         Text(
                           description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
+                          style: TextStyle(fontSize: 12, color: _isDarkMode ? Colors.white70 : Colors.black87),
                         ),
                       const SizedBox(height: 12),
                     ],
@@ -2008,10 +1877,10 @@ Widget _buildSettingsButton() {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: _isDarkMode ? Colors.white70 : Colors.black87,
-                          width: 1.4,
+                          width: 1.2,
                         ),
                       ),
-                      child: Icon(Icons.open_in_new, color: _isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black.withOpacity(0.9), size: 18),
+                      child: Icon(Icons.open_in_new, size: 14, color: _isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black.withOpacity(0.9)),
                     ),
                   ),
                 ),
@@ -2194,22 +2063,7 @@ Widget _buildSettingsButton() {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 12, color: _isDarkMode ? Colors.white70 : Colors.black87),
                           ),
-                        const Spacer(),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _isDarkMode ? Colors.white70 : Colors.black87,
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Icon(Icons.open_in_new, size: 14, color: _isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black.withOpacity(0.9)),
-                          ),
-                        ),
+                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
