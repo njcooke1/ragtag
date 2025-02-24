@@ -1667,39 +1667,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   // ---------------------------------------------------------------------------
-  //  New: Report message flow.
-  // ---------------------------------------------------------------------------
-  Future<void> _submitMessageReport(String messageId, String category, String details) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must be logged in to report.')));
-      return;
-    }
-    try {
-      await FirebaseFirestore.instance.collection('messageReports').add({
-        'forumId': widget.communityId,
-        'messageId': messageId,
-        'reporterId': user.uid,
-        'timestamp': FieldValue.serverTimestamp(),
-        'category': category,
-        'details': details,
-      });
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Report Received'),
-          content: const Text('Thank you. We will review your report and take action within 24 hours.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-          ],
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report failed: $e')));
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   //  New: Block user from chat.
   // ---------------------------------------------------------------------------
   Future<void> _blockUserFromChat(String userId) async {
