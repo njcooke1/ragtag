@@ -71,6 +71,17 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
+ Future<List<String>> _fetchBlockedUserIds() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return [];
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+    final blockedList = userDoc.data()?['Blocked'] as List<dynamic>? ?? [];
+    return blockedList.map((e) => e.toString()).toList();
+  }
+
   bool _isDarkMode = true;
   bool _isLoadingPage = true;
 
@@ -303,14 +314,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         _combinedFuture = _loadAllData();
       });
       await _combinedFuture;
-    }
-
-    Future<List<String>> _fetchBlockedUserIds() async {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return [];
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-      final blockedList = userDoc.data()?['Blocked'] as List<dynamic>? ?? [];
-      return blockedList.map((e) => e.toString()).toList();
     }
 
     final fullName = data['fullName'] as String? ?? 'No Name';
