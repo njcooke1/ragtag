@@ -529,7 +529,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   void _pickImage() async {
     showModalBottomSheet(
       context: context,
-      backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -539,12 +539,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             ListTile(
               leading: Icon(
                 Icons.camera_alt,
-                color: _isDarkMode ? Colors.tealAccent : Colors.blueGrey,
+                color: isDarkMode ? Colors.tealAccent : Colors.blueGrey,
               ),
               title: Text(
                 'Take a photo',
                 style: GoogleFonts.workSans(
-                  color: _isDarkMode ? Colors.white70 : Colors.black87,
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
                 ),
               ),
               onTap: () {
@@ -555,12 +555,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             ListTile(
               leading: Icon(
                 Icons.photo_library,
-                color: _isDarkMode ? Colors.tealAccent : Colors.blueGrey,
+                color: isDarkMode ? Colors.tealAccent : Colors.blueGrey,
               ),
               title: Text(
                 'Choose from Gallery',
                 style: GoogleFonts.workSans(
-                  color: _isDarkMode ? Colors.white70 : Colors.black87,
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
                 ),
               ),
               onTap: () {
@@ -1491,94 +1491,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  Widget _buildChatList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('openForums')
-          .doc(widget.communityId)
-          .collection('messages')
-          .orderBy('timestamp')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text("Error loading chat."));
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final docs = snapshot.data?.docs ?? [];
-        DateTime? previousDate;
-        final List<Widget> messageWidgets = [];
-
-        for (var i = 0; i < docs.length; i++) {
-          final doc = docs[i];
-          final data = doc.data() as Map<String, dynamic>;
-          final ts = data['timestamp'] as Timestamp?;
-          if (ts != null) {
-            final date = DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
-            final justDate = DateTime(date.year, date.month, date.day);
-            if (previousDate == null || justDate != previousDate) {
-              messageWidgets.add(_buildDateDivider(date));
-              previousDate = justDate;
-            }
-          }
-          messageWidgets.add(_buildChatBubble(doc));
-        }
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients) {
-            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-          }
-        });
-
-        return ListView(
-          controller: _scrollController,
-          padding: const EdgeInsets.only(bottom: 8),
-          children: [
-            _buildPinnedMessages(),
-            ...messageWidgets,
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDayDivider(DateTime date) {
-    final dayString = "${_weekdayName(date.weekday)}, ${_monthName(date.month)} ${date.day}, ${date.year}";
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Divider(thickness: 1, color: isDarkMode ? Colors.grey[600] : Colors.grey[400]),
-          ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFFFAF7B), Color(0xFFD76D77)]),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(dayString, style: GoogleFonts.workSans(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-          ),
-          Expanded(
-            child: Divider(thickness: 1, color: isDarkMode ? Colors.grey[600] : Colors.grey[400]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _weekdayName(int weekday) {
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    return days[weekday - 1];
-  }
-
-  String _monthName(int month) {
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    return months[month - 1];
-  }
-
   // ---------------------------------------------------------------------------
   //  New: Anonymous helper
   // ---------------------------------------------------------------------------
@@ -1667,25 +1579,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   // ---------------------------------------------------------------------------
-  //  New: Block user from chat.
-  // ---------------------------------------------------------------------------
-  Future<void> _blockUserFromChat(String userId) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must be logged in to block.')));
-      return;
-    }
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
-        'Blocked': FieldValue.arrayUnion([userId]),
-      });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User blocked.')));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error blocking user: $e')));
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   //  New: Delete dialog (reuse existing)
   // ---------------------------------------------------------------------------
   void _showDeleteDialog(String docId, bool isOwnMessage) {
@@ -1736,97 +1629,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
         .doc(docId)
         .delete();
   }
-
-  // ---------------------------------------------------------------------------
-  // 15) BOTTOM MESSAGE FIELD
-  // ---------------------------------------------------------------------------
-  Widget _buildBottomMessageField() {
-    return Container(
-      color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_selectedImage != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        File(_selectedImage!.path),
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(() => _selectedImage = null),
-                    icon: Icon(Icons.close, color: isDarkMode ? Colors.white : Colors.black87),
-                  ),
-                ],
-              ),
-            ),
-          Row(
-            children: [
-              InkWell(
-                onTap: _pickImageFromGallery,
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.blueGrey[400] : Colors.blueGrey[700],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.attachment_rounded, color: isDarkMode ? Colors.black : Colors.white, size: 20),
-                ),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _msgController,
-                  style: GoogleFonts.workSans(color: isDarkMode ? Colors.white : Colors.black87),
-                  decoration: InputDecoration(
-                    hintText: 'Type a message...',
-                    hintStyle: GoogleFonts.workSans(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
-                    filled: true,
-                    fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              InkWell(
-                onTap: _sendMessage,
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFfc4a1a), Color(0xFFf7b733)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.send, color: isDarkMode ? Colors.black87 : Colors.white, size: 20),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 Widget _buildFilteredChatList() {
   return StreamBuilder<QuerySnapshot>(
