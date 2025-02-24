@@ -706,9 +706,118 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
               }
             },
             child: SafeArea(
+  child: Column(
+    children: [
+      // New top row with dark mode toggle and settings button
+      Padding(@override
+Widget build(BuildContext context) {
+  return FutureBuilder<Map<String, dynamic>>(
+    future: _combinedFuture,
+    builder: (ctx, snapshot) {
+      if (!snapshot.hasData && !snapshot.hasError) {
+        _isLoadingPage = true;
+        return _buildFancyLoading();
+      }
+      if (snapshot.hasError) {
+        return Scaffold(
+          backgroundColor: Colors.red,
+          body: Center(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                "Error: ${snapshot.error}\nStack: ${snapshot.stackTrace}",
+                style: const TextStyle(
+                  color: Colors.yellow,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+      }
+
+      _isLoadingPage = false;
+      final profileData = snapshot.data!["profile"] as _ProfileAndCommunities;
+      final chatData = snapshot.data!["chats"] as List<ChatConversation>;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkDayOneBadge(profileData.badges);
+      });
+
+      return Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: _bgColor,
+        endDrawer: _buildMinimalSettingsDrawer(context),
+        bottomNavigationBar: _isLoadingPage ? null : _buildFloatingFooter(context, profileData),
+        body: RefreshIndicator(
+          onRefresh: () async {
+            setState(() {
+              _combinedFuture = _loadAllData();
+            });
+            await _combinedFuture;
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              if (_selectedChatId != null) {
+                setState(() => _selectedChatId = null);
+              }
+            },
+            child: SafeArea(
               child: Column(
                 children: [
-                  // ... your top row, etc.
+                  // New top row with dark mode toggle and settings button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _buildDarkModeToggle(),
+                        const SizedBox(width: 8),
+                        _buildSettingsButton(),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          _buildTopProfileContainer(profileData),
+                          _buildPrivateMessagesSection(profileData, chatData),
+                          _buildShadowDivider(),
+                          const SizedBox(height: 20),
+                          _buildCommunitiesLabelAndSearch(),
+                          const SizedBox(height: 16),
+                          _buildCommunitiesSection(profileData),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            _buildDarkModeToggle(),
+            const SizedBox(width: 8),
+            _buildSettingsButton(),
+          ],
+        ),
+      ),
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -734,6 +843,38 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       },
     );
   }
+
+Widget _buildDarkModeToggle() {
+  return Container(
+    decoration: BoxDecoration(
+      color: _isDarkMode ? Colors.black54 : Colors.white,
+      borderRadius: BorderRadius.circular(15),
+    ),
+    child: IconButton(
+      icon: Icon(
+        _isDarkMode ? Icons.nights_stay : Icons.wb_sunny,
+        color: _isDarkMode ? Colors.white : Colors.black87,
+      ),
+      onPressed: _toggleDarkMode,
+    ),
+  );
+}
+
+Widget _buildSettingsButton() {
+  return Container(
+    decoration: BoxDecoration(
+      color: _isDarkMode ? Colors.black54 : Colors.white,
+      borderRadius: BorderRadius.circular(15),
+    ),
+    child: IconButton(
+      icon: Icon(
+        Icons.settings,
+        color: _isDarkMode ? Colors.white : Colors.black87,
+      ),
+      onPressed: _openSettings,
+    ),
+  );
+}
 
   Widget _buildMinimalSettingsDrawer(BuildContext context) {
     return Container(
