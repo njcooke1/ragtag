@@ -298,6 +298,21 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     final data = userDocSnap.data() ?? {};
 
+    Future<void> _refreshPage() async {
+  setState(() {
+    _combinedFuture = _loadAllData();
+  });
+  await _combinedFuture;
+}
+
+    Future<List<String>> _fetchBlockedUserIds() async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return [];
+  final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+  final blockedList = userDoc.data()?['Blocked'] as List<dynamic>? ?? [];
+  return blockedList.map((e) => e.toString()).toList();
+}
+
     final fullName = data['fullName'] as String? ?? 'No Name';
     final username = data['username'] as String? ?? 'no_username';
     final photoUrl = data['photoUrl'] as String? ?? '';
@@ -355,39 +370,42 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     return combinedSet.toList();
   }
 
-  Future<List<ChatConversation>> _fetchUserChats() async {
-    if (_currentUser == null) return [];
-    final uid = _currentUser!.uid;
+Future<List<ChatConversation>> _fetchUserChats() async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return [];
+  final blockedUserIds = await _fetchBlockedUserIds();
+  final uid = currentUser.uid;
+  final querySnapshot = await FirebaseFirestore.instance
+      .collection('chats')
+      .where('participants', arrayContains: uid)
+      .get();
 
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('chats')
-        .where('participants', arrayContains: uid)
-        .get();
-
-    List<ChatConversation> chats = [];
-    for (var doc in querySnapshot.docs) {
-      final data = doc.data();
-      final participants = data['participants'] as List<dynamic>? ?? [];
-      String otherUserId = '';
-      for (String p in participants.cast<String>()) {
-        if (p != uid) {
-          otherUserId = p;
-          break;
-        }
-      }
-      if (otherUserId.isNotEmpty) {
-        final otherUserDoc = await FirebaseFirestore.instance.collection('users').doc(otherUserId).get();
-        final otherUserData = otherUserDoc.data() ?? {};
-        chats.add(ChatConversation(
-          chatId: doc.id,
-          otherUserId: otherUserId,
-          otherUserName: otherUserData['username'] ?? 'UnknownUser',
-          otherUserPhotoUrl: otherUserData['photoUrl'] ?? '',
-        ));
+  List<ChatConversation> chats = [];
+  for (var doc in querySnapshot.docs) {
+    final data = doc.data();
+    final participants = data['participants'] as List<dynamic>? ?? [];
+    String otherUserId = '';
+    for (var p in participants.cast<String>()) {
+      if (p != uid) {
+        otherUserId = p;
+        break;
       }
     }
-    return chats;
+    // Skip if the other user is blocked.
+    if (blockedUserIds.contains(otherUserId)) continue;
+    if (otherUserId.isNotEmpty) {
+      final otherUserDoc = await FirebaseFirestore.instance.collection('users').doc(otherUserId).get();
+      final otherUserData = otherUserDoc.data() ?? {};
+      chats.add(ChatConversation(
+        chatId: doc.id,
+        otherUserId: otherUserId,
+        otherUserName: otherUserData['username'] ?? 'UnknownUser',
+        otherUserPhotoUrl: otherUserData['photoUrl'] ?? '',
+      ));
+    }
   }
+  return chats;
+}
 
   void _toggleEditProfile() {
     setState(() {
@@ -673,67 +691,43 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
         });
 
         return Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: _bgColor,
-          endDrawer: _buildMinimalSettingsDrawer(context),
-          bottomNavigationBar: _isLoadingPage ? null : _buildFloatingFooter(context, profileData),
-          body: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (_selectedChatId != null) {
-                setState(() => _selectedChatId = null);
-              }
-            },
-            child: SafeArea(
+  key: _scaffoldKey,
+  backgroundColor: _bgColor,
+  endDrawer: _buildMinimalSettingsDrawer(context),
+  bottomNavigationBar: _isLoadingPage ? null : _buildFloatingFooter(context, profileData),
+  body: GestureDetector(
+    behavior: HitTestBehavior.translucent,
+    onTap: () {
+      if (_selectedChatId != null) {
+        setState(() => _selectedChatId = null);
+      }
+    },
+    child: SafeArea(
+      child: Column(
+        children: [
+          // ... your top row, etc.
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          _isDarkMode ? Icons.nights_stay : Icons.wb_sunny,
-                          color: _isDarkMode ? Colors.white : Colors.black87,
-                        ),
-                        onPressed: _toggleDarkMode,
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.settings,
-                          color: _isDarkMode ? Colors.white : Colors.black87,
-                        ),
-                        onPressed: _openSettings,
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 20),
-                          _buildTopProfileContainer(profileData),
-                          const SizedBox(height: 20),
-                          _buildPrivateMessagesSection(profileData, chatData),
-                          _buildShadowDivider(),
-                          const SizedBox(height: 20),
-                          _buildCommunitiesLabelAndSearch(),
-                          const SizedBox(height: 16),
-                          _buildCommunitiesSection(profileData),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
-                  ),
+                  _buildTopProfileContainer(profileData),
+                  _buildPrivateMessagesSection(profileData, chatData),
+                  _buildShadowDivider(),
+                  const SizedBox(height: 20),
+                  _buildCommunitiesLabelAndSearch(),
+                  const SizedBox(height: 16),
+                  _buildCommunitiesSection(profileData),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ],
+      ),
+    ),
+  ),
+);
 
   Widget _buildMinimalSettingsDrawer(BuildContext context) {
     return Container(

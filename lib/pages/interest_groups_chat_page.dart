@@ -52,6 +52,9 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
   // For pinned messages
   List<DocumentSnapshot> _pinnedMessages = [];
 
+  // For Blocking Users
+  List<String> _blockedUserIds = [];
+
   // For animations
   late AnimationController _heroController;
   late Animation<double> _heroAnimation;
@@ -78,6 +81,24 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
       setState(() => _censorActive = isCensorOn);
     });
   }
+
+  void _listenToBlockedUsers() {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser != null) {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .snapshots()
+        .listen((docSnapshot) {
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data();
+        setState(() {
+          _blockedUserIds = List<String>.from(data?['Blocked'] ?? []);
+        });
+      }
+    });
+  }
+}
 
   Future<void> _toggleCensor(bool newVal) async {
     await FirebaseFirestore.instance
@@ -124,12 +145,15 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
   void initState() {
     super.initState();
 
-    // Check admin + pfp
+    // Check admin + fetch group data
     _checkIfAdmin();
     _fetchGroupData();
 
     // Listen for censor changes
     _listenToCensor();
+
+    // Listen for blocked users updates
+    _listenToBlockedUsers();
 
     _heroController = AnimationController(
       vsync: this,
@@ -542,18 +566,18 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
         : null;
 
     Widget pinnedIcon() => Positioned(
-      top: 6,
-      right: 6,
-      child: Icon(
-        Icons.push_pin,
-        color: Colors.amber[300],
-        size: 16,
-      ),
-    );
+          top: 6,
+          right: 6,
+          child: Icon(
+            Icons.push_pin,
+            color: Colors.amber[300],
+            size: 16,
+          ),
+        );
 
-    // If it's me, use a semi-transparent deep sunset orange
+    // If it's me, use a semi-transparent deep sunset orange; otherwise use a dark/light grey.
     final bubbleColor = isMe
-        ? const Color(0xBBFC4A1A) // deep + partial transparency
+        ? const Color(0xBBFC4A1A)
         : (_isDarkMode ? Colors.grey[800] : Colors.grey[300]);
 
     Widget bubbleContent() {
@@ -626,67 +650,7 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
 
     return GestureDetector(
       onLongPress: () {
-        if (isMe || _isAdmin) {
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
-            builder: (_) => SafeArea(
-              child: Wrap(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.delete, color: Colors.redAccent),
-                    title: Text(
-                      isMe ? 'Delete Message' : 'Remove Message',
-                      style: GoogleFonts.workSans(
-                        color: _isDarkMode ? Colors.white70 : Colors.black87,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _showDeleteDialog(doc.id, isMe);
-                    },
-                  ),
-                  if (!pinned)
-                    ListTile(
-                      leading: Icon(
-                        Icons.push_pin,
-                        color:
-                            _isDarkMode ? Colors.tealAccent : Colors.blueGrey,
-                      ),
-                      title: Text(
-                        'Pin Message',
-                        style: GoogleFonts.workSans(
-                          color: _isDarkMode ? Colors.white70 : Colors.black87,
-                        ),
-                      ),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _pinMessage(doc.id);
-                      },
-                    )
-                  else
-                    ListTile(
-                      leading: Icon(
-                        Icons.push_pin_outlined,
-                        color:
-                            _isDarkMode ? Colors.tealAccent : Colors.blueGrey,
-                      ),
-                      title: Text(
-                        'Unpin Message',
-                        style: GoogleFonts.workSans(
-                          color: _isDarkMode ? Colors.white70 : Colors.black87,
-                        ),
-                      ),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _unpinMessage(doc.id);
-                      },
-                    ),
-                ],
-              ),
-            ),
-          );
-        }
+        _showMessageOptions(doc, isMe);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -698,8 +662,7 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
             if (!isMe) ...[
               CircleAvatar(
                 radius: 20,
-                backgroundColor:
-                    pinned ? Colors.tealAccent : Colors.grey.shade800,
+                backgroundColor: pinned ? Colors.tealAccent : Colors.grey.shade800,
                 backgroundImage: profileImageUrl.isNotEmpty
                     ? NetworkImage(profileImageUrl)
                     : null,
@@ -717,7 +680,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
             ],
             Flexible(
               child: Container(
-                // This keeps the bubble from elongating unboundedly
                 constraints: const BoxConstraints(maxWidth: 280),
                 decoration: BoxDecoration(
                   color: bubbleColor,
@@ -730,8 +692,7 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 20,
-                backgroundColor:
-                    pinned ? Colors.tealAccent : Colors.grey.shade800,
+                backgroundColor: pinned ? Colors.tealAccent : Colors.grey.shade800,
                 backgroundImage: profileImageUrl.isNotEmpty
                     ? NetworkImage(profileImageUrl)
                     : null,
@@ -753,7 +714,226 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
   }
 
   // ---------------------------------------------------------------------------
-  //  10) PINNED MESSAGES DISPLAY
+  //  New: Show message options on long-press.
+  // ---------------------------------------------------------------------------
+  void _showMessageOptions(DocumentSnapshot doc, bool isMe) {
+    final data = doc.data() as Map<String, dynamic>;
+    final bool pinned = data['pinned'] ?? false;
+    final senderUid = data['senderUid'] ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            if (!isMe) ...[
+              ListTile(
+                leading: const Icon(Icons.flag, color: Colors.redAccent),
+                title: const Text('Report Message',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showReportMessageDialog(doc);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.orangeAccent),
+                title: const Text('Block User',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _blockUserFromChat(senderUid);
+                },
+              ),
+            ],
+            if (isMe || _isAdmin) ...[
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.redAccent),
+                title: Text(
+                  isMe ? 'Delete Message' : 'Remove Message',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showDeleteDialog(doc.id, isMe);
+                },
+              ),
+              if (!pinned)
+                ListTile(
+                  leading: Icon(Icons.push_pin,
+                      color: _isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                  title: const Text('Pin Message',
+                      style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pinMessage(doc.id);
+                  },
+                )
+              else
+                ListTile(
+                  leading: Icon(Icons.push_pin_outlined,
+                      color: _isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                  title: const Text('Unpin Message',
+                      style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _unpinMessage(doc.id);
+                  },
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Report message flow.
+  // ---------------------------------------------------------------------------
+  void _showReportMessageDialog(DocumentSnapshot doc) {
+    final List<String> reportCategories = [
+      "Hate Speech",
+      "Harassment",
+      "Spam",
+      "NSFW Content",
+      "Impersonation",
+    ];
+    String selectedCategory = reportCategories.first;
+    final TextEditingController additionalDetails = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Report Message"),
+          content: StatefulBuilder(
+            builder: (context, setStateSB) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Select a reason for reporting this message:",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButton<String>(
+                    value: selectedCategory,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onChanged: (val) {
+                      if (val != null) setStateSB(() => selectedCategory = val);
+                    },
+                    items: reportCategories
+                        .map((cat) => DropdownMenuItem(
+                              value: cat,
+                              child: Text(cat),
+                            ))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: additionalDetails,
+                    decoration: const InputDecoration(
+                      hintText: "Additional details (optional)",
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "We will review this message and take action within 24 hours.",
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _submitMessageReport(
+                  doc.id,
+                  selectedCategory,
+                  additionalDetails.text.trim(),
+                );
+              },
+              child: const Text("Submit Report"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitMessageReport(
+      String messageId, String category, String details) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to report.')),
+      );
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('messageReports').add({
+        'groupId': widget.communityId,
+        'messageId': messageId,
+        'reporterId': user.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+        'category': category,
+        'details': details,
+      });
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Report Received'),
+          content: const Text(
+              'Thank you. We will review your report and take action within 24 hours.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report failed: $e')),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Block user from chat.
+  // ---------------------------------------------------------------------------
+  Future<void> _blockUserFromChat(String userId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to block.')),
+      );
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+        'Blocked': FieldValue.arrayUnion([userId]),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User blocked.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error blocking user: $e')),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 10) PINNED MESSAGES DISPLAY
   // ---------------------------------------------------------------------------
   Widget _buildPinnedMessages() {
     if (_pinnedMessages.isEmpty) return const SizedBox.shrink();
@@ -772,8 +952,7 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
             ),
           ),
         ),
-        for (var doc in _pinnedMessages)
-          _buildPinnedCard(doc),
+        for (var doc in _pinnedMessages) _buildPinnedCard(doc),
       ],
     );
   }
@@ -784,7 +963,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
     final senderUid = data['senderUid'] ?? '';
     final pinned = data['pinned'] == true;
     final timestamp = data['timestamp'] as Timestamp?;
-
     final user = FirebaseAuth.instance.currentUser;
     final isMe = (user != null && user.uid == senderUid);
 
@@ -808,126 +986,128 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
   }
 
   // ---------------------------------------------------------------------------
-  //  11) MESSAGES LIST
+  // 11) MESSAGES LIST
   // ---------------------------------------------------------------------------
-  Widget _buildMessagesList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('interestGroups')
-          .doc(widget.communityId)
-          .collection('messages')
-          .orderBy('timestamp', descending: false)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Error loading messages'));
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+Widget _buildMessagesList() {
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('interestGroups')
+        .doc(widget.communityId)
+        .collection('messages')
+        .orderBy('timestamp', descending: false)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return const Center(child: Text('Error loading messages'));
+      }
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-        final docs = snapshot.data?.docs ?? [];
-        if (docs.isEmpty) {
-          return Center(
-            child: Text(
-              'No messages yet. Start the conversation!',
-              style: GoogleFonts.workSans(
-                color: _isDarkMode ? Colors.white70 : Colors.black54,
-              ),
+      final docs = snapshot.data?.docs ?? [];
+      if (docs.isEmpty) {
+        return Center(
+          child: Text(
+            'No messages yet. Start the conversation!',
+            style: GoogleFonts.workSans(
+              color: _isDarkMode ? Colors.white70 : Colors.black54,
             ),
-          );
-        }
-
-        _pinnedMessages = docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return (data['pinned'] ?? false) == true;
-        }).toList();
-
-        List<DocumentSnapshot> normalMessages = docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return (data['pinned'] ?? false) == false;
-        }).toList();
-
-        // Search filter
-        if (_searchQuery.isNotEmpty) {
-          normalMessages = normalMessages.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final msgType = data['type'] ?? 'text';
-            final msgText = data['text'] ?? '';
-            if (msgType == 'image') return false;
-            return msgText.toLowerCase().contains(_searchQuery.toLowerCase());
-          }).toList();
-        }
-
-        final List<Widget> messageWidgets = [];
-        String? lastDateStr;
-
-        for (int i = 0; i < normalMessages.length; i++) {
-          final doc = normalMessages[i];
-          final data = doc.data() as Map<String, dynamic>;
-          final senderUid = data['senderUid'] ?? '';
-          final senderName = data['senderName'] ?? '';
-          final pinned = data['pinned'] == true;
-          final timestamp = data['timestamp'] as Timestamp?;
-
-          final user = FirebaseAuth.instance.currentUser;
-          final isMe = (user != null && user.uid == senderUid);
-
-          bool showName = true;
-          if (i > 0) {
-            final prevDoc = normalMessages[i - 1];
-            final prevData = prevDoc.data() as Map<String, dynamic>;
-            if (prevData['senderUid'] == senderUid) {
-              showName = false;
-            }
-          }
-
-          // Possibly add day divider
-          if (timestamp != null) {
-            final date = DateTime.fromMillisecondsSinceEpoch(
-              timestamp.millisecondsSinceEpoch,
-            );
-            final currentDateStr = DateFormat('yyyy-MM-dd').format(date);
-            if (currentDateStr != lastDateStr) {
-              messageWidgets.add(_buildDateDivider(date));
-              lastDateStr = currentDateStr;
-            }
-          }
-
-          messageWidgets.add(
-            _buildMessageBubble(
-              doc: doc,
-              senderName: senderName,
-              isMe: isMe,
-              showName: showName,
-              timestamp: timestamp,
-              pinned: pinned,
-            ),
-          );
-        }
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients) {
-            _scrollController.jumpTo(
-              _scrollController.position.maxScrollExtent,
-            );
-          }
-        });
-
-        return ListView(
-          controller: _scrollController,
-          padding: const EdgeInsets.only(bottom: 4),
-          children: [
-            _buildPinnedMessages(),
-            ...messageWidgets,
-          ],
+          ),
         );
-      },
-    );
-  }
+      }
+
+      // Pinned messages remain as-is.
+      _pinnedMessages = docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return (data['pinned'] ?? false) == true;
+      }).toList();
+
+      // Filter normal messages: exclude pinned and messages from blocked users.
+      List<DocumentSnapshot> normalMessages = docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final senderUid = data['senderUid'] ?? '';
+        return (data['pinned'] ?? false) == false && !_blockedUserIds.contains(senderUid);
+      }).toList();
+
+      // Apply search filter if a query is active.
+      if (_searchQuery.isNotEmpty) {
+        normalMessages = normalMessages.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final msgType = data['type'] ?? 'text';
+          final msgText = data['text'] ?? '';
+          if (msgType == 'image') return false;
+          return msgText.toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
+      }
+
+      final List<Widget> messageWidgets = [];
+      String? lastDateStr;
+
+      for (int i = 0; i < normalMessages.length; i++) {
+        final doc = normalMessages[i];
+        final data = doc.data() as Map<String, dynamic>;
+        final senderUid = data['senderUid'] ?? '';
+        final senderName = data['senderName'] ?? '';
+        final pinned = data['pinned'] == true;
+        final timestamp = data['timestamp'] as Timestamp?;
+
+        final user = FirebaseAuth.instance.currentUser;
+        final isMe = (user != null && user.uid == senderUid);
+
+        bool showName = true;
+        if (i > 0) {
+          final prevDoc = normalMessages[i - 1];
+          final prevData = prevDoc.data() as Map<String, dynamic>;
+          if (prevData['senderUid'] == senderUid) {
+            showName = false;
+          }
+        }
+
+        if (timestamp != null) {
+          final date = DateTime.fromMillisecondsSinceEpoch(
+            timestamp.millisecondsSinceEpoch,
+          );
+          final currentDateStr = DateFormat('yyyy-MM-dd').format(date);
+          if (currentDateStr != lastDateStr) {
+            messageWidgets.add(_buildDateDivider(date));
+            lastDateStr = currentDateStr;
+          }
+        }
+
+        messageWidgets.add(
+          _buildMessageBubble(
+            doc: doc,
+            senderName: senderName,
+            isMe: isMe,
+            showName: showName,
+            timestamp: timestamp,
+            pinned: pinned,
+          ),
+        );
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(
+            _scrollController.position.maxScrollExtent,
+          );
+        }
+      });
+
+      return ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(bottom: 4),
+        children: [
+          _buildPinnedMessages(),
+          ...messageWidgets,
+        ],
+      );
+    },
+  );
+}
 
   // ---------------------------------------------------------------------------
-  //  12) TOP BAR
+  // 12) TOP BAR
   // ---------------------------------------------------------------------------
   void _showCensorToggleSheet() {
     showModalBottomSheet(
@@ -960,7 +1140,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
   }
 
   Widget _buildTopBar() {
-    // If user tapped “search,” show the search field
     if (_isSearching) {
       return Container(
         padding: const EdgeInsets.only(top: 48, bottom: 16, left: 16, right: 16),
@@ -1001,14 +1180,11 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
         ),
       );
     }
-
-    // Otherwise a single row with back, community name, optional shield, and search
     return Container(
       color: _isDarkMode ? Colors.grey[900] : Colors.white,
       padding: const EdgeInsets.only(top: 48, bottom: 16, left: 16, right: 16),
       child: Row(
         children: [
-          // Back
           InkWell(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
@@ -1024,8 +1200,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
             ),
           ),
           const SizedBox(width: 8),
-
-          // Title
           Expanded(
             child: Text(
               widget.communityName,
@@ -1036,8 +1210,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
               ),
             ),
           ),
-
-          // If admin, show censor button
           if (_isAdmin) ...[
             InkWell(
               onTap: _showCensorToggleSheet,
@@ -1057,8 +1229,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
               ),
             ),
           ],
-
-          // Search
           InkWell(
             onTap: () => setState(() => _isSearching = true),
             child: Container(
@@ -1079,7 +1249,7 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
   }
 
   // ---------------------------------------------------------------------------
-  //  13) MESSAGE COMPOSER (sunset orange gradient for attachment & send)
+  // 13) MESSAGE COMPOSER (sunset orange gradient for attachment & send)
   // ---------------------------------------------------------------------------
   Widget _buildMessageComposer() {
     return Container(
@@ -1115,7 +1285,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
             ),
           Row(
             children: [
-              // Attachment button with sunset orange gradient
               InkWell(
                 onTap: _pickImage,
                 child: Container(
@@ -1124,8 +1293,8 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFFfc4a1a),  // deeper orange
-                        Color(0xFFf7b733), // lighter golden
+                        Color(0xFFfc4a1a),
+                        Color(0xFFf7b733),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1139,8 +1308,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
                   ),
                 ),
               ),
-
-              // Text field
               Expanded(
                 child: TextField(
                   controller: _messageController,
@@ -1165,8 +1332,6 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
                 ),
               ),
               const SizedBox(width: 8),
-
-              // Send button with sunset orange gradient
               InkWell(
                 onTap: _sendMessage,
                 child: Container(
@@ -1197,7 +1362,7 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
   }
 
   // ---------------------------------------------------------------------------
-  //  BUILD
+  // 14) BUILD
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
@@ -1208,13 +1373,8 @@ class _InterestGroupChatPageState extends State<InterestGroupChatPage>
           opacity: _fadeController,
           child: Column(
             children: [
-              // Minimal row top bar
               _buildTopBar(),
-
-              // Messages
               Expanded(child: _buildMessagesList()),
-
-              // Composer
               _buildMessageComposer(),
             ],
           ),

@@ -29,9 +29,28 @@ class _ClubChatPageState extends State<ClubChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+
   bool _isAdmin = false;
   bool _isTyping = false;
   bool _isUploadingImage = false;
+
+  void _listenToBlockedUsers() {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser != null) {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .snapshots()
+        .listen((docSnapshot) {
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data();
+        setState(() {
+          _blockedUserIds = List<String>.from(data?['Blocked'] ?? []);
+        });
+      }
+    });
+  }
+}
 
   bool _didMarkHere = false;
   List<DocumentSnapshot> _pinnedMessages = [];
@@ -47,6 +66,9 @@ class _ClubChatPageState extends State<ClubChatPage> {
 
   // For potential attendance usage
   List<String> _attendees = [];
+
+  List<String> _blockedUserIds = [];
+
 
   // ---------------------------------------------------------------------------
   // THEME COLORS & BUBBLE STYLING
@@ -65,10 +87,11 @@ class _ClubChatPageState extends State<ClubChatPage> {
   @override
   void initState() {
     super.initState();
-    _checkIfAdmin();   // checks admin from subcollection clubs/{clubId}/admins/{uid}
+    _checkIfAdmin(); // checks admin from clubs/{clubId}/admins/{uid}
     _fetchClubPfpIfNeeded();
     _listenToAttendance();
     _listenToCensor(); // watch for changes to "censorActive" in Firestore
+    _listenToBlockedUsers(); 
   }
 
   @override
@@ -100,8 +123,7 @@ class _ClubChatPageState extends State<ClubChatPage> {
     }
   }
 
-  /// Checks admin status by looking for a doc at:
-  ///   clubs/{clubId}/admins/{userUid}
+  /// Checks admin status by looking for a doc at: clubs/{clubId}/admins/{userUid}
   Future<void> _checkIfAdmin() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -139,7 +161,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
         .get();
 
     final senderName = userDoc.data()?['fullName']?.toString().trim() ?? '';
-    // CHANGED: now reading 'photoUrl' from the user doc
     final senderPhotoUrl = userDoc.data()?['photoUrl']?.toString().trim() ?? '';
 
     await FirebaseFirestore.instance
@@ -213,7 +234,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
           .doc(user.uid)
           .get();
       final senderName = userDoc.data()?['fullName']?.toString().trim() ?? '';
-      // CHANGED: read 'photoUrl' from user doc
       final senderPhotoUrl = userDoc.data()?['photoUrl']?.toString().trim() ?? '';
 
       final fileName = 'chatImages/${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -401,39 +421,16 @@ class _ClubChatPageState extends State<ClubChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 5) CENSORING LISTS
+  // 5) CENSOR LOGIC
   // ---------------------------------------------------------------------------
   final List<String> _badWords = [
-    'fuck', 'fuckyou', 'fucking', 'shit', 'shitty', 'ass', 'asshole', 'jackass', 'dumbass',
-    'bitch', 'bitchy', 'bastard', 'dick', 'dicks', 'dickhead',
-    'cock', 'pussy', 'cunt', 'whore', 'slut', 'slutty', 'douche', 'douchebag',
-    'motherfucker', 'motherfuckin', 'son of a bitch', 'goddamn', 'goddamned',
-    'damn', 'damned', 'piss', 'pissed', 'crapping',
-    'blowjob', 'bj', 'handjob', 'rimjob', 'dildo', 'vibrator',
-    'anal', 'butthole', 'bust a nut', 'jizz', 'ho', 'hoe',
-    // Racial / Ethnic slurs
-    'nigger', 'nigga', 'spic', 'beaner', 'kike', 'chink', 'gook', 'wetback',
-    'raghead', 'towelhead', 'jap', 'cracker',
-    // Homophobic slurs
-    'fag', 'faggot', 'f-a-g', 'g-a-y', 'dyke', 'homo', 'tranny', 'queer',
-    // Ableist / neurodivergent slurs
-    'retard', 'retarded', 'spazz', 'spastic', 'cripple',
-    // Religious-based slurs
-    'christfag', 'bible-basher', 'infidel', 'heathen',
-    // Other identity-based insults
-    'harlot', 'slant', 'slope', 'gypsy',
-    // Violent / Threatening expressions
-    'kill yourself', 'kys', 'die in a hole', 'die in a fire',
-    'i\'ll kill you', 'i\'ll murder you', 'hang yourself',
+    'fuck', 'shit', 'ass', 'bitch', 'bastard', 'dick'
+    // Add more as needed...
   ];
 
   final List<String> _cuteWords = [
-    'bubbles', 'hugs', 'kittens', 'puppies', 'rainbows',
-    'sprinkles', 'cupcakes', 'unicorns', 'cuddles', 'snuggles',
-    'fairy dust', 'pixie wings', 'butterfly kisses', 'marshmallows',
-    'sugarplums', 'stardust', 'confetti', 'daydreams', 'fluff',
-    'sunshine', 'glitter', 'sparkles', 'angel wings', 'cinnamon rolls',
-    'puppy dog tails', 'cotton candy', 'daisies', 'warm cookies', 'rainbow sprinkles',
+    'bubbles', 'hugs', 'kittens', 'puppies', 'rainbows'
+    // Add more as needed...
   ];
 
   final Random _random = Random();
@@ -450,7 +447,7 @@ class _ClubChatPageState extends State<ClubChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 6) MESSAGE BUBBLE
+  // 6) MESSAGE BUBBLE (with robust long-press options)
   // ---------------------------------------------------------------------------
   Widget _buildMessageBubble({
     required DocumentSnapshot doc,
@@ -569,57 +566,15 @@ class _ClubChatPageState extends State<ClubChatPage> {
 
     return GestureDetector(
       onLongPress: () {
-        if (isMe || _isAdmin) {
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: scaffoldBg,
-            builder: (_) => SafeArea(
-              child: Wrap(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.delete, color: Colors.redAccent),
-                    title: Text(
-                      isMe ? 'Delete Message' : 'Remove Message',
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _showDeleteDialog(doc.id, isMe);
-                    },
-                  ),
-                  if (!pinned)
-                    ListTile(
-                      leading: Icon(Icons.push_pin, color: accentColor),
-                      title: const Text('Pin Message',
-                          style: TextStyle(color: Colors.white70)),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _pinMessage(doc.id);
-                      },
-                    )
-                  else
-                    ListTile(
-                      leading: Icon(Icons.push_pin_outlined, color: accentColor),
-                      title: const Text('Unpin Message',
-                          style: TextStyle(color: Colors.white70)),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _unpinMessage(doc.id);
-                      },
-                    ),
-                ],
-              ),
-            ),
-          );
-        }
+        _showMessageOptions(doc, isMe);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment:
+              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Left side avatar if not me
             if (!isMe) ...[
               CircleAvatar(
                 radius: 20,
@@ -645,8 +600,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
                 child: bubbleContent(),
               ),
             ],
-
-            // Right side avatar if me
             if (isMe) ...[
               ConstrainedBox(
                 constraints: BoxConstraints(
@@ -676,6 +629,218 @@ class _ClubChatPageState extends State<ClubChatPage> {
         ),
       ),
     );
+  }
+
+  /// New: Show a robust bottom sheet of options when a message is long-pressed.
+  void _showMessageOptions(DocumentSnapshot doc, bool isMe) {
+    final data = doc.data() as Map<String, dynamic>;
+    final bool pinned = data['pinned'] ?? false;
+    final senderUid = data['senderUid'] ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: scaffoldBg,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            if (!isMe)
+              ListTile(
+                leading: const Icon(Icons.flag, color: Colors.redAccent),
+                title: const Text('Report Message',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showReportMessageDialog(doc);
+                },
+              ),
+            if (!isMe)
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.orangeAccent),
+                title: const Text('Block User',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _blockUserFromChat(senderUid);
+                },
+              ),
+            if (isMe || _isAdmin)
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.redAccent),
+                title: Text(
+                  isMe ? 'Delete Message' : 'Remove Message',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showDeleteDialog(doc.id, isMe);
+                },
+              ),
+            if (isMe || _isAdmin)
+              if (!pinned)
+                ListTile(
+                  leading: Icon(Icons.push_pin, color: accentColor),
+                  title: const Text('Pin Message',
+                      style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pinMessage(doc.id);
+                  },
+                )
+              else
+                ListTile(
+                  leading: Icon(Icons.push_pin_outlined, color: accentColor),
+                  title: const Text('Unpin Message',
+                      style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _unpinMessage(doc.id);
+                  },
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// New: Report message flow.
+  void _showReportMessageDialog(DocumentSnapshot doc) {
+    final List<String> reportCategories = [
+      "Hate Speech",
+      "Harassment",
+      "Spam",
+      "NSFW Content",
+      "Impersonation",
+    ];
+    String selectedCategory = reportCategories.first;
+    final TextEditingController additionalDetails = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Report Message"),
+          content: StatefulBuilder(
+            builder: (context, setStateSB) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Select a reason for reporting this message:",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButton<String>(
+                    value: selectedCategory,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onChanged: (val) {
+                      if (val != null) setStateSB(() => selectedCategory = val);
+                    },
+                    items: reportCategories
+                        .map((cat) => DropdownMenuItem(
+                              value: cat,
+                              child: Text(cat),
+                            ))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: additionalDetails,
+                    decoration: const InputDecoration(
+                      hintText: "Additional details (optional)",
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "We will review this message and take appropriate action within 24 hours.",
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _submitMessageReport(
+                  doc.id,
+                  selectedCategory,
+                  additionalDetails.text.trim(),
+                );
+              },
+              child: const Text("Submit Report"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitMessageReport(
+      String messageId, String category, String details) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to report.')),
+      );
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('messageReports').add({
+        'clubId': widget.clubId,
+        'messageId': messageId,
+        'reporterId': user.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+        'category': category,
+        'details': details,
+      });
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Report Received'),
+          content: const Text(
+              'Thank you. We will review your report and take action within 24 hours.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report failed: $e')),
+      );
+    }
+  }
+
+  /// New: Block user from chat – adds the sender’s uid to current user’s "Blocked" field.
+  Future<void> _blockUserFromChat(String userId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to block.')),
+      );
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+        'Blocked': FieldValue.arrayUnion([userId]),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User blocked.')),
+      );
+      // Optionally, filter out messages from blocked users.
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error blocking user: $e')),
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -768,23 +933,22 @@ class _ClubChatPageState extends State<ClubChatPage> {
         }).toList();
 
         List<DocumentSnapshot> normalMessages = docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return (data['pinned'] ?? false) == false;
-        }).toList();
+  final data = doc.data() as Map<String, dynamic>;
+  final senderUid = data['senderUid'] ?? '';
+  // Exclude messages that are pinned or from blocked users.
+  return (data['pinned'] ?? false) == false && !_blockedUserIds.contains(senderUid);
+}).toList();
 
-        // If searching, filter out messages that don’t match
         if (_searchQuery.isNotEmpty) {
           normalMessages = normalMessages.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
             final text = data['text'] ?? '';
             final type = data['type'] ?? 'text';
-            // Skip images in search
             if (type == 'image') return false;
             return text.toLowerCase().contains(_searchQuery.toLowerCase());
           }).toList();
         }
 
-        // Auto-scroll once data arrives
         SchedulerBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
@@ -804,7 +968,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
           final user = FirebaseAuth.instance.currentUser;
           final isMe = (user != null && user.uid == senderUid);
 
-          // Show or hide sender name
           bool showName = true;
           if (i > 0) {
             final prevDoc = normalMessages[i - 1];
@@ -815,7 +978,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
             }
           }
 
-          // Date divider if new date
           String currentDateStr = '';
           if (timestamp != null) {
             final date = DateTime.fromMillisecondsSinceEpoch(
@@ -886,7 +1048,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
   }
 
   Future<void> _showAttendanceList() async {
-    // Example: show a list of who said "here," etc.
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Show attendance list - not implemented.')),
     );
@@ -896,7 +1057,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
   // 10) CENSOR LOGIC: READ + TOGGLE
   // ---------------------------------------------------------------------------
   void _listenToCensor() {
-    // Listen to changes in 'censorActive' field of the club doc
     FirebaseFirestore.instance
         .collection('clubs')
         .doc(widget.clubId)
@@ -914,7 +1074,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
         .collection('clubs')
         .doc(widget.clubId);
 
-    // Flip the current boolean in Firestore
     await docRef.update({'censorActive': !_censorActive});
   }
 
@@ -974,7 +1133,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
               ),
             ),
             const SizedBox(width: 8),
-            // Minimal circle avatar for the club
             CircleAvatar(
               radius: 22,
               backgroundColor: Colors.grey.shade800,
@@ -1007,7 +1165,7 @@ class _ClubChatPageState extends State<ClubChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 12) SIDE DRAWER (SETTINGS REMOVED)
+  // 12) SIDE DRAWER
   // ---------------------------------------------------------------------------
   Widget _buildSideDrawer() {
     return Drawer(
@@ -1015,7 +1173,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Minimal header
           Container(
             color: scaffoldBg,
             height: 140,
@@ -1046,7 +1203,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
               ],
             ),
           ),
-
           if (_isAdmin)
             ListTile(
               leading: Icon(Icons.people_alt_outlined, color: accentColor),
@@ -1056,7 +1212,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
               ),
               onTap: _showAttendanceList,
             ),
-
           if (_isAdmin)
             SwitchListTile(
               activeColor: accentColor,
@@ -1068,7 +1223,6 @@ class _ClubChatPageState extends State<ClubChatPage> {
               value: _censorActive,
               onChanged: (_) => _toggleCensor(),
             ),
-
           const Spacer(),
           Padding(
             padding: const EdgeInsets.all(12.0),

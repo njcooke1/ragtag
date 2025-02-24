@@ -68,10 +68,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
       if (!snapshot.exists) return;
       final data = snapshot.data();
       if (data == null) return;
-
       final bool isCensorOn = data['censorActive'] == true;
       final bool areIdentitiesPublic = data['identitiesArePublic'] ?? true;
-
       setState(() {
         _censorActive = isCensorOn;
         _identitiesArePublic = areIdentitiesPublic;
@@ -107,10 +105,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFFFFAF7B),
-                Color(0xFFD76D77),
-              ],
+              colors: [Color(0xFFFFAF7B), Color(0xFFD76D77)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -196,8 +191,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 width: double.infinity,
                 child: Text(
                   "Admin Settings",
@@ -277,27 +271,24 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   // ---------------------------------------------------------------------------
-  // 3) PROFANITY LISTS
+  // 3) PROFANITY & ANONYMITY HELPERS
   // ---------------------------------------------------------------------------
   final List<String> _badWords = [
     'fuck','fuckyou','fucking','shit','shitty','ass','asshole','jackass','dumbass',
-    'bitch','bitchy','bastard','dick','dicks','dickhead','cock','pussy','cunt','whore',
-    'slut','slutty','douche','douchebag','motherfucker','motherfuckin','son of a bitch',
-    'goddamn','goddamned','damn','damned','piss','pissed','crapping','blowjob','bj',
-    'handjob','rimjob','dildo','vibrator','anal','butthole','bust a nut','jizz','ho',
-    'hoe','nigger','nigga','spic','beaner','kike','chink','gook','wetback','raghead',
-    'towelhead','jap','cracker','fag','faggot','dyke','homo','tranny','queer','retard',
-    'retarded','spazz','spastic','cripple','christfag','bible-basher','infidel',
-    'heathen','harlot','slant','slope','gypsy','kill yourself','kys','die in a hole',
+    'bitch','bitchy','bastard','dick','dicks','dickhead','cock','pussy','cunt','whore','slut','slutty',
+    'douche','douchebag','motherfucker','motherfuckin','son of a bitch','goddamn','goddamned','damn','damned',
+    'piss','pissed','crapping','blowjob','bj','handjob','rimjob','dildo','vibrator','anal','butthole','bust a nut',
+    'jizz','ho','hoe','nigger','nigga','spic','beaner','kike','chink','gook','wetback','raghead','towelhead','jap',
+    'cracker','fag','faggot','dyke','homo','tranny','queer','retard','retarded','spazz','spastic','cripple','christfag',
+    'bible-basher','infidel','heathen','harlot','slant','slope','gypsy','kill yourself','kys','die in a hole',
     'die in a fire','i\'ll kill you','i\'ll murder you','hang yourself'
   ];
 
   final List<String> _cuteWords = [
-    'bubbles','hugs','kittens','puppies','rainbows','sprinkles','cupcakes','unicorns',
-    'cuddles','snuggles','fairy dust','pixie wings','butterfly kisses','marshmallows',
-    'sugarplums','stardust','confetti','daydreams','fluff','sunshine','glitter','sparkles',
-    'angel wings','cinnamon rolls','puppy dog tails','cotton candy','daisies','warm cookies',
-    'rainbow sprinkles',
+    'bubbles','hugs','kittens','puppies','rainbows','sprinkles','cupcakes','unicorns','cuddles','snuggles',
+    'fairy dust','pixie wings','butterfly kisses','marshmallows','sugarplums','stardust','confetti','daydreams',
+    'fluff','sunshine','glitter','sparkles','angel wings','cinnamon rolls','puppy dog tails','cotton candy','daisies',
+    'warm cookies','rainbow sprinkles',
   ];
 
   final Random _random = Random();
@@ -314,10 +305,9 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   // ---------------------------------------------------------------------------
-  // 4) CHALLENGEBADGE ANIMATION SETUP
+  // 4) ANIMATION SETUP (includes challenge badge animation)
   // ---------------------------------------------------------------------------
   bool _hasShownChallengeBadgeDialog = false;
-
   late AnimationController _badgeAnimController;
   late Animation<double> _scaleAnim;
   late Animation<double> _rotationAnim;
@@ -325,6 +315,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   @override
   void initState() {
     super.initState();
+    _listenToBlockedUsers();
 
     _heroController = AnimationController(
       vsync: this,
@@ -382,28 +373,15 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------------
-  // 5) FETCH ALL DATA
-  // ---------------------------------------------------------------------------
   Future<void> _fetchAllData() async {
     setState(() => isLoading = true);
     try {
-      // 1. Forum Info, pinned messages, events
       await _fetchForumInfo(widget.communityId);
       if (pinnedMessageId != null) {
         await _fetchPinnedMessage(widget.communityId, pinnedMessageId!);
       }
       await _fetchEvents(widget.communityId);
-
-      // 2. Check final challenge first
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await _checkAndCompleteFinalChallenge(uid);
-      }
-
-      // 3. Check if user is admin
       await _checkIfUserIsAdmin(widget.communityId);
-      // (Membership logic removed)
     } catch (e) {
       _showSnack("Error loading forum data: $e");
     } finally {
@@ -463,178 +441,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     });
   }
 
-  bool get identitiesArePublic => _identitiesArePublic;
-
   String? get pinnedMessageId {
     return forumData['pinnedMessageId'] as String?;
   }
 
   // ---------------------------------------------------------------------------
-  // CHECK & COMPLETE FINAL CHALLENGE IMMEDIATELY
-  // ---------------------------------------------------------------------------
-  Future<void> _checkAndCompleteFinalChallenge(String uid) async {
-    try {
-      final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-      final userDoc = await userRef.get();
-
-      if (!userDoc.exists) return;
-      final data = userDoc.data();
-      if (data == null) return;
-
-      final introStep = data['introchallenge'] ?? 0;
-
-      // If user is at step 2 and hasn't shown the badge pop-up
-      if (introStep == 2 && !_hasShownChallengeBadgeDialog) {
-        _hasShownChallengeBadgeDialog = true;
-
-        // Immediately set introchallenge to 3, plus add badge
-        await userRef.update({
-          'introchallenge': 3,
-          'badges': FieldValue.arrayUnion(['ChallengeBadge'])
-        });
-
-        if (!mounted) return;
-        _showChallengeBadgeDialog();
-      }
-    } catch (e) {
-      _showSnack("Error checking final challenge: $e");
-    }
-  }
-
-  void _showChallengeBadgeDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return Center(
-          child: Material(
-            color: Colors.black54,
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.88,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.75),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 40,
-                    spreadRadius: 10,
-                    color: Colors.white.withOpacity(0.07),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Stack for glow + shimmer
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 220,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              Colors.amberAccent.withOpacity(0.5),
-                              Colors.transparent,
-                            ],
-                            radius: 0.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.yellowAccent.withOpacity(0.4),
-                              blurRadius: 70,
-                              spreadRadius: 20,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Shimmer.fromColors(
-                        baseColor: Colors.yellowAccent.withOpacity(0.2),
-                        highlightColor: Colors.white.withOpacity(0.1),
-                        child: Container(
-                          width: 180,
-                          height: 180,
-                          decoration: const BoxDecoration(
-                            color: Colors.amberAccent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      AnimatedBuilder(
-                        animation: _badgeAnimController,
-                        builder: (ctx, child) {
-                          return Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()
-                              ..scale(_scaleAnim.value, _scaleAnim.value)
-                              ..rotateZ(_rotationAnim.value),
-                            child: child,
-                          );
-                        },
-                        child: Image.asset(
-                          'assets/challengebadge.png',
-                          height: 160,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "CONGRATS!",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Lovelo',
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "You’ve just earned the Challenge-Badge.\nWelcome to the big leagues!",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amberAccent,
-                      foregroundColor: Colors.black87,
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
-                      elevation: 2,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("Awesome!"),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 6) UPDATE FORUM NAME + PIN
+  // 5) UPDATE FORUM NAME + PIN
   // ---------------------------------------------------------------------------
   Future<void> _updateForumName(String newName) async {
     if (!isAdmin) return;
@@ -658,7 +470,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
           .doc(widget.communityId)
           .update({'pinnedMessageId': messageId});
       setState(() => forumData['pinnedMessageId'] = messageId);
-
       await _fetchPinnedMessage(widget.communityId, messageId);
       _showSnack("Message pinned!");
     } catch (e) {
@@ -667,17 +478,14 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   // ---------------------------------------------------------------------------
-  // 7) SENDING MESSAGES (include senderPhotoUrl)
+  // 6) SENDING MESSAGES (include senderPhotoUrl)
   // ---------------------------------------------------------------------------
   Future<void> _sendMessage() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     final text = _msgController.text.trim();
-    if (text.isEmpty && _selectedImage == null) {
-      return;
-    }
+    if (text.isEmpty && _selectedImage == null) return;
 
-    // Grab the user's photoUrl to include in the message
     final userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     final senderName = userDoc.data()?['fullName'] ?? 'User';
@@ -686,7 +494,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     String? imageUrl;
     if (_selectedImage != null) {
       try {
-        // In real usage, you'd upload to Firebase Storage, but here we store local path as example
+        // For simplicity, using the local file path. Replace with Storage upload in production.
         imageUrl = _selectedImage!.path;
       } catch (e) {
         _showSnack("Couldn't upload image: $e");
@@ -703,7 +511,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
         'text': text,
         'senderId': uid,
         'senderName': senderName,
-        'senderPhotoUrl': userPhotoUrl, // <-- We add the user's photo URL
+        'senderPhotoUrl': userPhotoUrl,
         'timestamp': FieldValue.serverTimestamp(),
         if (imageUrl != null) 'imageUrl': imageUrl,
       });
@@ -716,7 +524,852 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   // ---------------------------------------------------------------------------
-  // 8) UI BUILD
+  // 7) IMAGE PICKING
+  // ---------------------------------------------------------------------------
+  void _pickImage() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(
+                Icons.camera_alt,
+                color: _isDarkMode ? Colors.tealAccent : Colors.blueGrey,
+              ),
+              title: Text(
+                'Take a photo',
+                style: GoogleFonts.workSans(
+                  color: _isDarkMode ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                _getImageFromSource(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.photo_library,
+                color: _isDarkMode ? Colors.tealAccent : Colors.blueGrey,
+              ),
+              title: Text(
+                'Choose from Gallery',
+                style: GoogleFonts.workSans(
+                  color: _isDarkMode ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                _getImageFromSource(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _getImageFromSource(ImageSource source) async {
+    try {
+      final pickedFile = await _imagePicker.pickImage(source: source);
+      if (pickedFile == null) return;
+      setState(() => _selectedImage = pickedFile);
+    } catch (e) {
+      _showSnack("Error picking image: $e");
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // 8) ADMIN ACTIONS: DELETE / PIN
+  // ---------------------------------------------------------------------------
+  Future<void> _deleteMessage(String docId) async {
+    await FirebaseFirestore.instance
+        .collection('openForums')
+        .doc(widget.communityId)
+        .collection('messages')
+        .doc(docId)
+        .delete();
+  }
+
+  Future<void> _unpinMessage(String messageId) async {
+    if (!isAdmin) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('openForums')
+          .doc(widget.communityId)
+          .update({'pinnedMessageId': FieldValue.delete()});
+      setState(() => forumData['pinnedMessageId'] = null);
+      _showSnack("Message unpinned.");
+    } catch (e) {
+      _showSnack("Error unpinning message: $e");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 9) MESSAGE BUBBLE (with robust long-press options)
+  // ---------------------------------------------------------------------------
+  Widget _buildChatBubble(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    String text = data['text'] ?? '';
+    final senderId = data['senderId'] ?? '';
+    final realSenderName = data['senderName'] ?? '';
+    final senderPhotoUrl = data['senderPhotoUrl'] ?? '';
+    final imageUrl = data['imageUrl'] as String?;
+    final ts = data['timestamp'] as Timestamp?;
+    final messageTime =
+        ts != null ? DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch) : null;
+
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isMe = (currentUserId == senderId);
+
+    // Censor text if needed
+    if (_censorActive && text.isNotEmpty) {
+      text = _censorText(text);
+    }
+
+    // Determine displayed name based on anonymity
+    final displayedName =
+        _identitiesArePublic ? realSenderName : _getAnonymousNameFor(senderId);
+
+    // If anonymous, skip showing photo
+    final actualPhotoUrl = _identitiesArePublic ? senderPhotoUrl : '';
+
+    // Build avatar
+    final avatar = CircleAvatar(
+      radius: 16,
+      backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[400],
+      backgroundImage:
+          (actualPhotoUrl != null && actualPhotoUrl.isNotEmpty) ? NetworkImage(actualPhotoUrl) : null,
+      child: (actualPhotoUrl == null || actualPhotoUrl.isEmpty)
+          ? Icon(Icons.person, color: isDarkMode ? Colors.white : Colors.black87, size: 18)
+          : null,
+    );
+
+    // Build bubble content
+    final bubbleColor = isMe
+        ? const Color(0xBBFC4A1A)
+        : (isDarkMode ? Colors.grey[800] : Colors.grey[300]);
+    final bubble = Container(
+      constraints: const BoxConstraints(maxWidth: 300),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bubbleColor,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(12),
+          topRight: const Radius.circular(12),
+          bottomLeft: isMe ? const Radius.circular(12) : Radius.zero,
+          bottomRight: isMe ? Radius.zero : const Radius.circular(12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (!isMe)
+            Text(
+              displayedName,
+              style: GoogleFonts.workSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.grey[100] : Colors.grey[800],
+              ),
+            ),
+          if (!isMe) const SizedBox(height: 4),
+          if (imageUrl != null && imageUrl.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(imageUrl),
+                  fit: BoxFit.cover,
+                  height: 200,
+                ),
+              ),
+            ),
+          if (text.isNotEmpty)
+            Text(
+              text,
+              style: GoogleFonts.workSans(
+                fontSize: 14,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          if (messageTime != null)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              alignment: Alignment.bottomRight,
+              child: Text(
+                DateFormat('h:mm a').format(messageTime),
+                style: GoogleFonts.workSans(
+                  fontSize: 11,
+                  color: isMe
+                      ? Colors.white70
+                      : (isDarkMode ? Colors.white60 : Colors.black54),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    // Wrap in GestureDetector for long-press options
+    return GestureDetector(
+      onLongPress: () {
+        _showMessageOptions(doc, isMe);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          mainAxisAlignment:
+              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isMe) ...[avatar, const SizedBox(width: 8)],
+            Flexible(child: bubble),
+            if (isMe) ...[const SizedBox(width: 8), avatar],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Show robust message options on long press.
+  // ---------------------------------------------------------------------------
+  void _showMessageOptions(DocumentSnapshot doc, bool isMe) {
+    final data = doc.data() as Map<String, dynamic>;
+    final bool pinned = data['pinned'] ?? false;
+    final senderId = data['senderId'] ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            if (!isMe) ...[
+              ListTile(
+                leading: const Icon(Icons.flag, color: Colors.redAccent),
+                title: const Text('Report Message',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showReportMessageDialog(doc);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.orangeAccent),
+                title: const Text('Block User',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _blockUserFromChat(senderId);
+                },
+              ),
+            ],
+            if (isMe || isAdmin) ...[
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.redAccent),
+                title: Text(
+                  isMe ? 'Delete Message' : 'Remove Message',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showDeleteDialog(doc.id, isMe);
+                },
+              ),
+              if (!pinned)
+                ListTile(
+                  leading: Icon(Icons.push_pin, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                  title: const Text('Pin Message',
+                      style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pinMessage(doc.id);
+                  },
+                )
+              else
+                ListTile(
+                  leading: Icon(Icons.push_pin_outlined, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                  title: const Text('Unpin Message',
+                      style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _unpinMessage(doc.id);
+                  },
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Report message flow.
+  // ---------------------------------------------------------------------------
+  void _showReportMessageDialog(DocumentSnapshot doc) {
+    final List<String> reportCategories = [
+      "Hate Speech",
+      "Harassment",
+      "Spam",
+      "NSFW Content",
+      "Impersonation",
+    ];
+    String selectedCategory = reportCategories.first;
+    final TextEditingController additionalDetails = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Report Message"),
+          content: StatefulBuilder(
+            builder: (context, setStateSB) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Select a reason for reporting this message:",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButton<String>(
+                    value: selectedCategory,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onChanged: (val) {
+                      if (val != null) setStateSB(() => selectedCategory = val);
+                    },
+                    items: reportCategories
+                        .map((cat) => DropdownMenuItem(
+                              value: cat,
+                              child: Text(cat),
+                            ))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: additionalDetails,
+                    decoration: const InputDecoration(
+                      hintText: "Additional details (optional)",
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "We will review this message and take action within 24 hours.",
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _submitMessageReport(
+                  doc.id,
+                  selectedCategory,
+                  additionalDetails.text.trim(),
+                );
+              },
+              child: const Text("Submit Report"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitMessageReport(String messageId, String category, String details) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to report.')),
+      );
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('messageReports').add({
+        'forumId': widget.communityId,
+        'messageId': messageId,
+        'reporterId': user.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+        'category': category,
+        'details': details,
+      });
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Report Received'),
+          content: const Text('Thank you. We will review your report and take action within 24 hours.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report failed: $e')),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Block user from chat.
+  // ---------------------------------------------------------------------------
+  Future<void> _blockUserFromChat(String userId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to block.')),
+      );
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+        'Blocked': FieldValue.arrayUnion([userId]),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User blocked.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error blocking user: $e')),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 10) PINNED MESSAGES DISPLAY
+  // ---------------------------------------------------------------------------
+  Widget _buildPinnedMessages() {
+    if (_pinnedMessages.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          color: isDarkMode ? Colors.grey[800] : Colors.blueGrey[200],
+          padding: const EdgeInsets.all(8),
+          child: Text(
+            'Pinned Messages',
+            style: GoogleFonts.workSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        for (var doc in _pinnedMessages) _buildPinnedCard(doc),
+      ],
+    );
+  }
+
+  Widget _buildPinnedCard(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final senderName = data['senderName'] ?? '';
+    final senderId = data['senderId'] ?? '';
+    final pinned = data['pinned'] == true;
+    final ts = data['timestamp'] as Timestamp?;
+    final isMe = FirebaseAuth.instance.currentUser?.uid == senderId;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: _buildChatBubble(doc),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 11) MESSAGES LIST
+  // ---------------------------------------------------------------------------
+  Widget _buildChatList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('openForums')
+          .doc(widget.communityId)
+          .collection('messages')
+          .orderBy('timestamp')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text("Error loading chat."));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snapshot.data?.docs ?? [];
+        DateTime? previousDate;
+        final List<Widget> messageWidgets = [];
+
+        for (var i = 0; i < docs.length; i++) {
+          final doc = docs[i];
+          final data = doc.data() as Map<String, dynamic>;
+          final ts = data['timestamp'] as Timestamp?;
+          if (ts != null) {
+            final date = DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
+            final justDate = DateTime(date.year, date.month, date.day);
+            if (previousDate == null || justDate != previousDate) {
+              messageWidgets.add(_buildDateDivider(date));
+              previousDate = justDate;
+            }
+          }
+          messageWidgets.add(_buildChatBubble(doc));
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          }
+        });
+
+        return ListView(
+          controller: _scrollController,
+          padding: const EdgeInsets.only(bottom: 8),
+          children: [
+            _buildPinnedMessages(),
+            ...messageWidgets,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDateDivider(DateTime date) {
+    final dayString =
+        "${_weekdayName(date.weekday)}, ${_monthName(date.month)} ${date.day}, ${date.year}";
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Divider(
+              thickness: 1,
+              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFAF7B), Color(0xFFD76D77)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              dayString,
+              style: GoogleFonts.workSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Divider(
+              thickness: 1,
+              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _weekdayName(int weekday) {
+    const days = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday"
+    ];
+    return days[weekday - 1];
+  }
+
+  String _monthName(int month) {
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
+    return months[month - 1];
+  }
+
+  // ---------------------------------------------------------------------------
+  // 12) TOP BAR
+  // ---------------------------------------------------------------------------
+  Widget _buildTopBar() {
+    if (_isSearching) {
+      return Container(
+        padding: const EdgeInsets.only(top: 48, bottom: 16, left: 16, right: 16),
+        color: isDarkMode ? Colors.grey[900] : Colors.white,
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: isDarkMode ? Colors.tealAccent : Colors.blueGrey,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isSearching = false;
+                  _searchQuery = '';
+                  _searchController.clear();
+                });
+              },
+            ),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                style: GoogleFonts.workSans(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search messages...',
+                  hintStyle: GoogleFonts.workSans(
+                    color: isDarkMode ? Colors.white54 : Colors.black38,
+                  ),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      color: isDarkMode ? Colors.grey[900] : Colors.white,
+      padding: const EdgeInsets.only(top: 48, bottom: 16, left: 16, right: 16),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.arrow_back,
+                color: isDarkMode ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              widget.communityName,
+              style: GoogleFonts.workSans(
+                color: isDarkMode ? Colors.white : Colors.black87,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (isAdmin) ...[
+            InkWell(
+              onTap: _showForumSettingsSheet,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.settings_outlined,
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                ),
+              ),
+            ),
+          ],
+          InkWell(
+            onTap: () => setState(() => _isSearching = true),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.search,
+                color: isDarkMode ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 13) MESSAGE COMPOSER (sunset orange gradient for attachment & send)
+  // ---------------------------------------------------------------------------
+  Widget _buildBottomMessageField() {
+    return Container(
+      color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_selectedImage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        File(_selectedImage!.path),
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() => _selectedImage = null);
+                    },
+                    icon: Icon(
+                      Icons.close,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Row(
+            children: [
+              InkWell(
+                onTap: _pickImageFromGallery,
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.blueGrey[400] : Colors.blueGrey[700],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.attachment_rounded,
+                    color: isDarkMode ? Colors.black : Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _msgController,
+                  style: GoogleFonts.workSans(
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: GoogleFonts.workSans(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    filled: true,
+                    fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: _sendMessage,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFfc4a1a), Color(0xFFf7b733)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.send,
+                    color: isDarkMode ? Colors.black87 : Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (picked != null) {
+        setState(() => _selectedImage = picked);
+      }
+    } catch (e) {
+      _showSnack("Error picking image: $e");
+    }
+  }
+
+  void _showSnack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  // ---------------------------------------------------------------------------
+  // 14) BUILD
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
@@ -744,9 +1397,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             if (isLoading)
               Container(
                 color: Colors.black54,
-                child: const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
+                child: const Center(child: CircularProgressIndicator(color: Colors.white)),
               ),
           ],
         ),
@@ -768,16 +1419,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
               if (pfpUrl.isNotEmpty)
                 Container(
                   decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(pfpUrl),
-                      fit: BoxFit.cover,
-                    ),
+                    image: DecorationImage(image: NetworkImage(pfpUrl), fit: BoxFit.cover),
                   ),
                 )
               else
                 Container(color: Colors.grey[600]),
               Container(color: Colors.black.withOpacity(0.35)),
-
               Positioned(
                 top: 16,
                 left: 16,
@@ -789,14 +1436,10 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color:
-                              isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                          color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: isDarkMode ? Colors.white70 : Colors.black87,
-                        ),
+                        child: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white70 : Colors.black87),
                       ),
                     ),
                     const Spacer(),
@@ -807,16 +1450,10 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                           padding: const EdgeInsets.all(8),
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? Colors.grey[800]
-                                : Colors.grey[300],
+                            color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(
-                            Icons.settings_outlined,
-                            color:
-                                isDarkMode ? Colors.white70 : Colors.black87,
-                          ),
+                          child: Icon(Icons.settings_outlined, color: isDarkMode ? Colors.white70 : Colors.black87),
                         ),
                       ),
                     InkWell(
@@ -824,14 +1461,11 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color:
-                              isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                          color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          isDarkMode
-                              ? Icons.light_mode_outlined
-                              : Icons.dark_mode_outlined,
+                          isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
                           color: isDarkMode ? Colors.white70 : Colors.black87,
                         ),
                       ),
@@ -839,7 +1473,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   ],
                 ),
               ),
-
               Align(
                 alignment: Alignment.center,
                 child: Transform.scale(
@@ -854,19 +1487,16 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                                 title: const Text("Edit Forum Name"),
                                 content: TextField(
                                   controller: _renameController,
-                                  decoration:
-                                      const InputDecoration(labelText: "Name"),
+                                  decoration: const InputDecoration(labelText: "Name"),
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context),
+                                    onPressed: () => Navigator.pop(context),
                                     child: const Text("Cancel"),
                                   ),
                                   ElevatedButton(
                                     onPressed: () {
-                                      _updateForumName(
-                                          _renameController.text.trim());
+                                      _updateForumName(_renameController.text.trim());
                                       Navigator.pop(context);
                                     },
                                     child: const Text("Save"),
@@ -877,27 +1507,18 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                           }
                         : null,
                     child: Text(
-                      fallbackName.isNotEmpty
-                          ? fallbackName
-                          : widget.communityId,
+                      fallbackName.isNotEmpty ? fallbackName : widget.communityId,
                       style: GoogleFonts.workSans(
                         color: Colors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
-                        shadows: const [
-                          Shadow(
-                            color: Colors.black54,
-                            offset: Offset(2, 2),
-                            blurRadius: 4,
-                          ),
-                        ],
+                        shadows: const [Shadow(color: Colors.black54, offset: Offset(2, 2), blurRadius: 4)],
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
                 ),
               ),
-              // We remove the old membership join/leave button from here
             ],
           ),
         );
@@ -909,26 +1530,20 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     final text = pinnedMessageData?['text'] ?? '';
     final realName = pinnedMessageData?['senderName'] ?? '—';
     final senderId = pinnedMessageData?['senderId'] ?? '???';
-    final displayedName = identitiesArePublic
-        ? realName
-        : _getAnonymousNameFor(senderId);
+    final displayedName = _identitiesArePublic ? realName : _getAnonymousNameFor(senderId);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          width: 1,
-          color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!,
-        ),
+        border: Border.all(width: 1, color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.push_pin_rounded,
-                color: isDarkMode ? Colors.orange[200] : Colors.orange[800]),
+            Icon(Icons.push_pin_rounded, color: isDarkMode ? Colors.orange[200] : Colors.orange[800]),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -975,86 +1590,61 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
         }
         final docs = snapshot.data?.docs ?? [];
         DateTime? previousDate;
-        final messageWidgets = <Widget>[];
+        final List<Widget> messageWidgets = [];
 
         for (var i = 0; i < docs.length; i++) {
-          final data = docs[i].data() as Map<String, dynamic>? ?? {};
+          final doc = docs[i];
+          final data = doc.data() as Map<String, dynamic>;
           final ts = data['timestamp'] as Timestamp?;
-          final msgDate = ts?.toDate();
-          final docId = docs[i].id;
-
-          if (msgDate != null) {
-            final justDate = DateTime(msgDate.year, msgDate.month, msgDate.day);
+          if (ts != null) {
+            final date = DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
+            final justDate = DateTime(date.year, date.month, date.day);
             if (previousDate == null || justDate != previousDate) {
-              messageWidgets.add(_buildDayDivider(justDate));
+              messageWidgets.add(_buildDateDivider(date));
               previousDate = justDate;
             }
           }
-
-          messageWidgets.add(
-            GestureDetector(
-              onLongPress: isAdmin ? () => _pinMessage(docId) : null,
-              child: _buildChatBubble(data),
-            ),
-          );
+          messageWidgets.add(_buildChatBubble(doc));
         }
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
-            _scrollController.jumpTo(
-              _scrollController.position.maxScrollExtent,
-            );
+            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
           }
         });
 
         return ListView(
           controller: _scrollController,
           padding: const EdgeInsets.only(bottom: 8),
-          children: messageWidgets,
+          children: [
+            _buildPinnedMessages(),
+            ...messageWidgets,
+          ],
         );
       },
     );
   }
 
   Widget _buildDayDivider(DateTime date) {
-    final dayString =
-        "${_weekdayName(date.weekday)}, ${_monthName(date.month)} ${date.day}, ${date.year}";
+    final dayString = "${_weekdayName(date.weekday)}, ${_monthName(date.month)} ${date.day}, ${date.year}";
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
           Expanded(
-            child: Divider(
-              thickness: 1,
-              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
-            ),
+            child: Divider(thickness: 1, color: isDarkMode ? Colors.grey[600] : Colors.grey[400]),
           ),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFFFFAF7B),
-                  Color(0xFFD76D77),
-                ],
-              ),
+              gradient: const LinearGradient(colors: [Color(0xFFFFAF7B), Color(0xFFD76D77)]),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              dayString,
-              style: GoogleFonts.workSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
+            child: Text(dayString, style: GoogleFonts.workSans(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
           ),
           Expanded(
-            child: Divider(
-              thickness: 1,
-              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
-            ),
+            child: Divider(thickness: 1, color: isDarkMode ? Colors.grey[600] : Colors.grey[400]),
           ),
         ],
       ),
@@ -1062,134 +1652,18 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   String _weekdayName(int weekday) {
-    const days = [
-      "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
-    ];
-    final index = weekday - 1;
-    if (index < 0 || index > 6) return "UnknownDay";
-    return days[index];
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    return days[weekday - 1];
   }
 
   String _monthName(int month) {
-    const months = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ];
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     return months[month - 1];
   }
 
-  // Reworked signature: pass the entire data doc so we can grab everything.
-  Widget _buildChatBubble(Map<String, dynamic> data) {
-    // Extract info
-    String text = data['text'] ?? '';
-    final senderId = data['senderId'] ?? '';
-    final realSenderName = data['senderName'] ?? '';
-    final senderPhotoUrl = data['senderPhotoUrl'] ?? '';
-    final imageUrl = data['imageUrl'] as String?;
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final isMe = currentUserId == senderId;
-
-    // Censor text if needed
-    if (_censorActive && text.isNotEmpty) {
-      text = _censorText(text);
-    }
-
-    // Name can be anonymized
-    final displayedName = identitiesArePublic
-        ? realSenderName
-        : _getAnonymousNameFor(senderId);
-
-    // If identities are not public, we also skip showing the real photo
-    final actualPhotoUrl =
-        identitiesArePublic ? senderPhotoUrl : null; // hide if anonymous
-
-    // Build a circle avatar
-    final circleAvatar = CircleAvatar(
-      radius: 16,
-      backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[400],
-      backgroundImage: (actualPhotoUrl != null && actualPhotoUrl.isNotEmpty)
-          ? NetworkImage(actualPhotoUrl)
-          : null,
-      child: (actualPhotoUrl == null || actualPhotoUrl.isEmpty)
-          ? Icon(
-              Icons.person,
-              color: isDarkMode ? Colors.white : Colors.black87,
-              size: 18,
-            )
-          : null,
-    );
-
-    // Build the actual message bubble
-    final bubble = Container(
-      constraints: const BoxConstraints(maxWidth: 300),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isMe
-            ? (isDarkMode ? Colors.blueGrey[700] : Colors.blue[100])
-            : (isDarkMode ? Colors.grey[800] : Colors.grey[300]),
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(12),
-          topRight: const Radius.circular(12),
-          bottomLeft: isMe ? const Radius.circular(12) : Radius.zero,
-          bottomRight: isMe ? Radius.zero : const Radius.circular(12),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          if (!isMe)
-            Text(
-              displayedName,
-              style: GoogleFonts.workSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.grey[100] : Colors.grey[800],
-              ),
-            ),
-          if (!isMe) const SizedBox(height: 4),
-          if (imageUrl != null && imageUrl.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  File(imageUrl),
-                  fit: BoxFit.cover,
-                  height: 200,
-                ),
-              ),
-            ),
-          if (text.isNotEmpty)
-            Text(
-              text,
-              style: GoogleFonts.workSans(
-                fontSize: 14,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
-            ),
-        ],
-      ),
-    );
-
-    // Return a row that places avatar + bubble left or right
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) circleAvatar,
-          if (!isMe) const SizedBox(width: 8),
-          bubble,
-          if (isMe) const SizedBox(width: 8),
-          if (isMe) circleAvatar,
-        ],
-      ),
-    );
-  }
-
+  // ---------------------------------------------------------------------------
+  //  New: Anonymous helper
+  // ---------------------------------------------------------------------------
   final Map<String, String> _anonymousNameMap = {};
 
   String _getAnonymousNameFor(String userId) {
@@ -1202,23 +1676,262 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   String _generateFunName() {
-    final adjectives = [
-      "Sneaky","Silly","Mighty","Dazzling","Funky","Cheerful",
-      "Whimsical","Grumpy","Clever","Goofy",
-    ];
-    final animals = [
-      "Penguin","Tiger","Giraffe","Octopus","Koala","Dragon",
-      "Dolphin","Narwhal","Hippo","Sloth",
-    ];
+    final adjectives = ["Sneaky", "Silly", "Mighty", "Dazzling", "Funky", "Cheerful", "Whimsical", "Grumpy", "Clever", "Goofy"];
+    final animals = ["Penguin", "Tiger", "Giraffe", "Octopus", "Koala", "Dragon", "Dolphin", "Narwhal", "Hippo", "Sloth"];
     final rand = Random();
-    final adj = adjectives[rand.nextInt(adjectives.length)];
-    final anim = animals[rand.nextInt(animals.length)];
-    return "$adj$anim"; // e.g. "SneakyPenguin"
+    return "${adjectives[rand.nextInt(adjectives.length)]}${animals[rand.nextInt(animals.length)]}";
   }
 
+  // ---------------------------------------------------------------------------
+  //  New: Show robust message options on long-press.
+  // ---------------------------------------------------------------------------
+  void _showMessageOptions(DocumentSnapshot doc, bool isMe) {
+    final data = doc.data() as Map<String, dynamic>;
+    final bool pinned = data['pinned'] ?? false;
+    final senderId = data['senderId'] ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            if (!isMe) ...[
+              ListTile(
+                leading: const Icon(Icons.flag, color: Colors.redAccent),
+                title: const Text('Report Message', style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showReportMessageDialog(doc);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.orangeAccent),
+                title: const Text('Block User', style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _blockUserFromChat(senderId);
+                },
+              ),
+            ],
+            if (isMe || isAdmin) ...[
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.redAccent),
+                title: Text(isMe ? 'Delete Message' : 'Remove Message', style: const TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showDeleteDialog(doc.id, isMe);
+                },
+              ),
+              if (!pinned)
+                ListTile(
+                  leading: Icon(Icons.push_pin, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                  title: const Text('Pin Message', style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pinMessage(doc.id);
+                  },
+                )
+              else
+                ListTile(
+                  leading: Icon(Icons.push_pin_outlined, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                  title: const Text('Unpin Message', style: TextStyle(color: Colors.white70)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _unpinMessage(doc.id);
+                  },
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Report message flow.
+  // ---------------------------------------------------------------------------
+  void _showReportMessageDialog(DocumentSnapshot doc) {
+    final List<String> reportCategories = ["Hate Speech", "Harassment", "Spam", "NSFW Content", "Impersonation"];
+    String selectedCategory = reportCategories.first;
+    final TextEditingController additionalDetails = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Report Message"),
+          content: StatefulBuilder(
+            builder: (context, setStateSB) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Select a reason for reporting this message:", style: TextStyle(fontSize: 14)),
+                  const SizedBox(height: 16),
+                  DropdownButton<String>(
+                    value: selectedCategory,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onChanged: (val) {
+                      if (val != null) setStateSB(() => selectedCategory = val);
+                    },
+                    items: reportCategories
+                        .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: additionalDetails,
+                    decoration: const InputDecoration(hintText: "Additional details (optional)"),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("We will review this message and take action within 24 hours.", style: TextStyle(fontSize: 12)),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _submitMessageReport(doc.id, selectedCategory, additionalDetails.text.trim());
+              },
+              child: const Text("Submit Report"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitMessageReport(String messageId, String category, String details) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must be logged in to report.')));
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('messageReports').add({
+        'forumId': widget.communityId,
+        'messageId': messageId,
+        'reporterId': user.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+        'category': category,
+        'details': details,
+      });
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Report Received'),
+          content: const Text('Thank you. We will review your report and take action within 24 hours.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report failed: $e')));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Block user from chat.
+  // ---------------------------------------------------------------------------
+  Future<void> _blockUserFromChat(String userId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must be logged in to block.')));
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+        'Blocked': FieldValue.arrayUnion([userId]),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User blocked.')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error blocking user: $e')));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Delete dialog (reuse existing)
+  // ---------------------------------------------------------------------------
+  void _showDeleteDialog(String docId, bool isOwnMessage) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+          title: Text(
+            isOwnMessage ? 'Delete Message' : 'Remove Message',
+            style: GoogleFonts.workSans(color: isDarkMode ? Colors.white70 : Colors.black87),
+          ),
+          content: Text(
+            isOwnMessage
+                ? 'Are you sure you want to delete this message?'
+                : 'Are you sure you want to remove this message?',
+            style: GoogleFonts.workSans(color: isDarkMode ? Colors.white60 : Colors.black54),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel', style: GoogleFonts.workSans(color: isDarkMode ? Colors.tealAccent : Colors.blueGrey)),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteMessage(docId);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(isOwnMessage ? 'Message deleted.' : 'Message removed.')),
+                );
+              },
+              child: Text('Delete', style: GoogleFonts.workSans(color: Colors.redAccent)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  //  New: Delete message (reused)
+  // ---------------------------------------------------------------------------
+  Future<void> _deleteMessage(String docId) async {
+    await FirebaseFirestore.instance
+        .collection('openForums')
+        .doc(widget.communityId)
+        .collection('messages')
+        .doc(docId)
+        .delete();
+  }
+
+  // ---------------------------------------------------------------------------
+  // 14) GET ANONYMOUS NAME (helper)
+  // ---------------------------------------------------------------------------
+  final Map<String, String> _anonymousNameMap = {};
+
+  String _getAnonymousNameFor(String userId) {
+    if (_anonymousNameMap.containsKey(userId)) {
+      return _anonymousNameMap[userId]!;
+    }
+    final randomName = _generateFunName();
+    _anonymousNameMap[userId] = randomName;
+    return randomName;
+  }
+
+  String _generateFunName() {
+    final adjectives = ["Sneaky", "Silly", "Mighty", "Dazzling", "Funky", "Cheerful", "Whimsical", "Grumpy", "Clever", "Goofy"];
+    final animals = ["Penguin", "Tiger", "Giraffe", "Octopus", "Koala", "Dragon", "Dolphin", "Narwhal", "Hippo", "Sloth"];
+    final rand = Random();
+    return "${adjectives[rand.nextInt(adjectives.length)]}${animals[rand.nextInt(animals.length)]}";
+  }
+
+  // ---------------------------------------------------------------------------
+  // 15) BOTTOM MESSAGE FIELD
+  // ---------------------------------------------------------------------------
   Widget _buildBottomMessageField() {
     return Container(
-      color: isDarkMode ? Colors.grey[850] : Colors.white,
+      color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1239,13 +1952,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                     ),
                   ),
                   IconButton(
-                    onPressed: () {
-                      setState(() => _selectedImage = null);
-                    },
-                    icon: Icon(
-                      Icons.close,
-                      color: isDarkMode ? Colors.white : Colors.black87,
-                    ),
+                    onPressed: () => setState(() => _selectedImage = null),
+                    icon: Icon(Icons.close, color: isDarkMode ? Colors.white : Colors.black87),
                   ),
                 ],
               ),
@@ -1258,48 +1966,28 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? Colors.blueGrey[400]
-                        : Colors.blueGrey[700],
+                    color: isDarkMode ? Colors.blueGrey[400] : Colors.blueGrey[700],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.attachment_rounded,
-                    color: isDarkMode ? Colors.black : Colors.white,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.attachment_rounded, color: isDarkMode ? Colors.black : Colors.white, size: 20),
                 ),
               ),
               Expanded(
                 child: TextField(
                   controller: _msgController,
-                  style: GoogleFonts.workSans(
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
+                  style: GoogleFonts.workSans(color: isDarkMode ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
-                    hintStyle: GoogleFonts.workSans(
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                    ),
+                    hintStyle: GoogleFonts.workSans(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                     filled: true,
                     fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 12,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: isDarkMode
-                            ? Colors.grey[700]!
-                            : Colors.grey[300]!,
-                      ),
+                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color:
-                            isDarkMode ? Colors.tealAccent : Colors.blueGrey,
-                      ),
+                      borderSide: BorderSide(color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -1311,16 +1999,14 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? Colors.blueGrey[400]
-                        : Colors.blueGrey[700],
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFfc4a1a), Color(0xFFf7b733)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.send,
-                    color: isDarkMode ? Colors.black : Colors.white,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.send, color: isDarkMode ? Colors.black87 : Colors.white, size: 20),
                 ),
               ),
             ],
@@ -1329,22 +2015,84 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
       ),
     );
   }
+}
 
-  Future<void> _pickImageFromGallery() async {
-    try {
-      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
-      if (picked != null) {
-        setState(() => _selectedImage = picked);
+Widget _buildFilteredChatList() {
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('openForums')
+        .doc(widget.communityId)
+        .collection('messages')
+        .orderBy('timestamp')
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return const Center(child: Text("Error loading chat."));
       }
-    } catch (e) {
-      _showSnack("Error picking image: $e");
-    }
-  }
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      final docs = snapshot.data?.docs ?? [];
+      // Filter out messages from blocked users.
+      final filteredDocs = docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final senderId = data['senderId'] ?? '';
+        return !_blockedUserIds.contains(senderId);
+      }).toList();
 
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
-    );
+      DateTime? previousDate;
+      final List<Widget> messageWidgets = [];
+      for (var i = 0; i < filteredDocs.length; i++) {
+        final doc = filteredDocs[i];
+        final data = doc.data() as Map<String, dynamic>;
+        final ts = data['timestamp'] as Timestamp?;
+        if (ts != null) {
+          final date =
+              DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
+          final justDate = DateTime(date.year, date.month, date.day);
+          if (previousDate == null || justDate != previousDate) {
+            messageWidgets.add(_buildDateDivider(date));
+            previousDate = justDate;
+          }
+        }
+        messageWidgets.add(_buildChatBubble(doc));
+      }
+      
+      // Auto-scroll to bottom when messages update.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(
+            _scrollController.position.maxScrollExtent,
+          );
+        }
+      });
+      
+      return ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(bottom: 8),
+        children: [
+          _buildPinnedMessages(),
+          ...messageWidgets,
+        ],
+      );
+    },
+  );
+}
+
+void _listenToBlockedUsers() {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser != null) {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .snapshots()
+        .listen((docSnapshot) {
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data();
+        setState(() {
+          _blockedUserIds = List<String>.from(data?['Blocked'] ?? []);
+        });
+      }
+    });
   }
 }
