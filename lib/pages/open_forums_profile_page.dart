@@ -595,15 +595,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   // ---------------------------------------------------------------------------
   // 8) ADMIN ACTIONS: DELETE / PIN
   // ---------------------------------------------------------------------------
-  Future<void> _deleteMessage(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('openForums')
-        .doc(widget.communityId)
-        .collection('messages')
-        .doc(docId)
-        .delete();
-  }
-
   Future<void> _unpinMessage(String messageId) async {
     if (!isAdmin) return;
     try {
@@ -741,79 +732,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             if (!isMe) ...[avatar, const SizedBox(width: 8)],
             Flexible(child: bubble),
             if (isMe) ...[const SizedBox(width: 8), avatar],
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  //  New: Show robust message options on long press.
-  // ---------------------------------------------------------------------------
-  void _showMessageOptions(DocumentSnapshot doc, bool isMe) {
-    final data = doc.data() as Map<String, dynamic>;
-    final bool pinned = data['pinned'] ?? false;
-    final senderId = data['senderId'] ?? '';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
-      builder: (_) => SafeArea(
-        child: Wrap(
-          children: [
-            if (!isMe) ...[
-              ListTile(
-                leading: const Icon(Icons.flag, color: Colors.redAccent),
-                title: const Text('Report Message',
-                    style: TextStyle(color: Colors.white70)),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _showReportMessageDialog(doc);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.block, color: Colors.orangeAccent),
-                title: const Text('Block User',
-                    style: TextStyle(color: Colors.white70)),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _blockUserFromChat(senderId);
-                },
-              ),
-            ],
-            if (isMe || isAdmin) ...[
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.redAccent),
-                title: Text(
-                  isMe ? 'Delete Message' : 'Remove Message',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _showDeleteDialog(doc.id, isMe);
-                },
-              ),
-              if (!pinned)
-                ListTile(
-                  leading: Icon(Icons.push_pin, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
-                  title: const Text('Pin Message',
-                      style: TextStyle(color: Colors.white70)),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _pinMessage(doc.id);
-                  },
-                )
-              else
-                ListTile(
-                  leading: Icon(Icons.push_pin_outlined, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
-                  title: const Text('Unpin Message',
-                      style: TextStyle(color: Colors.white70)),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _unpinMessage(doc.id);
-                  },
-                ),
-            ],
           ],
         ),
       ),
@@ -1751,59 +1669,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   // ---------------------------------------------------------------------------
   //  New: Report message flow.
   // ---------------------------------------------------------------------------
-  void _showReportMessageDialog(DocumentSnapshot doc) {
-    final List<String> reportCategories = ["Hate Speech", "Harassment", "Spam", "NSFW Content", "Impersonation"];
-    String selectedCategory = reportCategories.first;
-    final TextEditingController additionalDetails = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text("Report Message"),
-          content: StatefulBuilder(
-            builder: (context, setStateSB) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("Select a reason for reporting this message:", style: TextStyle(fontSize: 14)),
-                  const SizedBox(height: 16),
-                  DropdownButton<String>(
-                    value: selectedCategory,
-                    icon: const Icon(Icons.arrow_drop_down),
-                    onChanged: (val) {
-                      if (val != null) setStateSB(() => selectedCategory = val);
-                    },
-                    items: reportCategories
-                        .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: additionalDetails,
-                    decoration: const InputDecoration(hintText: "Additional details (optional)"),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text("We will review this message and take action within 24 hours.", style: TextStyle(fontSize: 12)),
-                ],
-              );
-            },
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _submitMessageReport(doc.id, selectedCategory, additionalDetails.text.trim());
-              },
-              child: const Text("Submit Report"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _submitMessageReport(String messageId, String category, String details) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -1903,27 +1768,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
         .collection('messages')
         .doc(docId)
         .delete();
-  }
-
-  // ---------------------------------------------------------------------------
-  // 14) GET ANONYMOUS NAME (helper)
-  // ---------------------------------------------------------------------------
-  final Map<String, String> _anonymousNameMap = {};
-
-  String _getAnonymousNameFor(String userId) {
-    if (_anonymousNameMap.containsKey(userId)) {
-      return _anonymousNameMap[userId]!;
-    }
-    final randomName = _generateFunName();
-    _anonymousNameMap[userId] = randomName;
-    return randomName;
-  }
-
-  String _generateFunName() {
-    final adjectives = ["Sneaky", "Silly", "Mighty", "Dazzling", "Funky", "Cheerful", "Whimsical", "Grumpy", "Clever", "Goofy"];
-    final animals = ["Penguin", "Tiger", "Giraffe", "Octopus", "Koala", "Dragon", "Dolphin", "Narwhal", "Hippo", "Sloth"];
-    final rand = Random();
-    return "${adjectives[rand.nextInt(adjectives.length)]}${animals[rand.nextInt(animals.length)]}";
   }
 
   // ---------------------------------------------------------------------------
