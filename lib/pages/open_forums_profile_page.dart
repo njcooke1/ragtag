@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:intl/intl.dart'; // Needed for DateFormat
 
 class OpenForumsProfilePage extends StatefulWidget {
   final String communityId;
@@ -27,9 +28,7 @@ class OpenForumsProfilePage extends StatefulWidget {
 
 class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     with TickerProviderStateMixin {
-  // ---------------------------------------------------------------------------
   // 1) BASIC STATES
-  // ---------------------------------------------------------------------------
   bool isLoading = false;
   bool isAdmin = false;
   bool isDarkMode = true; // Default to dark mode
@@ -37,6 +36,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   Map<String, dynamic> forumData = {};
   Map<String, dynamic>? pinnedMessageData;
   List<Map<String, dynamic>> eventList = [];
+
+  // Added missing state variables:
+  List<String> _blockedUserIds = [];
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   late AnimationController _heroController;
   late Animation<double> _heroAnimation;
@@ -53,9 +58,10 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   final ImagePicker _imagePicker = ImagePicker();
   XFile? _selectedImage;
 
-  // ---------------------------------------------------------------------------
+  // For pinned messages if needed:
+  List<DocumentSnapshot> _pinnedMessages = [];
+
   // 2) CENSOR & ANONYMITY
-  // ---------------------------------------------------------------------------
   bool _censorActive = false;
   bool _identitiesArePublic = true;
 
@@ -191,14 +197,16 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 width: double.infinity,
                 child: Text(
                   "Admin Settings",
                   style: GoogleFonts.workSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                    color:
+                        isDarkMode ? Colors.white70 : Colors.black87,
                   ),
                 ),
               ),
@@ -215,7 +223,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                 subtitle: Text(
                   "Replace offensive words with cuteness",
                   style: GoogleFonts.workSans(
-                    color: isDarkMode ? Colors.white54 : Colors.black54,
+                    color:
+                        isDarkMode ? Colors.white54 : Colors.black54,
                     fontSize: 13,
                   ),
                 ),
@@ -238,14 +247,18 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                     ? Text(
                         "Make user identities hidden forever",
                         style: GoogleFonts.workSans(
-                          color: isDarkMode ? Colors.white54 : Colors.black54,
+                          color: isDarkMode
+                              ? Colors.white54
+                              : Colors.black54,
                           fontSize: 13,
                         ),
                       )
                     : Text(
                         "Already Anonymous (irreversible)",
                         style: GoogleFonts.workSans(
-                          color: isDarkMode ? Colors.white54 : Colors.black54,
+                          color: isDarkMode
+                              ? Colors.white54
+                              : Colors.black54,
                           fontSize: 13,
                         ),
                       ),
@@ -270,25 +283,123 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  // ---------------------------------------------------------------------------
   // 3) PROFANITY & ANONYMITY HELPERS
-  // ---------------------------------------------------------------------------
   final List<String> _badWords = [
-    'fuck','fuckyou','fucking','shit','shitty','ass','asshole','jackass','dumbass',
-    'bitch','bitchy','bastard','dick','dicks','dickhead','cock','pussy','cunt','whore','slut','slutty',
-    'douche','douchebag','motherfucker','motherfuckin','son of a bitch','goddamn','goddamned','damn','damned',
-    'piss','pissed','crapping','blowjob','bj','handjob','rimjob','dildo','vibrator','anal','butthole','bust a nut',
-    'jizz','ho','hoe','nigger','nigga','spic','beaner','kike','chink','gook','wetback','raghead','towelhead','jap',
-    'cracker','fag','faggot','dyke','homo','tranny','queer','retard','retarded','spazz','spastic','cripple','christfag',
-    'bible-basher','infidel','heathen','harlot','slant','slope','gypsy','kill yourself','kys','die in a hole',
-    'die in a fire','i\'ll kill you','i\'ll murder you','hang yourself'
+    'fuck',
+    'fuckyou',
+    'fucking',
+    'shit',
+    'shitty',
+    'ass',
+    'asshole',
+    'jackass',
+    'dumbass',
+    'bitch',
+    'bitchy',
+    'bastard',
+    'dick',
+    'dicks',
+    'dickhead',
+    'cock',
+    'pussy',
+    'cunt',
+    'whore',
+    'slut',
+    'slutty',
+    'douche',
+    'douchebag',
+    'motherfucker',
+    'motherfuckin',
+    'son of a bitch',
+    'goddamn',
+    'goddamned',
+    'damn',
+    'damned',
+    'piss',
+    'pissed',
+    'crapping',
+    'blowjob',
+    'bj',
+    'handjob',
+    'rimjob',
+    'dildo',
+    'vibrator',
+    'anal',
+    'butthole',
+    'bust a nut',
+    'jizz',
+    'ho',
+    'hoe',
+    'nigger',
+    'nigga',
+    'spic',
+    'beaner',
+    'kike',
+    'chink',
+    'gook',
+    'wetback',
+    'raghead',
+    'towelhead',
+    'jap',
+    'cracker',
+    'fag',
+    'faggot',
+    'dyke',
+    'homo',
+    'tranny',
+    'queer',
+    'retard',
+    'retarded',
+    'spazz',
+    'spastic',
+    'cripple',
+    'christfag',
+    'bible-basher',
+    'infidel',
+    'heathen',
+    'harlot',
+    'slant',
+    'slope',
+    'gypsy',
+    'kill yourself',
+    'kys',
+    'die in a hole',
+    'die in a fire',
+    'i\'ll kill you',
+    'i\'ll murder you',
+    'hang yourself'
   ];
 
   final List<String> _cuteWords = [
-    'bubbles','hugs','kittens','puppies','rainbows','sprinkles','cupcakes','unicorns','cuddles','snuggles',
-    'fairy dust','pixie wings','butterfly kisses','marshmallows','sugarplums','stardust','confetti','daydreams',
-    'fluff','sunshine','glitter','sparkles','angel wings','cinnamon rolls','puppy dog tails','cotton candy','daisies',
-    'warm cookies','rainbow sprinkles',
+    'bubbles',
+    'hugs',
+    'kittens',
+    'puppies',
+    'rainbows',
+    'sprinkles',
+    'cupcakes',
+    'unicorns',
+    'cuddles',
+    'snuggles',
+    'fairy dust',
+    'pixie wings',
+    'butterfly kisses',
+    'marshmallows',
+    'sugarplums',
+    'stardust',
+    'confetti',
+    'daydreams',
+    'fluff',
+    'sunshine',
+    'glitter',
+    'sparkles',
+    'angel wings',
+    'cinnamon rolls',
+    'puppy dog tails',
+    'cotton candy',
+    'daisies',
+    'warm cookies',
+    'rainbow sprinkles',
   ];
 
   final Random _random = Random();
@@ -304,9 +415,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     return text;
   }
 
-  // ---------------------------------------------------------------------------
-  // 4) ANIMATION SETUP (includes challenge badge animation)
-  // ---------------------------------------------------------------------------
+  // 4) ANIMATION SETUP
   bool _hasShownChallengeBadgeDialog = false;
   late AnimationController _badgeAnimController;
   late Animation<double> _scaleAnim;
@@ -370,6 +479,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     _newEventLocationCtrl.dispose();
     _scrollController.dispose();
     _badgeAnimController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -445,9 +555,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     return forumData['pinnedMessageId'] as String?;
   }
 
-  // ---------------------------------------------------------------------------
   // 5) UPDATE FORUM NAME + PIN
-  // ---------------------------------------------------------------------------
   Future<void> _updateForumName(String newName) async {
     if (!isAdmin) return;
     try {
@@ -477,9 +585,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 6) SENDING MESSAGES (include senderPhotoUrl)
-  // ---------------------------------------------------------------------------
+  // 6) SENDING MESSAGES
   Future<void> _sendMessage() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -494,7 +600,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     String? imageUrl;
     if (_selectedImage != null) {
       try {
-        // For simplicity, using the local file path. Replace with Storage upload in production.
         imageUrl = _selectedImage!.path;
       } catch (e) {
         _showSnack("Couldn't upload image: $e");
@@ -523,9 +628,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     }
   }
 
-  // ---------------------------------------------------------------------------
   // 7) IMAGE PICKING
-  // ---------------------------------------------------------------------------
   void _pickImage() async {
     showModalBottomSheet(
       context: context,
@@ -592,9 +695,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     });
   }
 
-  // ---------------------------------------------------------------------------
   // 8) ADMIN ACTIONS: DELETE / PIN
-  // ---------------------------------------------------------------------------
   Future<void> _unpinMessage(String messageId) async {
     if (!isAdmin) return;
     try {
@@ -609,9 +710,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 9) MESSAGE BUBBLE (with robust long-press options)
-  // ---------------------------------------------------------------------------
+  // 9) MESSAGE BUBBLE
   Widget _buildChatBubble(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     String text = data['text'] ?? '';
@@ -620,36 +719,33 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     final senderPhotoUrl = data['senderPhotoUrl'] ?? '';
     final imageUrl = data['imageUrl'] as String?;
     final ts = data['timestamp'] as Timestamp?;
-    final messageTime =
-        ts != null ? DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch) : null;
+    final messageTime = ts != null
+        ? DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch)
+        : null;
 
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final isMe = (currentUserId == senderId);
 
-    // Censor text if needed
     if (_censorActive && text.isNotEmpty) {
       text = _censorText(text);
     }
 
-    // Determine displayed name based on anonymity
-    final displayedName =
-        _identitiesArePublic ? realSenderName : _getAnonymousNameFor(senderId);
-
-    // If anonymous, skip showing photo
+    final displayedName = _identitiesArePublic
+        ? realSenderName
+        : _getAnonymousNameFor(senderId);
     final actualPhotoUrl = _identitiesArePublic ? senderPhotoUrl : '';
 
-    // Build avatar
     final avatar = CircleAvatar(
       radius: 16,
       backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[400],
       backgroundImage:
-          (actualPhotoUrl != null && actualPhotoUrl.isNotEmpty) ? NetworkImage(actualPhotoUrl) : null,
-      child: (actualPhotoUrl == null || actualPhotoUrl.isEmpty)
-          ? Icon(Icons.person, color: isDarkMode ? Colors.white : Colors.black87, size: 18)
+          (actualPhotoUrl.isNotEmpty) ? NetworkImage(actualPhotoUrl) : null,
+      child: (actualPhotoUrl.isEmpty)
+          ? Icon(Icons.person,
+              color: isDarkMode ? Colors.white : Colors.black87, size: 18)
           : null,
     );
 
-    // Build bubble content
     final bubbleColor = isMe
         ? const Color(0xBBFC4A1A)
         : (isDarkMode ? Colors.grey[800] : Colors.grey[300]);
@@ -717,7 +813,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
       ),
     );
 
-    // Wrap in GestureDetector for long-press options
     return GestureDetector(
       onLongPress: () {
         _showMessageOptions(doc, isMe);
@@ -738,9 +833,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  New: Report message flow.
-  // ---------------------------------------------------------------------------
   void _showReportMessageDialog(DocumentSnapshot doc) {
     final List<String> reportCategories = [
       "Hate Speech",
@@ -750,7 +842,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
       "Impersonation",
     ];
     String selectedCategory = reportCategories.first;
-    final TextEditingController additionalDetails = TextEditingController();
+    final TextEditingController additionalDetails =
+        TextEditingController();
 
     showDialog(
       context: context,
@@ -818,7 +911,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  Future<void> _submitMessageReport(String messageId, String category, String details) async {
+  Future<void> _submitMessageReport(
+      String messageId, String category, String details) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -839,7 +933,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Report Received'),
-          content: const Text('Thank you. We will review your report and take action within 24 hours.'),
+          content: const Text(
+              'Thank you. We will review your report and take action within 24 hours.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -855,9 +950,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     }
   }
 
-  // ---------------------------------------------------------------------------
-  //  New: Block user from chat.
-  // ---------------------------------------------------------------------------
   Future<void> _blockUserFromChat(String userId) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -867,7 +959,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
       return;
     }
     try {
-      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid)
+          .update({
         'Blocked': FieldValue.arrayUnion([userId]),
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -880,9 +973,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 10) PINNED MESSAGES DISPLAY
-  // ---------------------------------------------------------------------------
   Widget _buildPinnedMessages() {
     if (_pinnedMessages.isEmpty) return const SizedBox.shrink();
 
@@ -925,9 +1015,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 11) MESSAGES LIST
-  // ---------------------------------------------------------------------------
   Widget _buildChatList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -952,7 +1039,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
           final data = doc.data() as Map<String, dynamic>;
           final ts = data['timestamp'] as Timestamp?;
           if (ts != null) {
-            final date = DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
+            final date =
+                DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
             final justDate = DateTime(date.year, date.month, date.day);
             if (previousDate == null || justDate != previousDate) {
               messageWidgets.add(_buildDateDivider(date));
@@ -964,7 +1052,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
-            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+            _scrollController.jumpTo(
+                _scrollController.position.maxScrollExtent);
           }
         });
 
@@ -995,7 +1084,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
           ),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFFFFAF7B), Color(0xFFD76D77)],
@@ -1053,13 +1143,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     return months[month - 1];
   }
 
-  // ---------------------------------------------------------------------------
   // 12) TOP BAR
-  // ---------------------------------------------------------------------------
   Widget _buildTopBar() {
     if (_isSearching) {
       return Container(
-        padding: const EdgeInsets.only(top: 48, bottom: 16, left: 16, right: 16),
+        padding: const EdgeInsets.only(
+            top: 48, bottom: 16, left: 16, right: 16),
         color: isDarkMode ? Colors.grey[900] : Colors.white,
         child: Row(
           children: [
@@ -1090,7 +1179,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   ),
                   border: InputBorder.none,
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value),
+                onChanged: (value) =>
+                    setState(() => _searchQuery = value),
               ),
             ),
           ],
@@ -1099,7 +1189,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     }
     return Container(
       color: isDarkMode ? Colors.grey[900] : Colors.white,
-      padding: const EdgeInsets.only(top: 48, bottom: 16, left: 16, right: 16),
+      padding: const EdgeInsets.only(
+          top: 48, bottom: 16, left: 16, right: 16),
       child: Row(
         children: [
           InkWell(
@@ -1119,7 +1210,7 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              widget.communityName,
+              widget.communityData['name'] ?? widget.communityId,
               style: GoogleFonts.workSans(
                 color: isDarkMode ? Colors.white : Colors.black87,
                 fontSize: 18,
@@ -1137,10 +1228,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.settings_outlined,
-                  color: isDarkMode ? Colors.white70 : Colors.black87,
-                ),
+                child: Icon(Icons.settings_outlined,
+                    color: isDarkMode ? Colors.white70 : Colors.black87),
               ),
             ),
           ],
@@ -1163,13 +1252,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 13) MESSAGE COMPOSER (sunset orange gradient for attachment & send)
-  // ---------------------------------------------------------------------------
+  // 13) MESSAGE COMPOSER
   Widget _buildBottomMessageField() {
     return Container(
       color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1194,7 +1282,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                     },
                     icon: Icon(
                       Icons.close,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+                      color:
+                          isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
                 ],
@@ -1208,7 +1297,9 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.blueGrey[400] : Colors.blueGrey[700],
+                    color: isDarkMode
+                        ? Colors.blueGrey[400]
+                        : Colors.blueGrey[700],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -1222,22 +1313,35 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                 child: TextField(
                   controller: _msgController,
                   style: GoogleFonts.workSans(
-                    color: isDarkMode ? Colors.white : Colors.black87,
+                    color:
+                        isDarkMode ? Colors.white : Colors.black87,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
                     hintStyle: GoogleFonts.workSans(
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      color: isDarkMode
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                     ),
                     filled: true,
-                    fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    fillColor: isDarkMode
+                        ? Colors.grey[800]
+                        : Colors.grey[200],
+                    contentPadding:
+                        const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 12),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                      borderSide: BorderSide(
+                          color: isDarkMode
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
+                      borderSide: BorderSide(
+                          color: isDarkMode
+                              ? Colors.tealAccent
+                              : Colors.blueGrey),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -1250,7 +1354,10 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFfc4a1a), Color(0xFFf7b733)],
+                      colors: [
+                        Color(0xFFfc4a1a),
+                        Color(0xFFf7b733)
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1258,7 +1365,9 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   ),
                   child: Icon(
                     Icons.send,
-                    color: isDarkMode ? Colors.black87 : Colors.white,
+                    color: isDarkMode
+                        ? Colors.black87
+                        : Colors.white,
                     size: 20,
                   ),
                 ),
@@ -1272,7 +1381,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
 
   Future<void> _pickImageFromGallery() async {
     try {
-      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+      final picked =
+          await _imagePicker.pickImage(source: ImageSource.gallery);
       if (picked != null) {
         setState(() => _selectedImage = picked);
       }
@@ -1283,19 +1393,22 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
 
   void _showSnack(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // ---------------------------------------------------------------------------
-  // 14) BUILD
-  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final fallbackName = forumData['name'] ?? widget.communityData['name'] ?? '';
-    final pfpUrl = forumData['pfpUrl'] ?? widget.communityData['pfpUrl'] ?? '';
+    final fallbackName = forumData['name'] ??
+        widget.communityData['name'] ??
+        '';
+    final pfpUrl = forumData['pfpUrl'] ??
+        widget.communityData['pfpUrl'] ??
+        '';
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey[100],
+      backgroundColor:
+          isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey[100],
       body: SafeArea(
         child: Stack(
           children: [
@@ -1315,7 +1428,9 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             if (isLoading)
               Container(
                 color: Colors.black54,
-                child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+                child: const Center(
+                    child: CircularProgressIndicator(
+                        color: Colors.white)),
               ),
           ],
         ),
@@ -1323,7 +1438,8 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  Widget _buildHeader({required String pfpUrl, required String fallbackName}) {
+  Widget _buildHeader(
+      {required String pfpUrl, required String fallbackName}) {
     return AnimatedBuilder(
       animation: _heroAnimation,
       builder: (context, child) {
@@ -1337,7 +1453,9 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
               if (pfpUrl.isNotEmpty)
                 Container(
                   decoration: BoxDecoration(
-                    image: DecorationImage(image: NetworkImage(pfpUrl), fit: BoxFit.cover),
+                    image: DecorationImage(
+                        image: NetworkImage(pfpUrl),
+                        fit: BoxFit.cover),
                   ),
                 )
               else
@@ -1354,10 +1472,16 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
+                          color: isDarkMode
+                              ? Colors.grey[800]
+                              : Colors.grey[300],
+                          borderRadius:
+                              BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white70 : Colors.black87),
+                        child: Icon(Icons.arrow_back,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : Colors.black87),
                       ),
                     ),
                     const Spacer(),
@@ -1368,23 +1492,37 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                           padding: const EdgeInsets.all(8),
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
-                            color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8),
+                            color: isDarkMode
+                                ? Colors.grey[800]
+                                : Colors.grey[300],
+                            borderRadius:
+                                BorderRadius.circular(8),
                           ),
-                          child: Icon(Icons.settings_outlined, color: isDarkMode ? Colors.white70 : Colors.black87),
+                          child: Icon(Icons.settings_outlined,
+                              color: isDarkMode
+                                  ? Colors.white70
+                                  : Colors.black87),
                         ),
                       ),
                     InkWell(
-                      onTap: () => setState(() => isDarkMode = !isDarkMode),
+                      onTap: () =>
+                          setState(() => isDarkMode = !isDarkMode),
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
+                          color: isDarkMode
+                              ? Colors.grey[800]
+                              : Colors.grey[300],
+                          borderRadius:
+                              BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                          color: isDarkMode ? Colors.white70 : Colors.black87,
+                          isDarkMode
+                              ? Icons.light_mode_outlined
+                              : Icons.dark_mode_outlined,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : Colors.black87,
                         ),
                       ),
                     ),
@@ -1398,23 +1536,30 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                   child: InkWell(
                     onTap: isAdmin
                         ? () async {
-                            _renameController.text = fallbackName;
+                            _renameController.text =
+                                fallbackName;
                             await showDialog(
                               context: context,
                               builder: (_) => AlertDialog(
-                                title: const Text("Edit Forum Name"),
+                                title:
+                                    const Text("Edit Forum Name"),
                                 content: TextField(
                                   controller: _renameController,
-                                  decoration: const InputDecoration(labelText: "Name"),
+                                  decoration:
+                                      const InputDecoration(
+                                          labelText: "Name"),
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () => Navigator.pop(context),
+                                    onPressed: () =>
+                                        Navigator.pop(context),
                                     child: const Text("Cancel"),
                                   ),
                                   ElevatedButton(
                                     onPressed: () {
-                                      _updateForumName(_renameController.text.trim());
+                                      _updateForumName(
+                                          _renameController.text
+                                              .trim());
                                       Navigator.pop(context);
                                     },
                                     child: const Text("Save"),
@@ -1425,12 +1570,19 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                           }
                         : null,
                     child: Text(
-                      fallbackName.isNotEmpty ? fallbackName : widget.communityId,
+                      fallbackName.isNotEmpty
+                          ? fallbackName
+                          : widget.communityId,
                       style: GoogleFonts.workSans(
                         color: Colors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
-                        shadows: const [Shadow(color: Colors.black54, offset: Offset(2, 2), blurRadius: 4)],
+                        shadows: const [
+                          Shadow(
+                              color: Colors.black54,
+                              offset: Offset(2, 2),
+                              blurRadius: 4)
+                        ],
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -1448,30 +1600,43 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     final text = pinnedMessageData?['text'] ?? '';
     final realName = pinnedMessageData?['senderName'] ?? '—';
     final senderId = pinnedMessageData?['senderId'] ?? '???';
-    final displayedName = _identitiesArePublic ? realName : _getAnonymousNameFor(senderId);
+    final displayedName = _identitiesArePublic
+        ? realName
+        : _getAnonymousNameFor(senderId);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(width: 1, color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!),
+        border: Border.all(
+            width: 1,
+            color: isDarkMode
+                ? Colors.grey[600]!
+                : Colors.grey[400]!),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.push_pin_rounded, color: isDarkMode ? Colors.orange[200] : Colors.orange[800]),
+            Icon(Icons.push_pin_rounded,
+                color: isDarkMode
+                    ? Colors.orange[200]
+                    : Colors.orange[800]),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Pinned Message",
                     style: GoogleFonts.workSans(
                       fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+                      color: isDarkMode
+                          ? Colors.white
+                          : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1479,7 +1644,9 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                     "$text\n– $displayedName",
                     style: GoogleFonts.workSans(
                       fontSize: 14,
-                      color: isDarkMode ? Colors.white70 : Colors.black87,
+                      color: isDarkMode
+                          ? Colors.white70
+                          : Colors.black87,
                     ),
                   ),
                 ],
@@ -1491,9 +1658,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  New: Anonymous helper
-  // ---------------------------------------------------------------------------
   final Map<String, String> _anonymousNameMap = {};
 
   String _getAnonymousNameFor(String userId) {
@@ -1506,15 +1670,34 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
   }
 
   String _generateFunName() {
-    final adjectives = ["Sneaky", "Silly", "Mighty", "Dazzling", "Funky", "Cheerful", "Whimsical", "Grumpy", "Clever", "Goofy"];
-    final animals = ["Penguin", "Tiger", "Giraffe", "Octopus", "Koala", "Dragon", "Dolphin", "Narwhal", "Hippo", "Sloth"];
+    final adjectives = [
+      "Sneaky",
+      "Silly",
+      "Mighty",
+      "Dazzling",
+      "Funky",
+      "Cheerful",
+      "Whimsical",
+      "Grumpy",
+      "Clever",
+      "Goofy"
+    ];
+    final animals = [
+      "Penguin",
+      "Tiger",
+      "Giraffe",
+      "Octopus",
+      "Koala",
+      "Dragon",
+      "Dolphin",
+      "Narwhal",
+      "Hippo",
+      "Sloth"
+    ];
     final rand = Random();
     return "${adjectives[rand.nextInt(adjectives.length)]}${animals[rand.nextInt(animals.length)]}";
   }
 
-  // ---------------------------------------------------------------------------
-  //  New: Show robust message options on long-press.
-  // ---------------------------------------------------------------------------
   void _showMessageOptions(DocumentSnapshot doc, bool isMe) {
     final data = doc.data() as Map<String, dynamic>;
     final bool pinned = data['pinned'] ?? false;
@@ -1528,16 +1711,22 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
           children: [
             if (!isMe) ...[
               ListTile(
-                leading: const Icon(Icons.flag, color: Colors.redAccent),
-                title: const Text('Report Message', style: TextStyle(color: Colors.white70)),
+                leading: const Icon(Icons.flag,
+                    color: Colors.redAccent),
+                title: const Text('Report Message',
+                    style:
+                        TextStyle(color: Colors.white70)),
                 onTap: () {
                   Navigator.of(context).pop();
                   _showReportMessageDialog(doc);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.block, color: Colors.orangeAccent),
-                title: const Text('Block User', style: TextStyle(color: Colors.white70)),
+                leading: const Icon(Icons.block,
+                    color: Colors.orangeAccent),
+                title: const Text('Block User',
+                    style:
+                        TextStyle(color: Colors.white70)),
                 onTap: () {
                   Navigator.of(context).pop();
                   _blockUserFromChat(senderId);
@@ -1546,8 +1735,12 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
             ],
             if (isMe || isAdmin) ...[
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.redAccent),
-                title: Text(isMe ? 'Delete Message' : 'Remove Message', style: const TextStyle(color: Colors.white70)),
+                leading: const Icon(Icons.delete,
+                    color: Colors.redAccent),
+                title: Text(
+                    isMe ? 'Delete Message' : 'Remove Message',
+                    style: const TextStyle(
+                        color: Colors.white70)),
                 onTap: () {
                   Navigator.of(context).pop();
                   _showDeleteDialog(doc.id, isMe);
@@ -1555,8 +1748,13 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
               ),
               if (!pinned)
                 ListTile(
-                  leading: Icon(Icons.push_pin, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
-                  title: const Text('Pin Message', style: TextStyle(color: Colors.white70)),
+                  leading: Icon(Icons.push_pin,
+                      color: isDarkMode
+                          ? Colors.tealAccent
+                          : Colors.blueGrey),
+                  title: const Text('Pin Message',
+                      style:
+                          TextStyle(color: Colors.white70)),
                   onTap: () {
                     Navigator.of(context).pop();
                     _pinMessage(doc.id);
@@ -1564,8 +1762,13 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
                 )
               else
                 ListTile(
-                  leading: Icon(Icons.push_pin_outlined, color: isDarkMode ? Colors.tealAccent : Colors.blueGrey),
-                  title: const Text('Unpin Message', style: TextStyle(color: Colors.white70)),
+                  leading: Icon(Icons.push_pin_outlined,
+                      color: isDarkMode
+                          ? Colors.tealAccent
+                          : Colors.blueGrey),
+                  title: const Text('Unpin Message',
+                      style:
+                          TextStyle(color: Colors.white70)),
                   onTap: () {
                     Navigator.of(context).pop();
                     _unpinMessage(doc.id);
@@ -1578,39 +1781,52 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  New: Delete dialog (reuse existing)
-  // ---------------------------------------------------------------------------
   void _showDeleteDialog(String docId, bool isOwnMessage) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+          backgroundColor:
+              isDarkMode ? Colors.grey[900] : Colors.white,
           title: Text(
             isOwnMessage ? 'Delete Message' : 'Remove Message',
-            style: GoogleFonts.workSans(color: isDarkMode ? Colors.white70 : Colors.black87),
+            style: GoogleFonts.workSans(
+                color: isDarkMode
+                    ? Colors.white70
+                    : Colors.black87),
           ),
           content: Text(
             isOwnMessage
                 ? 'Are you sure you want to delete this message?'
                 : 'Are you sure you want to remove this message?',
-            style: GoogleFonts.workSans(color: isDarkMode ? Colors.white60 : Colors.black54),
+            style: GoogleFonts.workSans(
+                color: isDarkMode
+                    ? Colors.white60
+                    : Colors.black54),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: GoogleFonts.workSans(color: isDarkMode ? Colors.tealAccent : Colors.blueGrey)),
+              child: Text('Cancel',
+                  style: GoogleFonts.workSans(
+                      color: isDarkMode
+                          ? Colors.tealAccent
+                          : Colors.blueGrey)),
             ),
             TextButton(
               onPressed: () {
                 _deleteMessage(docId);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isOwnMessage ? 'Message deleted.' : 'Message removed.')),
+                  SnackBar(
+                      content: Text(isOwnMessage
+                          ? 'Message deleted.'
+                          : 'Message removed.')),
                 );
               },
-              child: Text('Delete', style: GoogleFonts.workSans(color: Colors.redAccent)),
+              child: Text('Delete',
+                  style: GoogleFonts.workSans(
+                      color: Colors.redAccent)),
             ),
           ],
         );
@@ -1618,9 +1834,6 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  New: Delete message (reused)
-  // ---------------------------------------------------------------------------
   Future<void> _deleteMessage(String docId) async {
     await FirebaseFirestore.instance
         .collection('openForums')
@@ -1630,82 +1843,81 @@ class _OpenForumsProfilePageState extends State<OpenForumsProfilePage>
         .delete();
   }
 
-Widget _buildFilteredChatList() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance
-        .collection('openForums')
-        .doc(widget.communityId)
-        .collection('messages')
-        .orderBy('timestamp')
-        .snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return const Center(child: Text("Error loading chat."));
-      }
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      final docs = snapshot.data?.docs ?? [];
-      // Filter out messages from blocked users.
-      final filteredDocs = docs.where((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        final senderId = data['senderId'] ?? '';
-        return !_blockedUserIds.contains(senderId);
-      }).toList();
-
-      DateTime? previousDate;
-      final List<Widget> messageWidgets = [];
-      for (var i = 0; i < filteredDocs.length; i++) {
-        final doc = filteredDocs[i];
-        final data = doc.data() as Map<String, dynamic>;
-        final ts = data['timestamp'] as Timestamp?;
-        if (ts != null) {
-          final date =
-              DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
-          final justDate = DateTime(date.year, date.month, date.day);
-          if (previousDate == null || justDate != previousDate) {
-            messageWidgets.add(_buildDateDivider(date));
-            previousDate = justDate;
-          }
+  Widget _buildFilteredChatList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('openForums')
+          .doc(widget.communityId)
+          .collection('messages')
+          .orderBy('timestamp')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text("Error loading chat."));
         }
-        messageWidgets.add(_buildChatBubble(doc));
-      }
-      
-      // Auto-scroll to bottom when messages update.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(
-            _scrollController.position.maxScrollExtent,
-          );
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snapshot.data?.docs ?? [];
+        final filteredDocs = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final senderId = data['senderId'] ?? '';
+          return !_blockedUserIds.contains(senderId);
+        }).toList();
+
+        DateTime? previousDate;
+        final List<Widget> messageWidgets = [];
+        for (var i = 0; i < filteredDocs.length; i++) {
+          final doc = filteredDocs[i];
+          final data = doc.data() as Map<String, dynamic>;
+          final ts = data['timestamp'] as Timestamp?;
+          if (ts != null) {
+            final date =
+                DateTime.fromMillisecondsSinceEpoch(ts.millisecondsSinceEpoch);
+            final justDate = DateTime(date.year, date.month, date.day);
+            if (previousDate == null || justDate != previousDate) {
+              messageWidgets.add(_buildDateDivider(date));
+              previousDate = justDate;
+            }
+          }
+          messageWidgets.add(_buildChatBubble(doc));
+        }
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(
+              _scrollController.position.maxScrollExtent,
+            );
+          }
+        });
+        
+        return ListView(
+          controller: _scrollController,
+          padding: const EdgeInsets.only(bottom: 8),
+          children: [
+            _buildPinnedMessages(),
+            ...messageWidgets,
+          ],
+        );
+      },
+    );
+  }
+
+  void _listenToBlockedUsers() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .snapshots()
+          .listen((docSnapshot) {
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data();
+          setState(() {
+            _blockedUserIds = List<String>.from(data?['Blocked'] ?? []);
+          });
         }
       });
-      
-      return ListView(
-        controller: _scrollController,
-        padding: const EdgeInsets.only(bottom: 8),
-        children: [
-          _buildPinnedMessages(),
-          ...messageWidgets,
-        ],
-      );
-    },
-  );
-}
-
-void _listenToBlockedUsers() {
-  final currentUser = FirebaseAuth.instance.currentUser;
-  if (currentUser != null) {
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .snapshots()
-        .listen((docSnapshot) {
-      if (docSnapshot.exists) {
-        final data = docSnapshot.data();
-        setState(() {
-          _blockedUserIds = List<String>.from(data?['Blocked'] ?? []);
-        });
-      }
-    });
+    }
   }
-}
+} // <-- Final closing brace added here.
