@@ -18,6 +18,12 @@
 			<string>iPhoneOS</string>
 		</array>
 		
+		<!-- Restricting the app to iPhone only -->
+		<key>UIDeviceFamily</key>
+		<array>
+			<integer>1</integer>
+		</array>
+		
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
@@ -97,8 +103,8 @@
 		<key>UIStatusBarHidden</key>
 		<false/>
 	
-    <!-- CALENDAR PERMISSION -->
-    <key>NSCalendarsUsageDescription</key>
-    <string>This app needs access to your calendar to schedule events and reminders for your campus life experience.</string>
-</dict>
+		<!-- CALENDAR PERMISSION -->
+		<key>NSCalendarsUsageDescription</key>
+		<string>This app needs access to your calendar to schedule events and reminders for your campus life experience.</string>
+	</dict>
 </plist>
