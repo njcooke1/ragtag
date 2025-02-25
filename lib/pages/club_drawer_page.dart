@@ -1178,7 +1178,7 @@ Future<void> _unfollowClub() async {
             ),
             const SizedBox(width: 10),
             Text(
-              "Not provided",
+              "Type Handle (after @)",
               style: TextStyle(
                 color: widget.isDarkMode ? Colors.white : Colors.black87,
               ),

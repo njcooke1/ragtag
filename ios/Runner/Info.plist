@@ -12,7 +12,7 @@
 		<key>CFBundleIdentifier</key>
 		<string>com.ragtag.ragtag</string>
 		
-		<!-- This key tells Xcode the supported platform for your app -->
+		<!-- Supported platform -->
 		<key>CFBundleSupportedPlatforms</key>
 		<array>
 			<string>iPhoneOS</string>
@@ -48,13 +48,8 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
+		
+		<!-- Removed iPad specific orientations for clarity -->
 		
 		<!-- App Icon Configuration -->
 		<key>CFBundleIcons</key>
@@ -84,16 +79,6 @@
 		<string>This app needs your location to provide location-specific features.</string>
 		
 		<!-- Background Modes -->
-		<key>UIBackgroundModes</key>
-		<array>
-			<string>remote-notification</string>
-		</array>
-		
-		<!-- Push Notifications Permission -->
-		<key>NSUserNotificationsUsageDescription</key>
-		<string>This app needs permission to send you notifications.</string>
-		
-		<!-- Background Fetch and Push Notifications -->
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>fetch</string>

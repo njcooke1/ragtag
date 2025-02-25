@@ -2197,7 +2197,7 @@ class _RedesignedInterestGroupsPageState
           backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
           title: const Text('Report Received'),
           content: Text(
-            'Thanks! We have received your report.',
+            'We will conduct a full investigation within 24 hours.',
             style: GoogleFonts.workSans(
               color: isDarkMode ? Colors.grey[200] : Colors.grey[800],
             ),

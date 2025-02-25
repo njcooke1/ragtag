@@ -5,6 +5,197 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'dart:ui'; // For HSLColor conversion
 
+//
+// --- Shared Helper Functions for Report / Block Actions ---
+//
+
+void _showCommunityActions(BuildContext context, String communityId, String collectionName) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.black87,
+    builder: (ctx) {
+      return SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.flag, color: Colors.redAccent),
+              title: const Text(
+                'Report Community',
+                style: TextStyle(color: Colors.white70),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _showReportDialog(context, communityId, collectionName);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block, color: Colors.orangeAccent),
+              title: const Text(
+                'Block Community',
+                style: TextStyle(color: Colors.white70),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _blockCommunity(context, communityId);
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showReportDialog(BuildContext context, String communityId, String collectionName) {
+  String selectedReason = 'Spam or Scam';
+  final TextEditingController _descriptionController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: Colors.black87,
+            title: const Text(
+              'Report Community',
+              style: TextStyle(color: Colors.white70),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedReason,
+                    dropdownColor: Colors.black87,
+                    decoration: const InputDecoration(
+                      labelText: 'Reason',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white54),
+                      ),
+                    ),
+                    items: <String>[
+                      'Spam or Scam',
+                      'Harassment or Bullying',
+                      'Inappropriate Content',
+                      'Fake Community',
+                      'Other',
+                    ].map((reason) => DropdownMenuItem<String>(
+                      value: reason,
+                      child: Text(reason, style: const TextStyle(color: Colors.white)),
+                    )).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedReason = value ?? 'Spam or Scam';
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _descriptionController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Additional details (optional)',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white54),
+                      ),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'We will conduct a full investigation within 24 hours.',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _reportCommunity(
+                    context,
+                    communityId,
+                    selectedReason,
+                    _descriptionController.text,
+                    collectionName,
+                  );
+                },
+                child: const Text(
+                  'Submit',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<void> _reportCommunity(
+  BuildContext context,
+  String communityId,
+  String reason,
+  String description,
+  String collectionName,
+) async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return;
+  try {
+    await FirebaseFirestore.instance.collection('reports').add({
+      'reporterUid': currentUser.uid,
+      'reportedCommunityId': communityId,
+      'collection': collectionName,
+      'timestamp': FieldValue.serverTimestamp(),
+      'status': 'pending',
+      'reason': reason,
+      'description': description,
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Report submitted. We will conduct a full investigation within 24 hours.'),
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error reporting community: $e')),
+    );
+  }
+}
+
+Future<void> _blockCommunity(BuildContext context, String communityId) async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return;
+  try {
+    await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+      'BlockedCommunities': FieldValue.arrayUnion([communityId]),
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Community blocked.')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error blocking community: $e')),
+    );
+  }
+}
+
+//
+// --- AllOrganizationsPage & Related Widgets ---
+//
+
 /// A page with 3 main tabs: Clubs, Interest Groups, Open Forums.
 /// - Clubs: single, wider card per row.
 /// - Interest Groups / Class Groups: 3 columns, toggled by a local switch.
@@ -358,8 +549,7 @@ class InterestOrClassGroupsTab extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<InterestOrClassGroupsTab> createState() =>
-      _InterestOrClassGroupsTabState();
+  State<InterestOrClassGroupsTab> createState() => _InterestOrClassGroupsTabState();
 }
 
 class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
@@ -386,8 +576,7 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
                   style: TextStyle(
                     fontFamily: 'Lovelo',
                     fontSize: 16,
-                    fontWeight:
-                        showClassGroups ? FontWeight.normal : FontWeight.bold,
+                    fontWeight: showClassGroups ? FontWeight.normal : FontWeight.bold,
                     color: showClassGroups ? Colors.grey : Colors.white,
                   ),
                 ),
@@ -400,8 +589,7 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
                   style: TextStyle(
                     fontFamily: 'Lovelo',
                     fontSize: 16,
-                    fontWeight:
-                        showClassGroups ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: showClassGroups ? FontWeight.bold : FontWeight.normal,
                     color: showClassGroups ? Colors.white : Colors.grey,
                   ),
                 ),
@@ -489,7 +677,6 @@ class OrganizationGrid extends StatelessWidget {
               ),
             );
           }
-
           return Center(
             child: Text(
               'Something went wrong:\n\n${snapshot.error}',
@@ -555,9 +742,9 @@ class OrganizationGrid extends StatelessWidget {
                     final orgName = data['name'] ?? 'No Name';
                     final description = data['description'] ?? 'No Description';
 
-                    // Wrap each card in a TweenAnimationBuilder
+                    // Wrap each card in a TweenAnimationBuilder for a smooth entry.
                     return TweenAnimationBuilder<double>(
-                      key: ValueKey(docSnap.id), // helps keep animation stable
+                      key: ValueKey(docSnap.id),
                       duration: Duration(milliseconds: 300 + 50 * index),
                       tween: Tween(begin: 0.0, end: 1.0),
                       curve: Curves.easeOut,
@@ -570,19 +757,13 @@ class OrganizationGrid extends StatelessWidget {
                           ),
                         );
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: _buildClubCard(
-                          context: context,
-                          docId: docSnap.id,
-                          data: data,
-                          pfpUrl: pfpUrl,
-                          name: orgName,
-                          description: description,
-                        ),
+                      child: _buildClubCard(
+                        context: context,
+                        docId: docSnap.id,
+                        data: data,
+                        pfpUrl: pfpUrl,
+                        name: orgName,
+                        description: description,
                       ),
                     );
                   }),
@@ -628,9 +809,8 @@ class OrganizationGrid extends StatelessWidget {
 
                         // If missing a backgroundColor, assign one permanently:
                         if (!(data['backgroundColor']?.isNotEmpty ?? false)) {
-                          final color = _generateAllowedRandomColor();
-                          // Store e.g. "0xFFABCDEF"
-                          final colorHex = _colorToFirestoreHex(color);
+                          final color = OrganizationGrid._generateAllowedRandomColor();
+                          final colorHex = OrganizationGrid._colorToFirestoreHex(color);
                           data['backgroundColor'] = colorHex;
 
                           // Write to Firestore so it never changes in future:
@@ -643,7 +823,6 @@ class OrganizationGrid extends StatelessWidget {
                       final pfpText = data['pfpText'] ?? '';
                       final bgColorHex = data['backgroundColor'] ?? '';
 
-                      // Wrap each item in a TweenAnimationBuilder for nice entry
                       return TweenAnimationBuilder<double>(
                         key: ValueKey(docSnap.id),
                         duration: Duration(milliseconds: 300 + 50 * index),
@@ -666,14 +845,13 @@ class OrganizationGrid extends StatelessWidget {
                               arguments: {
                                 'communityId': docSnap.id,
                                 'communityData': data,
-                                'userId':
-                                    FirebaseAuth.instance.currentUser?.uid ??
-                                        'noUser',
+                                'userId': FirebaseAuth.instance.currentUser?.uid ?? 'noUser',
                                 'collectionName': collectionName,
                               },
                             );
                           },
                           child: OrganizationCard(
+                            communityId: docSnap.id,
                             name: orgName,
                             description: finalDescription,
                             pfpUrl: pfpUrl,
@@ -710,20 +888,11 @@ class OrganizationGrid extends StatelessWidget {
       final bool ghost = data['isGhostMode'] == true;
 
       if (!ghost) {
-        // Not ghost => keep
         results.add(docSnap);
       } else {
-        // Ghost => must check membership
-        if (uid == null) {
-          // Not logged in => can't see ghost doc
-          continue;
-        }
-        final memberDoc = await docSnap.reference
-            .collection('members')
-            .doc(uid)
-            .get();
+        if (uid == null) continue;
+        final memberDoc = await docSnap.reference.collection('members').doc(uid).get();
         if (memberDoc.exists) {
-          // The user is a member => keep it
           results.add(docSnap);
         }
       }
@@ -740,109 +909,125 @@ class OrganizationGrid extends StatelessWidget {
     required String name,
     required String description,
   }) {
-    return InkWell(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/clubs-profile',
-          arguments: {
-            'communityId': docId,
-            'communityData': data,
-            'userId': FirebaseAuth.instance.currentUser?.uid ?? 'noUser',
-            'collectionName': 'clubs',
-          },
-        );
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1F1F1F),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.white.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Big image (16:9 ratio)
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: pfpUrl.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: pfpUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey.shade900,
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey.shade900,
-                          child: const Icon(
-                            Icons.broken_image,
-                            color: Colors.white54,
-                            size: 48,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.grey.shade900,
-                        child: const Icon(
-                          Icons.image,
-                          color: Colors.white54,
-                          size: 48,
-                        ),
-                      ),
+    return GestureDetector(
+      onLongPress: () => _showCommunityActions(context, docId, 'clubs'),
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/clubs-profile',
+                arguments: {
+                  'communityId': docId,
+                  'communityData': data,
+                  'userId': FirebaseAuth.instance.currentUser?.uid ?? 'noUser',
+                  'collectionName': 'clubs',
+                },
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1F1F1F),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              // Info at bottom
-              Padding(
-                padding: const EdgeInsets.all(14.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Lovelo',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    // Big image (16:9 ratio)
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: pfpUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: pfpUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey.shade900,
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey.shade900,
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  color: Colors.white54,
+                                  size: 48,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey.shade900,
+                              child: const Icon(
+                                Icons.image,
+                                color: Colors.white54,
+                                size: 48,
+                              ),
+                            ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
+                    // Info at bottom
+                    Padding(
+                      padding: const EdgeInsets.all(14.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Lovelo',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          // Positioned "..." icon
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
+              onPressed: () => _showCommunityActions(context, docId, 'clubs'),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Generate a random color while skipping white/grey/bright-yellows
+  /// Generate a random color while skipping white/grey/bright-yellows.
   static Color _generateAllowedRandomColor() {
     const maxTries = 50;
     for (int i = 0; i < maxTries; i++) {
@@ -852,49 +1037,38 @@ class OrganizationGrid extends StatelessWidget {
         return color;
       }
     }
-    // fallback
     return Colors.blue;
   }
 
   /// Convert e.g. Color(0xFFABCDEF) → "0xFFABCDEF"
   static String _colorToFirestoreHex(Color color) {
-    final int argb = color.value; // e.g. 0xFFABCDEF
-    // toRadixString(16) => 'ffabcdef', uppercase & ensure 8 chars
+    final int argb = color.value;
     final hex = argb.toRadixString(16).toUpperCase().padLeft(8, '0');
-    return '0x$hex'; // e.g. "0xFFABCDEF"
+    return '0x$hex';
   }
 
-  /// Exclude:
-  /// - near-white (lightness>0.9),
-  /// - grey (saturation<0.1),
-  /// - bright yellow (hue ~50..70, sat>0.5, lightness>0.4)
+  /// Exclude near-white, grey, bright yellow.
   static bool _isDisallowedColor(Color c) {
     final hsl = HSLColor.fromColor(c);
-    final h = hsl.hue;         // 0..360
-    final s = hsl.saturation;  // 0..1
-    final l = hsl.lightness;   // 0..1
+    final h = hsl.hue;
+    final s = hsl.saturation;
+    final l = hsl.lightness;
 
-    // near-white
     if (l > 0.9) return true;
-    // grey
     if (s < 0.1) return true;
-    // bright yellow
-    if (h >= 50 && h <= 70 && s > 0.5 && l > 0.4) {
-      return true;
-    }
+    if (h >= 50 && h <= 70 && s > 0.5 && l > 0.4) return true;
     return false;
   }
 }
 
 /// A simpler card that can be rectangular or circular for interest/forums
-/// or class groups. Now it always just uses `backgroundColorHex` from doc
-/// for textAvatar. We do NOT re-randomize here anymore.
+/// or class groups. Now includes report/block actions on long press and via a “...” overlay.
 class OrganizationCard extends StatelessWidget {
+  final String communityId; // New: to track the community's ID.
   final String name;
   final String description;
   final String pfpUrl;
   final bool circleCards;
-
   final String pfpType;
   final String pfpText;
   final String backgroundColorHex;
@@ -902,6 +1076,7 @@ class OrganizationCard extends StatelessWidget {
 
   const OrganizationCard({
     Key? key,
+    required this.communityId,
     required this.name,
     required this.description,
     required this.pfpUrl,
@@ -914,11 +1089,26 @@ class OrganizationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isTextAvatar = (pfpType == 'textAvatar' && pfpText.isNotEmpty);
-
-    return circleCards
-        ? _buildCircleCard(isTextAvatar)
-        : _buildRectangularCard(isTextAvatar);
+    // Wrap the card in a GestureDetector to enable long-press actions.
+    return GestureDetector(
+      onLongPress: () => _showCommunityActions(context, communityId, 'organizations'),
+      child: Stack(
+        children: [
+          circleCards
+              ? _buildCircleCard(pfpType == 'textAvatar' && pfpText.isNotEmpty)
+              : _buildRectangularCard(pfpType == 'textAvatar' && pfpText.isNotEmpty),
+          // "..." action button overlay.
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
+              onPressed: () => _showCommunityActions(context, communityId, 'organizations'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCircleCard(bool isTextAvatar) {
@@ -1036,8 +1226,7 @@ class OrganizationCard extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
-                  crossAxisAlignment:
-                      circleCards ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+                  crossAxisAlignment: circleCards ? CrossAxisAlignment.center : CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
@@ -1070,7 +1259,6 @@ class OrganizationCard extends StatelessWidget {
     );
   }
 
-  /// Loads image or placeholder
   Widget _buildImageOrPlaceholder() {
     if (pfpUrl.isNotEmpty) {
       return CachedNetworkImage(
@@ -1103,10 +1291,7 @@ class OrganizationCard extends StatelessWidget {
     }
   }
 
-  /// For text-avatar, we do NOT re-randomize if isClassGroups.
-  /// We always just parse the doc's 'backgroundColorHex' (hard-coded once assigned).
   Widget _buildTextAvatar({required bool isCircle}) {
-    // parse doc color
     Color parsedColor = Colors.grey.shade700;
     try {
       if (backgroundColorHex.startsWith('0x')) {
@@ -1114,7 +1299,6 @@ class OrganizationCard extends StatelessWidget {
         parsedColor = Color(colorValue);
       }
     } catch (_) {
-      // fallback
       parsedColor = Colors.grey.shade700;
     }
 

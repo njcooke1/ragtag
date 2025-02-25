@@ -52,11 +52,13 @@ class _ChatPageState extends State<ChatPage> {
 
   List<DocumentSnapshot> _pinnedMessages = [];
   List<DocumentSnapshot> _normalMessages = [];
+  List<String> _blockedUserIds = [];
 
   @override
   void initState() {
     super.initState();
     _checkIfAdmin();
+    _listenToBlockedUsers();
   }
 
   @override
@@ -82,7 +84,28 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 2) BUILD
+  // 2) LISTEN TO BLOCKED USERS
+  // ---------------------------------------------------------------------------
+  void _listenToBlockedUsers() {
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .snapshots()
+          .listen((docSnapshot) {
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data();
+          setState(() {
+            _blockedUserIds = List<String>.from(data?['Blocked'] ?? []);
+          });
+        }
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 3) BUILD
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
@@ -100,7 +123,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 3) DARK APP BAR + the new 3‐dot menu => calls _showMoreMenu()
+  // 4) DARK APP BAR + 3‐DOT MENU (REPORT & BLOCK)
   // ---------------------------------------------------------------------------
   AppBar _buildDarkAppBar() {
     return AppBar(
@@ -144,7 +167,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  /// Minimal “More” menu => just a big “REPORT” button
+  /// Updated “More” menu: now shows both REPORT and BLOCK options.
   void _showMoreMenu() {
     showModalBottomSheet(
       context: context,
@@ -156,7 +179,7 @@ class _ChatPageState extends State<ChatPage> {
         return Container(
           padding: const EdgeInsets.all(16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ElevatedButton(
                 onPressed: () {
@@ -178,6 +201,26 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
               ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _confirmBlockDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "BLOCK",
+                  style: TextStyle(
+                    color: Colors.orangeAccent,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -186,7 +229,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 4) MESSAGES LIST (PINNED + NORMAL)
+  // 5) MESSAGES LIST (PINNED + NORMAL, FILTERING BLOCKED)
   // ---------------------------------------------------------------------------
   Widget _buildMessagesList() {
     return StreamBuilder<QuerySnapshot>(
@@ -213,7 +256,7 @@ class _ChatPageState extends State<ChatPage> {
           );
         }
 
-        // Separate pinned from normal
+        // Separate pinned from normal messages.
         _pinnedMessages = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           return data['pinned'] == true;
@@ -221,10 +264,16 @@ class _ChatPageState extends State<ChatPage> {
 
         _normalMessages = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
+          final senderId = data['senderId'] ?? '';
+          // Filter out messages from blocked users (if not sent by current user)
+          if (senderId != _auth.currentUser?.uid &&
+              _blockedUserIds.contains(senderId)) {
+            return false;
+          }
           return data['pinned'] != true;
         }).toList();
 
-        // Build the final list of widgets
+        // Build the final list of widgets.
         final List<Widget> messageWidgets = [];
 
         // Show pinned messages in a “pinned section”
@@ -232,7 +281,7 @@ class _ChatPageState extends State<ChatPage> {
           messageWidgets.add(_buildPinnedSection());
         }
 
-        // Build normal messages with day dividers
+        // Build normal messages with day dividers.
         DateTime? lastDate;
         for (int i = 0; i < _normalMessages.length; i++) {
           final doc = _normalMessages[i];
@@ -251,7 +300,7 @@ class _ChatPageState extends State<ChatPage> {
           messageWidgets.add(_buildMessageBubble(doc));
         }
 
-        // Auto-scroll after building
+        // Auto-scroll after building.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
             _scrollController.jumpTo(
@@ -270,7 +319,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 5) PINNED SECTION
+  // 6) PINNED SECTION
   // ---------------------------------------------------------------------------
   Widget _buildPinnedSection() {
     return Container(
@@ -285,7 +334,7 @@ class _ChatPageState extends State<ChatPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Label + pin icon
+          // Label + pin icon.
           Padding(
             padding: const EdgeInsets.all(8),
             child: Row(
@@ -303,7 +352,7 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           const Divider(color: Colors.white54, height: 1),
-          // Render each pinned message in the same bubble style
+          // Render each pinned message.
           for (final doc in _pinnedMessages) _buildMessageBubble(doc),
         ],
       ),
@@ -311,7 +360,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 6) DATE DIVIDER
+  // 7) DATE DIVIDER
   // ---------------------------------------------------------------------------
   Widget _buildDateDivider(DateTime date) {
     final dayString =
@@ -329,7 +378,6 @@ class _ChatPageState extends State<ChatPage> {
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            // Subtle triple gradient
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [
@@ -361,7 +409,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  /// Convert weekday int (Mon=1,Sun=7) to full name
+  /// Convert weekday int (Mon=1, Sun=7) to full name.
   String _weekdayName(int weekday) {
     const days = [
       "Monday",
@@ -376,7 +424,7 @@ class _ChatPageState extends State<ChatPage> {
     return days[weekday - 1];
   }
 
-  /// Convert month int (1-12) to full name
+  /// Convert month int (1-12) to full name.
   String _monthName(int month) {
     const months = [
       "January",
@@ -397,7 +445,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 7) MESSAGE BUBBLE
+  // 8) MESSAGE BUBBLE
   // ---------------------------------------------------------------------------
   Widget _buildMessageBubble(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -417,7 +465,6 @@ class _ChatPageState extends State<ChatPage> {
     final currentUser = _auth.currentUser;
     final isMe = (currentUser != null && senderId == currentUser.uid);
 
-    // We'll align the bubble left or right
     return GestureDetector(
       onLongPress: () => _showMessageOptions(doc, isMe),
       child: Container(
@@ -480,7 +527,6 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                   ),
                 ),
-              // Time at bottom
               const SizedBox(height: 6),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -496,7 +542,7 @@ class _ChatPageState extends State<ChatPage> {
                     const SizedBox(width: 8),
                     Icon(
                       Icons.push_pin,
-                      color: pinnedIconColor, // golden
+                      color: pinnedIconColor,
                       size: 16,
                     ),
                   ],
@@ -510,7 +556,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 8) SHOW MESSAGE OPTIONS (PIN/UNPIN/DELETE)
+  // 9) SHOW MESSAGE OPTIONS (PIN/UNPIN/DELETE)
   // ---------------------------------------------------------------------------
   void _showMessageOptions(DocumentSnapshot doc, bool isMe) {
     final data = doc.data() as Map<String, dynamic>;
@@ -529,7 +575,8 @@ class _ChatPageState extends State<ChatPage> {
           child: Wrap(
             children: [
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                leading:
+                    const Icon(Icons.delete_outline, color: Colors.redAccent),
                 title: Text(
                   isMe ? "Delete for Me" : "Delete Message",
                   style: const TextStyle(color: Colors.white70),
@@ -543,8 +590,8 @@ class _ChatPageState extends State<ChatPage> {
                 ListTile(
                   leading: Icon(Icons.push_pin, color: accentColor),
                   title: const Text(
-                      "Pin Message",
-                      style: TextStyle(color: Colors.white70),
+                    "Pin Message",
+                    style: TextStyle(color: Colors.white70),
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -555,8 +602,8 @@ class _ChatPageState extends State<ChatPage> {
                 ListTile(
                   leading: Icon(Icons.push_pin_outlined, color: accentColor),
                   title: const Text(
-                      "Unpin Message",
-                      style: TextStyle(color: Colors.white70),
+                    "Unpin Message",
+                    style: TextStyle(color: Colors.white70),
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -589,7 +636,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 9) TYPING INDICATOR (LOCAL ONLY)
+  // 10) TYPING INDICATOR (LOCAL ONLY)
   // ---------------------------------------------------------------------------
   Widget _buildTypingIndicator() {
     return AnimatedSwitcher(
@@ -613,7 +660,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 10) INPUT ROW
+  // 11) INPUT ROW
   // ---------------------------------------------------------------------------
   Widget _buildInputRow() {
     return SafeArea(
@@ -629,10 +676,10 @@ class _ChatPageState extends State<ChatPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Row for icons + text field
+            // Row for icons + text field.
             Row(
               children: [
-                // If uploading image -> show spinner
+                // If uploading image -> show spinner.
                 if (_isUploadingImage)
                   const Padding(
                     padding: EdgeInsets.only(right: 8),
@@ -659,7 +706,7 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                   ),
                 const SizedBox(width: 8),
-                // TextField
+                // TextField.
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -673,8 +720,8 @@ class _ChatPageState extends State<ChatPage> {
                         hintText: "Type a message...",
                         hintStyle: TextStyle(color: Colors.white38),
                         border: InputBorder.none,
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 10),
                       ),
                       onChanged: (val) {
                         if (val.isNotEmpty && !_isTyping) {
@@ -687,7 +734,7 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Send button
+                // Send button.
                 InkWell(
                   onTap: _sendMessage,
                   child: Container(
@@ -712,7 +759,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 11) SEND TEXT MESSAGE
+  // 12) SEND TEXT MESSAGE
   // ---------------------------------------------------------------------------
   Future<void> _sendMessage() async {
     final text = _msgController.text.trim();
@@ -721,7 +768,7 @@ class _ChatPageState extends State<ChatPage> {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    // For real user data, you'd fetch from Firestore or pass in
+    // For real user data, you'd fetch from Firestore or pass in.
     final senderName = widget.otherUserName;
     final senderPhotoUrl = widget.otherUserPhotoUrl;
 
@@ -748,7 +795,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 12) SEND IMAGE MESSAGE
+  // 13) SEND IMAGE MESSAGE
   // ---------------------------------------------------------------------------
   Future<void> _sendImageMessage() async {
     final currentUser = _auth.currentUser;
@@ -784,7 +831,6 @@ class _ChatPageState extends State<ChatPage> {
           .doc(widget.chatId)
           .collection('messages')
           .add(data);
-
     } catch (e) {
       debugPrint("Error uploading image: $e");
     }
@@ -794,7 +840,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 13) AUTO SCROLL
+  // 14) AUTO SCROLL
   // ---------------------------------------------------------------------------
   void _autoScroll() {
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -807,10 +853,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 14) REPORT FLOW
+  // 15) REPORT FLOW
   // ---------------------------------------------------------------------------
 
-  /// Step 1: Prompt user to pick a category
+  /// Step 1: Prompt user to pick a report category.
   void _showReportDialog() {
     final List<String> reportCategories = [
       "Harassment",
@@ -826,7 +872,8 @@ class _ChatPageState extends State<ChatPage> {
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text("Report this Chat", style: TextStyle(color: Colors.white)),
+          title:
+              const Text("Report this Chat", style: TextStyle(color: Colors.white)),
           content: StatefulBuilder(
             builder: (context, setStateSB) {
               return Column(
@@ -861,32 +908,35 @@ class _ChatPageState extends State<ChatPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancel", style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text("Cancel", style: TextStyle(color: Colors.white70)),
             ),
             ElevatedButton(
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.redAccent, 
-    foregroundColor: Colors.white, // <-- White text
-  ),
-  onPressed: () {
-    // ...
-  },
-  child: const Text("Next"),
-)
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _confirmReport(selectedCategory);
+              },
+              child: const Text("Next"),
+            )
           ],
         );
       },
     );
   }
 
-  /// Step 2: Confirmation
+  /// Step 2: Confirmation before report submission.
   void _confirmReport(String category) {
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text("Confirm Report", style: TextStyle(color: Colors.white)),
+          title:
+              const Text("Confirm Report", style: TextStyle(color: Colors.white)),
           content: Text(
             'Are you sure you want to report this chat for "$category"?',
             style: const TextStyle(color: Colors.white70),
@@ -894,7 +944,8 @@ class _ChatPageState extends State<ChatPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("No", style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text("No", style: TextStyle(color: Colors.white70)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
@@ -910,7 +961,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  /// Step 3: Write to 'reports' in Firestore
+  /// Step 3: Write the report to 'reports' collection in Firestore.
   Future<void> _submitReport(String category) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -927,12 +978,13 @@ class _ChatPageState extends State<ChatPage> {
         'category': category,
       });
 
-      // Show success feedback
+      // Show success feedback.
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text('Report Received', style: TextStyle(color: Colors.white)),
+          title:
+              const Text('Report Received', style: TextStyle(color: Colors.white)),
           content: const Text(
             'Thanks! We have received your report.',
             style: TextStyle(color: Colors.white70),
@@ -940,7 +992,8 @@ class _ChatPageState extends State<ChatPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK', style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text('OK', style: TextStyle(color: Colors.white70)),
             ),
           ],
         ),
@@ -950,7 +1003,63 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  // Simple helper to show a snackbar
+  // ---------------------------------------------------------------------------
+  // 16) BLOCK USER FLOW
+  // ---------------------------------------------------------------------------
+
+  /// Show a confirmation dialog before blocking the user.
+  void _confirmBlockDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title:
+              const Text("Confirm Block", style: TextStyle(color: Colors.white)),
+          content: const Text(
+            "Are you sure you want to block this user?",
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child:
+                  const Text("Cancel", style: TextStyle(color: Colors.white70)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _blockUser();
+              },
+              child: const Text("Yes, Block", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Perform the block action: add the other user's ID to the current user's "Blocked" field.
+  Future<void> _blockUser() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      _showSnack("You must be logged in to block.");
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+        'Blocked': FieldValue.arrayUnion([widget.otherUserId]),
+      });
+      _showSnack("User blocked.");
+    } catch (e) {
+      _showSnack("Error blocking user: $e");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 17) HELPER: SHOW SNACKBAR
+  // ---------------------------------------------------------------------------
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg)),

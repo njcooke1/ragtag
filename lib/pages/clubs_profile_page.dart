@@ -3348,7 +3348,7 @@ Widget _buildBottomActionCard({
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Report Received'),
-          content: const Text('Thanks! We have received your report.'),
+          content: const Text('We will conduct a full investigation within 24 hours.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),

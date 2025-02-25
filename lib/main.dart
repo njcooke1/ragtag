@@ -79,9 +79,6 @@ Future<void> main() async {
     print('Error during Firebase.initializeApp(): $e\n$stacktrace');
   }
 
-  // Firebase Auth automatically persists the user session.
-  // No need to manually re-sign in using a stored custom token.
-
   // Activate Firebase App Check.
   try {
     await FirebaseAppCheck.instance.activate(
@@ -100,9 +97,16 @@ Future<void> main() async {
   await requestNotificationPermission();
   await getAPNSTokenAndPrint();
 
-  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-    print('New APNs token (onTokenRefresh): $newToken');
-  });
+  // Retrieve stored auth token from secure storage.
+  // Firebase Auth persists sessions by default.
+  // This is useful if you're using custom tokens or additional auth logic.
+  final String? storedAuthToken = await secureStorage.read(key: 'auth_token');
+  if (storedAuthToken != null) {
+    print('Found auth token in secure storage: $storedAuthToken');
+    // Optionally, use the token to reinitialize your custom auth session.
+  } else {
+    print('No auth token found in secure storage.');
+  }
 
   runApp(const RagtagApp());
   print('App launched.');
