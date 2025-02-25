@@ -702,17 +702,77 @@ class OrganizationGrid extends StatelessWidget {
                 // Build UI sections.
                 Widget activeWidget;
                 if (collectionName == 'clubs') {
-                  activeWidget = SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: activeDocs.asMap().entries.map((entry) {
-                        int index = entry.key;
-                        final docSnap = entry.value;
+                  activeWidget = Column(
+                    children: activeDocs.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      final docSnap = entry.value;
+                      final data = docSnap.data() as Map<String, dynamic>;
+                      data['id'] = docSnap.id;
+                      final pfpUrl = data['pfpUrl'] ?? '';
+                      final orgName = data['name'] ?? 'No Name';
+                      final description = data['description'] ?? 'No Description';
+                      return TweenAnimationBuilder<double>(
+                        key: ValueKey(docSnap.id),
+                        duration: Duration(milliseconds: 300 + 50 * index),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        curve: Curves.easeOut,
+                        builder: (context, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 30 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _buildClubCard(
+                          context: context,
+                          docId: docSnap.id,
+                          data: data,
+                          pfpUrl: pfpUrl,
+                          name: orgName,
+                          description: description,
+                        ),
+                      );
+                    }).toList(),
+                  );
+                } else {
+                  int crossAxisCount = 3;
+                  double aspectRatio = circleCards ? 1 : 3 / 4;
+                  activeWidget = Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: activeDocs.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: 16.0,
+                        crossAxisSpacing: 16.0,
+                        childAspectRatio: aspectRatio,
+                      ),
+                      itemBuilder: (context, index) {
+                        final docSnap = activeDocs[index];
                         final data = docSnap.data() as Map<String, dynamic>;
                         data['id'] = docSnap.id;
-                        final pfpUrl = data['pfpUrl'] ?? '';
                         final orgName = data['name'] ?? 'No Name';
-                        final description = data['description'] ?? 'No Description';
+                        final originalDesc = data['description'] ?? 'No Description';
+                        String finalDescription = originalDesc;
+                        if (isClassGroups) {
+                          final lastName = data['profLastName'] ?? '';
+                          final daysString = data['days'] ?? '';
+                          finalDescription = '$lastName - $daysString';
+                          if (!(data['backgroundColor']?.isNotEmpty ?? false)) {
+                            final color = OrganizationGrid._generateAllowedRandomColor();
+                            final colorHex = OrganizationGrid._colorToFirestoreHex(color);
+                            data['backgroundColor'] = colorHex;
+                            docSnap.reference.update({'backgroundColor': colorHex});
+                          }
+                        }
+                        final pfpUrl = data['pfpUrl'] ?? '';
+                        final pfpType = data['pfpType'] ?? '';
+                        final pfpText = data['pfpText'] ?? '';
+                        final bgColorHex = data['backgroundColor'] ?? '';
                         return TweenAnimationBuilder<double>(
                           key: ValueKey(docSnap.id),
                           duration: Duration(milliseconds: 300 + 50 * index),
@@ -727,99 +787,33 @@ class OrganizationGrid extends StatelessWidget {
                               ),
                             );
                           },
-                          child: _buildClubCard(
-                            context: context,
-                            docId: docSnap.id,
-                            data: data,
-                            pfpUrl: pfpUrl,
-                            name: orgName,
-                            description: description,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  );
-                } else {
-                  int crossAxisCount = 3;
-                  double aspectRatio = circleCards ? 1 : 3 / 4;
-                  activeWidget = SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: GridView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: activeDocs.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          mainAxisSpacing: 16.0,
-                          crossAxisSpacing: 16.0,
-                          childAspectRatio: aspectRatio,
-                        ),
-                        itemBuilder: (context, index) {
-                          final docSnap = activeDocs[index];
-                          final data = docSnap.data() as Map<String, dynamic>;
-                          data['id'] = docSnap.id;
-                          final orgName = data['name'] ?? 'No Name';
-                          final originalDesc = data['description'] ?? 'No Description';
-                          String finalDescription = originalDesc;
-                          if (isClassGroups) {
-                            final lastName = data['profLastName'] ?? '';
-                            final daysString = data['days'] ?? '';
-                            finalDescription = '$lastName - $daysString';
-                            if (!(data['backgroundColor']?.isNotEmpty ?? false)) {
-                              final color = OrganizationGrid._generateAllowedRandomColor();
-                              final colorHex = OrganizationGrid._colorToFirestoreHex(color);
-                              data['backgroundColor'] = colorHex;
-                              docSnap.reference.update({'backgroundColor': colorHex});
-                            }
-                          }
-                          final pfpUrl = data['pfpUrl'] ?? '';
-                          final pfpType = data['pfpType'] ?? '';
-                          final pfpText = data['pfpText'] ?? '';
-                          final bgColorHex = data['backgroundColor'] ?? '';
-                          return TweenAnimationBuilder<double>(
-                            key: ValueKey(docSnap.id),
-                            duration: Duration(milliseconds: 300 + 50 * index),
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            curve: Curves.easeOut,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 30 * (1 - value)),
-                                  child: child,
-                                ),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                onCardTapRoute,
+                                arguments: {
+                                  'communityId': docSnap.id,
+                                  'communityData': data,
+                                  'userId': FirebaseAuth.instance.currentUser?.uid ?? 'noUser',
+                                  'collectionName': collectionName,
+                                },
                               );
                             },
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  onCardTapRoute,
-                                  arguments: {
-                                    'communityId': docSnap.id,
-                                    'communityData': data,
-                                    'userId': FirebaseAuth.instance.currentUser?.uid ?? 'noUser',
-                                    'collectionName': collectionName,
-                                  },
-                                );
-                              },
-                              child: OrganizationCard(
-                                communityId: docSnap.id,
-                                name: orgName,
-                                description: finalDescription,
-                                pfpUrl: pfpUrl,
-                                circleCards: circleCards,
-                                pfpType: pfpType,
-                                pfpText: pfpText,
-                                backgroundColorHex: bgColorHex,
-                                isClassGroups: isClassGroups,
-                              ),
+                            child: OrganizationCard(
+                              communityId: docSnap.id,
+                              name: orgName,
+                              description: finalDescription,
+                              pfpUrl: pfpUrl,
+                              circleCards: circleCards,
+                              pfpType: pfpType,
+                              pfpText: pfpText,
+                              backgroundColorHex: bgColorHex,
+                              isClassGroups: isClassGroups,
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   );
                 }

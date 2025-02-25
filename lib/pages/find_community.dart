@@ -440,7 +440,7 @@ class _FindCommunityPageState extends State<FindCommunityPage>
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       // Main Title
-      Text("User Agreement", style: mainTitleStyle),
+      Text("User & EULA Agreement", style: mainTitleStyle),
       const SizedBox(height: 4),
 
       // Dates: smaller

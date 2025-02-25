@@ -925,34 +925,23 @@ Future<void> _deleteAccount() async {
             ),
             // NEW: Delete Account button below sign out.
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-              child: Tooltip(
-                message: "Hold for 3 seconds to delete your account",
-                child: GestureDetector(
-                  onLongPressStart: (details) {
-                    _deleteButtonHoldStartTime = DateTime.now();
-                  },
-                  onLongPressEnd: (details) {
-                    final heldDuration = DateTime.now().difference(_deleteButtonHoldStartTime ?? DateTime.now());
-                    if (heldDuration.inSeconds >= 3) {
-                      _showDeleteAccountConfirmationDialog();
-                    }
-                  },
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.delete_forever,
-                      color: _isDarkMode ? Colors.redAccent : Colors.red,
-                    ),
-                    title: Text(
-                      "Delete Account",
-                      style: TextStyle(
-                        color: _isDarkMode ? Colors.redAccent : Colors.red,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+  child: GestureDetector(
+    onTap: _showDeleteAccountConfirmationDialog,
+    child: ListTile(
+      leading: Icon(
+        Icons.delete_forever,
+        color: _isDarkMode ? Colors.redAccent : Colors.red,
+      ),
+      title: Text(
+        "Delete Account",
+        style: TextStyle(
+          color: _isDarkMode ? Colors.redAccent : Colors.red,
+        ),
+      ),
+    ),
+  ),
+),
           ], // <-- Closing bracket for the children list.
         ),
       ),
