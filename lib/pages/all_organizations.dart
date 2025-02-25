@@ -1051,7 +1051,7 @@ class OrganizationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final cardContent = GestureDetector(
       onLongPress: () {
         if (!isBlocked) {
           _showCommunityActions(context, communityId, 'organizations');
@@ -1081,6 +1081,10 @@ class OrganizationCard extends StatelessWidget {
         ],
       ),
     );
+
+    return isBlocked
+        ? Opacity(opacity: 0.6, child: cardContent)
+        : cardContent;
   }
 
   Widget _buildCircleCard(bool isTextAvatar) {
