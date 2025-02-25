@@ -986,7 +986,7 @@ class _ChatPageState extends State<ChatPage> {
           title:
               const Text('Report Received', style: TextStyle(color: Colors.white)),
           content: const Text(
-            'Thanks! We have received your report.',
+            'Thanks! We have received your report and will conduct an investigation within 24 hours.',
             style: TextStyle(color: Colors.white70),
           ),
           actions: [
