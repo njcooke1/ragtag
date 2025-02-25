@@ -210,15 +210,6 @@ Future<void> _unblockCommunity(BuildContext context, String communityId) async {
   }
 }
 
-/// Fetch the current user’s blocked community IDs.
-Future<List<String>> _fetchBlockedCommunityIds() async {
-  final currentUser = FirebaseAuth.instance.currentUser;
-  if (currentUser == null) return [];
-  final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-  final blockedList = userDoc.data()?['BlockedCommunities'] as List<dynamic>? ?? [];
-  return blockedList.map((e) => e.toString()).toList();
-}
-
 /// Filter ghost docs: only members see ghost-mode docs.
 Future<List<QueryDocumentSnapshot>> _filterGhostDocs(
   List<QueryDocumentSnapshot> inputDocs,
@@ -688,17 +679,23 @@ class OrganizationGrid extends StatelessWidget {
                 child: Center(child: Text('No results found', style: TextStyle(color: Colors.grey))),
               );
             }
-            // Fetch blocked community IDs.
-            return FutureBuilder<List<String>>(
-              future: _fetchBlockedCommunityIds(),
-              builder: (context, blockedSnapshot) {
-                if (blockedSnapshot.connectionState == ConnectionState.waiting) {
+            // Use a StreamBuilder to listen to changes in the user's document for blocked communities.
+            return StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .snapshots(),
+              builder: (context, userDocSnapshot) {
+                if (userDocSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator(color: Colors.white));
                 }
-                if (blockedSnapshot.hasError) {
-                  return Center(child: Text('Error: ${blockedSnapshot.error}', style: const TextStyle(color: Colors.red)));
+                if (userDocSnapshot.hasError) {
+                  return Center(child: Text('Error: ${userDocSnapshot.error}', style: const TextStyle(color: Colors.red)));
                 }
-                final blockedIds = blockedSnapshot.data ?? [];
+                final userData = userDocSnapshot.data?.data() as Map<String, dynamic>? ?? {};
+                final blockedList = userData['BlockedCommunities'] as List<dynamic>? ?? [];
+                final blockedIds = blockedList.map((e) => e.toString()).toList();
+
                 final activeDocs = finalDocs.where((doc) => !blockedIds.contains(doc.id)).toList();
                 final blockedDocs = finalDocs.where((doc) => blockedIds.contains(doc.id)).toList();
 
