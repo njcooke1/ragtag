@@ -666,7 +666,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                primary: Colors.red,
+                backgroundColor: Colors.red,
               ),
               onPressed: () async {
                 if (_deleteController.text.trim() == "DELETE") {
@@ -686,24 +686,37 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     );
   }
 
-  Future<void> _deleteAccount() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        // Optionally: Delete user data from Firestore here.
-        await user.delete();
+Future<void> _deleteAccount() async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final uid = user.uid;
+      // Delete user's document from Firestore.
+      await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+
+      // Optionally, delete the user's profile picture from Firebase Storage.
+      final storageRef = FirebaseStorage.instance.ref().child('profilePics').child('$uid.png');
+      try {
+        await storageRef.delete();
+      } catch (e) {
+        // Ignore errors if the file doesn't exist.
       }
-      // After deletion, navigate to the landing page.
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const OpeningLandingPage()),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error deleting account: $e")),
-      );
+
+      // Delete the Firebase Auth user account.
+      await user.delete();
     }
+    
+    // Navigate to the OpeningLandingPage like the sign-out button does.
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const OpeningLandingPage()),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error deleting account: $e")),
+    );
   }
+}
   // --------------------------------------------------
 
   @override
