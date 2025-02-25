@@ -407,314 +407,319 @@ class _FindCommunityPageState extends State<FindCommunityPage>
 
   /// The user agreement content, including Section 17
   Widget _buildUserAgreementContent() {
-    final textColor = isDarkMode ? Colors.white70 : Colors.black87;
+  final textColor = isDarkMode ? Colors.white70 : Colors.black87;
 
-    /// Body text => Times New Roman
-    final TextStyle bodyStyle = TextStyle(
-      fontSize: 15,
-      height: 1.4,
-      color: textColor,
-      fontFamily: 'Times New Roman',
-    );
+  /// Body text => Times New Roman
+  final TextStyle bodyStyle = TextStyle(
+    fontSize: 15,
+    height: 1.4,
+    color: textColor,
+    fontFamily: 'Times New Roman',
+  );
 
-    /// Section headings => bold
-    final TextStyle headingStyle = bodyStyle.copyWith(
-      fontWeight: FontWeight.bold,
-    );
+  /// Section headings => bold
+  final TextStyle headingStyle = bodyStyle.copyWith(
+    fontWeight: FontWeight.bold,
+  );
 
-    /// The main big title => Lovelo
-    final TextStyle mainTitleStyle = TextStyle(
-      fontSize: 24,
-      fontFamily: 'Lovelo-Black',
-      fontWeight: FontWeight.bold,
-      color: textColor,
-    );
+  /// The main big title => Lovelo
+  final TextStyle mainTitleStyle = TextStyle(
+    fontSize: 24,
+    fontFamily: 'Lovelo-Black',
+    fontWeight: FontWeight.bold,
+    color: textColor,
+  );
 
-    /// The smaller date style
-    final TextStyle dateStyle = bodyStyle.copyWith(
-      fontSize: 13,
-      color: textColor.withOpacity(0.8),
-    );
+  /// The smaller date style
+  final TextStyle dateStyle = bodyStyle.copyWith(
+    fontSize: 13,
+    color: textColor.withOpacity(0.8),
+  );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Main Title
-        Text("User Agreement", style: mainTitleStyle),
-        const SizedBox(height: 4),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Main Title
+      Text("User Agreement", style: mainTitleStyle),
+      const SizedBox(height: 4),
 
-        // Dates: smaller
-        Text("Last Updated: January 27, 2025", style: dateStyle),
-        Text("Effective Date: January 27, 2025", style: dateStyle),
-        const SizedBox(height: 12),
+      // Dates: smaller
+      Text("Last Updated: January 27, 2025", style: dateStyle),
+      Text("Effective Date: January 27, 2025", style: dateStyle),
+      const SizedBox(height: 12),
 
-        // Big Intro
-        Text(
-          "Welcome to Ragtag (the “App”), owned and operated by Ragtag Social LLC (“Ragtag,” “we,” “us,” or “our”). By using or accessing our App (including any associated websites, features, content, platforms, tools, and services), you (“User” or “you”) agree to comply with the terms and conditions set forth in this agreement (the “Agreement” or “Terms”). If you do not agree to these Terms, you must discontinue use of the App immediately.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // Big Intro
+      Text(
+        "Welcome to Ragtag (the “App”), owned and operated by Ragtag Social LLC (“Ragtag,” “we,” “us,” or “our”). By using or accessing our App (including any associated websites, features, content, platforms, tools, and services), you (“User” or “you”) agree to comply with the terms and conditions set forth in this agreement (the “Agreement” or “Terms”). If you do not agree to these Terms, you must discontinue use of the App immediately.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 1. Acceptance of Terms
-        Text("1. Acceptance of Terms", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "1.1 Binding Agreement\nBy downloading, installing, accessing, or using the App, you acknowledge that you have read, understood, and agree to be bound by this Agreement, our [Privacy Policy], and any additional guidelines, rules, or disclaimers posted within the App or our official website.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "1.2 Eligibility\nYou must be at least 13 years of age (or older if required in your jurisdiction) to use our App. If you are under 18, you represent that you have your parent or guardian’s permission to use the App. If you do not meet these requirements, you are not permitted to use or access the App.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 1. Acceptance of Terms
+      Text("1. Acceptance of Terms", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "1.1 Binding Agreement\nBy downloading, installing, accessing, or using the App, you acknowledge that you have read, understood, and agree to be bound by this Agreement, our [Privacy Policy], and any additional guidelines, rules, or disclaimers posted within the App or our official website.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "1.2 Eligibility\nYou must be at least 13 years of age (or older if required in your jurisdiction) to use our App. If you are under 18, you represent that you have your parent or guardian’s permission to use the App. If you do not meet these requirements, you are not permitted to use or access the App.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 2. Accounts and Registration
-        Text("2. Accounts and Registration", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "2.1 Account Creation\nTo access certain features, you may be required to create an account. You agree to:\n• Provide accurate, current, and complete information during registration.\n• Keep your account credentials confidential.\n• Maintain and promptly update your information to keep it accurate and complete.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "2.2 Account Security\nYou are responsible for any activity that occurs under your username and password, whether or not authorized. If you suspect any unauthorized use of your account, notify us immediately at [Contact Email or Support Portal].",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "2.3 Multiple Accounts\nYou may not create multiple accounts for the purpose of abusing the functionality of the App or circumventing any restrictions.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 2. Accounts and Registration
+      Text("2. Accounts and Registration", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "2.1 Account Creation\nTo access certain features, you may be required to create an account. You agree to:\n• Provide accurate, current, and complete information during registration.\n• Keep your account credentials confidential.\n• Maintain and promptly update your information to keep it accurate and complete.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "2.2 Account Security\nYou are responsible for any activity that occurs under your username and password, whether or not authorized. If you suspect any unauthorized use of your account, notify us immediately at [Contact Email or Support Portal].",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "2.3 Multiple Accounts\nYou may not create multiple accounts for the purpose of abusing the functionality of the App or circumventing any restrictions.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 3. License and App Usage
-        Text("3. License and App Usage", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "3.1 Limited License\nRagtag grants you a non-exclusive, non-transferable, revocable license to use the App for personal, non-commercial purposes, subject to these Terms and any other guidelines we provide.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "3.2 Prohibited Activities\nIn using the App, you agree not to:\n• Violate any applicable local, state, national, or international law.\n• Reverse-engineer, decompile, modify, or create derivative works of the App or its features (including but not limited to “Campus Commons,” “Class Sync,” and “FOMO Feed”) unless explicitly permitted by applicable law.\n• Use the App to transmit any spam, viruses, or harmful content.\n• Engage in automated data collection (e.g., bots, spiders, scrapers) unless expressly permitted in writing by Ragtag.\n• Attempt to gain unauthorized access to other users’ accounts or our systems.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 3. License and App Usage
+      Text("3. License and App Usage", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "3.1 Limited License\nRagtag grants you a non-exclusive, non-transferable, revocable license to use the App for personal, non-commercial purposes, subject to these Terms and any other guidelines we provide.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "3.2 Prohibited Activities\nIn using the App, you agree not to:\n• Violate any applicable local, state, national, or international law.\n• Reverse-engineer, decompile, modify, or create derivative works of the App or its features (including but not limited to “Campus Commons,” “Class Sync,” and “FOMO Feed”) unless explicitly permitted by applicable law.\n• Use the App to transmit any spam, viruses, or harmful content.\n• Engage in automated data collection (e.g., bots, spiders, scrapers) unless expressly permitted in writing by Ragtag.\n• Attempt to gain unauthorized access to other users’ accounts or our systems.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 4. User Conduct and Community Guidelines
-        Text("4. User Conduct and Community Guidelines", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "4.1 Behavioral Standards\nYou are solely responsible for any content you post, share, or otherwise make available through the App. You agree not to:\n• Post content that is defamatory, obscene, hateful, harassing, threatening, or otherwise objectionable.\n• Impersonate any person or entity, or falsely state or misrepresent your affiliation with a person or entity.\n• Post any content that infringes or violates the intellectual property rights of others.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "4.2 Reporting Violations\nIf you observe content or user behavior that violates these Terms, please notify us at [Contact Email or Support Portal]. Ragtag reserves the right to remove or modify any content that violates our policies or is otherwise objectionable.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 4. User Conduct and Community Guidelines
+      Text("4. User Conduct and Community Guidelines", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "4.1 Behavioral Standards\nYou are solely responsible for any content you post, share, or otherwise make available through the App. You agree not to:\n• Post content that is defamatory, obscene, hateful, harassing, threatening, or otherwise objectionable.\n• Impersonate any person or entity, or falsely state or misrepresent your affiliation with a person or entity.\n• Post any content that infringes or violates the intellectual property rights of others.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "4.2 Zero Tolerance for Abusive and Objectionable Content\nWe enforce a strict, zero-tolerance policy for abusive behavior and objectionable content. Any content or conduct that violates this policy will be removed immediately, and repeat offenders may have their accounts suspended or terminated without prior notice.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "4.3 Reporting Violations\nIf you observe content or user behavior that violates these Terms, please notify us at [Contact Email or Support Portal]. Ragtag reserves the right to remove or modify any content that violates our policies or is otherwise objectionable.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 5. User-Generated Content
-        Text("5. User-Generated Content", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "5.1 Ownership of Your Content\nYou retain all intellectual property rights in any content you create and share on the App (“User Content”). By posting or sharing User Content, you represent that you own or have the necessary permissions to share such content.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "5.2 License to Ragtag\nBy submitting or posting User Content, you grant Ragtag a non-exclusive, worldwide, royalty-free, transferable license to use, store, display, reproduce, distribute, modify, and create derivative works of your User Content for the purpose of operating, developing, providing, and improving the App.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "5.3 Content Removal\nRagtag reserves the right, but is not obligated, to remove any User Content that, at our sole discretion, violates these Terms or is otherwise objectionable.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 5. User-Generated Content
+      Text("5. User-Generated Content", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "5.1 Ownership of Your Content\nYou retain all intellectual property rights in any content you create and share on the App (“User Content”). By posting or sharing User Content, you represent that you own or have the necessary permissions to share such content.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "5.2 License to Ragtag\nBy submitting or posting User Content, you grant Ragtag a non-exclusive, worldwide, royalty-free, transferable license to use, store, display, reproduce, distribute, modify, and create derivative works of your User Content for the purpose of operating, developing, providing, and improving the App.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "5.3 Content Removal\nRagtag reserves the right, but is not obligated, to remove any User Content that, at our sole discretion, violates these Terms or is otherwise objectionable.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 6. Intellectual Property Rights
-        Text("6. Intellectual Property Rights", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "6.1 Ragtag Ownership\nAll content, features, functionality, trademarks, service marks, and trade names (including but not limited to “Ragtag,” “Campus Commons,” “Class Sync,” and “FOMO Feed”) are owned by Ragtag Social LLC or its licensors, and are protected by copyright, trademark, patent, trade secret, or other intellectual property laws.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "6.2 No Implied Rights\nExcept for the limited license granted herein, nothing in this Agreement transfers any ownership or license of our intellectual property to you.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 6. Intellectual Property Rights
+      Text("6. Intellectual Property Rights", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "6.1 Ragtag Ownership\nAll content, features, functionality, trademarks, service marks, and trade names (including but not limited to “Ragtag,” “Campus Commons,” “Class Sync,” and “FOMO Feed”) are owned by Ragtag Social LLC or its licensors, and are protected by copyright, trademark, patent, trade secret, or other intellectual property laws.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "6.2 No Implied Rights\nExcept for the limited license granted herein, nothing in this Agreement transfers any ownership or license of our intellectual property to you.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 7. Privacy
-        Text("7. Privacy and Data Collection", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "Our [Privacy Policy] explains how we collect, use, and share information about you when you use our App. By using the App, you consent to the collection and use of your data as outlined in that policy.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 7. Privacy and Data Collection
+      Text("7. Privacy and Data Collection", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "Our [Privacy Policy] explains how we collect, use, and share information about you when you use our App. By using the App, you consent to the collection and use of your data as outlined in that policy.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 8. Paid Features or Subscriptions
-        Text("8. Paid Features or Subscriptions (If Applicable)", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "8.1 Subscription Fees\nRagtag may offer certain premium features or subscriptions for a fee. The pricing and payment terms will be described at the point of purchase.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "8.2 Free Trials\nIf we offer free trials, you may be required to cancel before the trial ends to avoid being charged.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "8.3 Refunds\nRefund requests will be evaluated on a case-by-case basis according to applicable consumer protection laws and our internal policy.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 8. Paid Features or Subscriptions (If Applicable)
+      Text("8. Paid Features or Subscriptions (If Applicable)", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "8.1 Subscription Fees\nRagtag may offer certain premium features or subscriptions for a fee. The pricing and payment terms will be described at the point of purchase.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "8.2 Free Trials\nIf we offer free trials, you may be required to cancel before the trial ends to avoid being charged.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "8.3 Refunds\nRefund requests will be evaluated on a case-by-case basis according to applicable consumer protection laws and our internal policy.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 9. Third-Party
-        Text("9. Third-Party Services and Links", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "9.1 Third-Party Content\nThe App may contain links to third-party websites or services that are not under our control. We are not responsible for the content, privacy policies, or practices of any third-party services.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "9.2 No Endorsement\nAny reference to third-party products, services, or websites is not an endorsement or recommendation by Ragtag.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 9. Third-Party Services and Links
+      Text("9. Third-Party Services and Links", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "9.1 Third-Party Content\nThe App may contain links to third-party websites or services that are not under our control. We are not responsible for the content, privacy policies, or practices of any third-party services.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "9.2 No Endorsement\nAny reference to third-party products, services, or websites is not an endorsement or recommendation by Ragtag.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 10. Disclaimer
-        Text("10. Disclaimer of Warranties", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "10.1 “AS IS” and “AS AVAILABLE”\nYour use of the App is at your sole risk. The App is provided on an “AS IS” and “AS AVAILABLE” basis without warranties of any kind, whether express or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, or non-infringement.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "10.2 No Guarantee\nWe do not guarantee that the App will be secure, uninterrupted, error-free, or free of viruses or other harmful components. We do not guarantee any specific results from using the App.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 10. Disclaimer of Warranties
+      Text("10. Disclaimer of Warranties", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "10.1 “AS IS” and “AS AVAILABLE”\nYour use of the App is at your sole risk. The App is provided on an “AS IS” and “AS AVAILABLE” basis without warranties of any kind, whether express or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, or non-infringement.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "10.2 No Guarantee\nWe do not guarantee that the App will be secure, uninterrupted, error-free, or free of viruses or other harmful components. We do not guarantee any specific results from using the App.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 11. Limitation of Liability
-        Text("11. Limitation of Liability", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "11.1 No Indirect Damages\nTo the maximum extent permitted by law, Ragtag Social LLC and its affiliates, officers, employees, agents, or partners shall not be liable to you for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, or goodwill.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "11.2 Cap on Liability\nIn no event shall Ragtag’s total liability for all claims arising out of or related to these Terms exceed the amount paid by you (if any) for accessing or using the App in the twelve (12) months preceding the event giving rise to liability.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 11. Limitation of Liability
+      Text("11. Limitation of Liability", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "11.1 No Indirect Damages\nTo the maximum extent permitted by law, Ragtag Social LLC and its affiliates, officers, employees, agents, or partners shall not be liable to you for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, or goodwill.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "11.2 Cap on Liability\nIn no event shall Ragtag’s total liability for all claims arising out of or related to these Terms exceed the amount paid by you (if any) for accessing or using the App in the twelve (12) months preceding the event giving rise to liability.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 12. Indemnification
-        Text("12. Indemnification", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "You agree to defend, indemnify, and hold harmless Ragtag Social LLC, its affiliates, and their respective officers, directors, employees, and agents from and against any claims, damages, obligations, losses, liabilities, costs, or debt, and expenses (including but not limited to attorney’s fees) arising from:\n• Your use or misuse of the App.\n• Your violation of any term of this Agreement.\n• Your violation of any third-party right, including without limitation any intellectual property or privacy right.\n• Another’s misuse/violation of the App",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 12. Indemnification
+      Text("12. Indemnification", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "You agree to defend, indemnify, and hold harmless Ragtag Social LLC, its affiliates, and their respective officers, directors, employees, and agents from and against any claims, damages, obligations, losses, liabilities, costs, or debt, and expenses (including but not limited to attorney’s fees) arising from:\n• Your use or misuse of the App.\n• Your violation of any term of this Agreement.\n• Your violation of any third-party right, including without limitation any intellectual property or privacy right.\n• Another’s misuse/violation of the App",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 13. Term and Termination
-        Text("13. Term and Termination", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "13.1 Termination by User\nYou may terminate your account and stop using the App at any time.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "13.2 Termination by Ragtag\nWe may suspend or terminate your access to the App if we believe you have violated these Terms or for any other reason at our sole discretion, with or without notice.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "13.3 Effect of Termination\nUpon termination, all rights granted to you under this Agreement shall cease. Sections regarding intellectual property, disclaimers, liability limitations, and indemnification shall survive termination.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 13. Term and Termination
+      Text("13. Term and Termination", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "13.1 Termination by User\nYou may terminate your account and stop using the App at any time.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "13.2 Termination by Ragtag\nWe may suspend or terminate your access to the App if we believe you have violated these Terms or for any other reason at our sole discretion, with or without notice.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "13.3 Effect of Termination\nUpon termination, all rights granted to you under this Agreement shall cease. Sections regarding intellectual property, disclaimers, liability limitations, and indemnification shall survive termination.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 14. Governing Law
-        Text("14. Governing Law and Dispute Resolution", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "14.1 Governing Law\nThis Agreement shall be governed by and construed in accordance with the laws of the [State/Country], without regard to its conflict of law principles.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "14.2 Arbitration\nAny dispute, claim, or controversy arising out of or relating to this Agreement or the breach thereof shall be settled by binding arbitration in a decided jurisdiction, in accordance with the rules of the American Arbitration Association. Judgment on the award rendered by the arbitrator may be entered in any court having jurisdiction thereof.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "14.3 Venue and Jurisdiction\nIf arbitration is not mandated, you agree to submit to the personal jurisdiction of the state and federal courts located in Raleigh, North Carolina, and you agree to waive any objections to the exercise of jurisdiction over you by such courts.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 14. Governing Law and Dispute Resolution
+      Text("14. Governing Law and Dispute Resolution", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "14.1 Governing Law\nThis Agreement shall be governed by and construed in accordance with the laws of the [State/Country], without regard to its conflict of law principles.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "14.2 Arbitration\nAny dispute, claim, or controversy arising out of or relating to this Agreement or the breach thereof shall be settled by binding arbitration in a decided jurisdiction, in accordance with the rules of the American Arbitration Association. Judgment on the award rendered by the arbitrator may be entered in any court having jurisdiction thereof.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "14.3 Venue and Jurisdiction\nIf arbitration is not mandated, you agree to submit to the personal jurisdiction of the state and federal courts located in Raleigh, North Carolina, and you agree to waive any objections to the exercise of jurisdiction over you by such courts.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 15. Changes to These Terms
-        Text("15. Changes to These Terms", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will make reasonable efforts to notify you of material changes, such as by posting the updated Agreement within the App or sending a notification. Your continued use of the App after any such changes constitutes your acceptance of the new Terms.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 15. Changes to These Terms
+      Text("15. Changes to These Terms", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will make reasonable efforts to notify you of material changes, such as by posting the updated Agreement within the App or sending a notification. Your continued use of the App after any such changes constitutes your acceptance of the new Terms.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 16. General Provisions
-        Text("16. General Provisions", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "16.1 Entire Agreement\nThis Agreement, together with the Privacy Policy, constitutes the entire agreement between you and Ragtag and supersedes any prior agreements or understandings.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "16.2 Severability\nIf any provision of this Agreement is found to be invalid, illegal, or unenforceable, the remaining provisions shall remain in full force and effect.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "16.3 No Waiver\nNo waiver of any term or condition herein shall be deemed a further or continuing waiver of such term or any other term, and Ragtag’s failure to assert any right or provision under these Terms shall not constitute a waiver.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "16.4 Assignment\nYou may not assign or transfer your rights or obligations under these Terms without our prior written consent. We may freely assign our rights and obligations under these Terms.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "16.5 Electronic Communications\nYou consent to receive communications electronically from us, and you agree that any notices, agreements, disclosures, or other communications we provide electronically satisfy any legal requirements for written communication.",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 16),
+      // 16. General Provisions
+      Text("16. General Provisions", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "16.1 Entire Agreement\nThis Agreement, together with the Privacy Policy, constitutes the entire agreement between you and Ragtag and supersedes any prior agreements or understandings.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "16.2 Severability\nIf any provision of this Agreement is found to be invalid, illegal, or unenforceable, the remaining provisions shall remain in full force and effect.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "16.3 No Waiver\nNo waiver of any term or condition herein shall be deemed a further or continuing waiver of such term or any other term, and Ragtag’s failure to assert any right or provision under these Terms shall not constitute a waiver.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "16.4 Assignment\nYou may not assign or transfer your rights or obligations under these Terms without our prior written consent. We may freely assign our rights and obligations under these Terms.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        "16.5 Electronic Communications\nYou consent to receive communications electronically from us, and you agree that any notices, agreements, disclosures, or other communications we provide electronically satisfy any legal requirements for written communication.",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 16),
 
-        // 17. Contact Information
-        Text("17. Contact Information", style: headingStyle),
-        const SizedBox(height: 6),
-        Text(
-          "If you have any questions or concerns about this Agreement, please contact us at:\nRagtag Social LLC\nAttn: Nicholas Cooke (Founder & CEO)\nreachragtag@gmail.com",
-          style: bodyStyle,
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
+      // 17. Contact Information
+      Text("17. Contact Information", style: headingStyle),
+      const SizedBox(height: 6),
+      Text(
+        "If you have any questions or concerns about this Agreement, please contact us at:\nRagtag Social LLC\nAttn: Nicholas Cooke (Founder & CEO)\nreachragtag@gmail.com",
+        style: bodyStyle,
+      ),
+      const SizedBox(height: 20),
+    ],
+  );
+}
 
   /// The "Accept" pill button (Shimmer)
   Widget _buildShimmerAcceptButton() {

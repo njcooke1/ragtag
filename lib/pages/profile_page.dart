@@ -71,6 +71,9 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
+  // NEW: Variable to track the long press start time for delete account.
+  DateTime? _deleteButtonHoldStartTime;
+
   Future<List<String>> _fetchBlockedUserIds() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return [];
@@ -621,6 +624,88 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  // ---------- NEW: Delete Account Methods ----------
+  void _showDeleteAccountConfirmationDialog() {
+    TextEditingController _deleteController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+          title: Text(
+            "Delete Account",
+            style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "This action is irreversible. Please type DELETE to confirm.",
+                style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _deleteController,
+                decoration: InputDecoration(
+                  hintText: "Type DELETE here",
+                  hintStyle: TextStyle(color: _isDarkMode ? Colors.white54 : Colors.black54),
+                  border: const OutlineInputBorder(),
+                ),
+                style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                primary: Colors.red,
+              ),
+              onPressed: () async {
+                if (_deleteController.text.trim() == "DELETE") {
+                  Navigator.pop(context);
+                  await _deleteAccount();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Incorrect confirmation text.")),
+                  );
+                }
+              },
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Optionally: Delete user data from Firestore here.
+        await user.delete();
+      }
+      // After deletion, navigate to the landing page.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OpeningLandingPage()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error deleting account: $e")),
+      );
+    }
+  }
+  // --------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
@@ -825,11 +910,36 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                 ),
               ),
             ),
-          ],
+            // NEW: Delete Account button below sign out.
+            Container(
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+  child: Tooltip(
+    message: "Hold for 3 seconds to delete your account",
+    child: GestureDetector(
+      onLongPressStart: (details) {
+        _deleteButtonHoldStartTime = DateTime.now();
+      },
+      onLongPressEnd: (details) {
+        final heldDuration = DateTime.now().difference(_deleteButtonHoldStartTime ?? DateTime.now());
+        if (heldDuration.inSeconds >= 3) {
+          _showDeleteAccountConfirmationDialog();
+        }
+      },
+      child: ListTile(
+        leading: Icon(
+          Icons.delete_forever,
+          color: _isDarkMode ? Colors.redAccent : Colors.red,
+        ),
+        title: Text(
+          "Delete Account",
+          style: TextStyle(
+            color: _isDarkMode ? Colors.redAccent : Colors.red,
+          ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+),
 
   Widget _buildDrawerTile({required IconData icon, required String title, required VoidCallback onTap}) {
     return InkWell(
