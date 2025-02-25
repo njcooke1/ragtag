@@ -37,7 +37,7 @@ void _showCommunityActions(BuildContext context, String communityId, String coll
               ),
               onTap: () {
                 Navigator.of(ctx).pop();
-                _blockCommunity(context, communityId);
+                _blockCommunity(context, communityId, collectionName);
               },
             ),
           ],
@@ -176,12 +176,12 @@ Future<void> _reportCommunity(
   }
 }
 
-Future<void> _blockCommunity(BuildContext context, String communityId) async {
+Future<void> _blockCommunity(BuildContext context, String communityId, String collectionName) async {
   final currentUser = FirebaseAuth.instance.currentUser;
   if (currentUser == null) return;
   try {
     await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
-      'BlockedCommunities': FieldValue.arrayUnion([communityId]),
+      _getBlockedFieldName(collectionName): FieldValue.arrayUnion([communityId]),
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Community blocked.')),
@@ -193,12 +193,12 @@ Future<void> _blockCommunity(BuildContext context, String communityId) async {
   }
 }
 
-Future<void> _unblockCommunity(BuildContext context, String communityId) async {
+Future<void> _unblockCommunity(BuildContext context, String communityId, String collectionName) async {
   final currentUser = FirebaseAuth.instance.currentUser;
   if (currentUser == null) return;
   try {
     await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
-      'BlockedCommunities': FieldValue.arrayRemove([communityId]),
+      _getBlockedFieldName(collectionName): FieldValue.arrayRemove([communityId]),
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Community unblocked.')),
@@ -207,6 +207,21 @@ Future<void> _unblockCommunity(BuildContext context, String communityId) async {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Error unblocking community: $e')),
     );
+  }
+}
+
+String _getBlockedFieldName(String collectionName) {
+  switch (collectionName) {
+    case 'clubs':
+      return 'blockedClubs';
+    case 'interestGroups':
+      return 'blockedInterestGroups';
+    case 'classGroups':
+      return 'blockedClassGroups';
+    case 'openForums':
+      return 'blockedOpenForums';
+    default:
+      return 'blockedCommunities';
   }
 }
 
@@ -595,8 +610,8 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
 }
 
 /// Displays a grid of organizations from Firestore.
-/// Blocked communities (based on BlockedCommunities in the user doc)
-/// are removed from the main view and shown in an expandable section.
+/// Blocked communities are now stored in dedicated fields based on the collection type,
+/// so the query below fetches the blocked IDs from the appropriate field.
 class OrganizationGrid extends StatelessWidget {
   final String collectionName;
   final String searchQuery;
@@ -693,7 +708,8 @@ class OrganizationGrid extends StatelessWidget {
                   return Center(child: Text('Error: ${userDocSnapshot.error}', style: const TextStyle(color: Colors.red)));
                 }
                 final userData = userDocSnapshot.data?.data() as Map<String, dynamic>? ?? {};
-                final blockedList = userData['BlockedCommunities'] as List<dynamic>? ?? [];
+                final blockedField = _getBlockedFieldName(collectionName);
+                final blockedList = userData[blockedField] as List<dynamic>? ?? [];
                 final blockedIds = blockedList.map((e) => e.toString()).toList();
 
                 final activeDocs = finalDocs.where((doc) => !blockedIds.contains(doc.id)).toList();
@@ -801,6 +817,7 @@ class OrganizationGrid extends StatelessWidget {
                               );
                             },
                             child: OrganizationCard(
+                              collectionName: collectionName,
                               communityId: docSnap.id,
                               name: orgName,
                               description: finalDescription,
@@ -836,6 +853,7 @@ class OrganizationGrid extends StatelessWidget {
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: OrganizationCard(
+                              collectionName: collectionName,
                               communityId: doc.id,
                               name: data['name'] ?? 'No Name',
                               description: data['description'] ?? '',
@@ -1015,6 +1033,7 @@ class OrganizationGrid extends StatelessWidget {
 /// report/block actions on long press or via a “...” overlay.
 /// When [isBlocked] is true, an “Unblock” button is shown instead.
 class OrganizationCard extends StatelessWidget {
+  final String collectionName;
   final String communityId;
   final String name;
   final String description;
@@ -1028,6 +1047,7 @@ class OrganizationCard extends StatelessWidget {
 
   const OrganizationCard({
     Key? key,
+    required this.collectionName,
     required this.communityId,
     required this.name,
     required this.description,
@@ -1045,7 +1065,7 @@ class OrganizationCard extends StatelessWidget {
     final cardContent = GestureDetector(
       onLongPress: () {
         if (!isBlocked) {
-          _showCommunityActions(context, communityId, 'organizations');
+          _showCommunityActions(context, communityId, collectionName);
         }
       },
       child: Stack(
@@ -1058,7 +1078,7 @@ class OrganizationCard extends StatelessWidget {
             right: 4,
             child: isBlocked
                 ? TextButton(
-                    onPressed: () => _unblockCommunity(context, communityId),
+                    onPressed: () => _unblockCommunity(context, communityId, collectionName),
                     child: const Text(
                       'Unblock',
                       style: TextStyle(color: Colors.redAccent),
@@ -1066,7 +1086,7 @@ class OrganizationCard extends StatelessWidget {
                   )
                 : IconButton(
                     icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
-                    onPressed: () => _showCommunityActions(context, communityId, 'organizations'),
+                    onPressed: () => _showCommunityActions(context, communityId, collectionName),
                   ),
           ),
         ],
