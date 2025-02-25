@@ -1,12 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'dart:ui'; // For HSLColor conversion
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 //
-// --- Shared Helper Functions for Report / Block Actions ---
+// --- Helper Functions for Report / Block Actions ---
 //
 
 void _showCommunityActions(BuildContext context, String communityId, String collectionName) {
@@ -192,14 +193,60 @@ Future<void> _blockCommunity(BuildContext context, String communityId) async {
   }
 }
 
+Future<void> _unblockCommunity(BuildContext context, String communityId) async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return;
+  try {
+    await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+      'BlockedCommunities': FieldValue.arrayRemove([communityId]),
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Community unblocked.')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error unblocking community: $e')),
+    );
+  }
+}
+
+/// Fetch the current user’s blocked community IDs.
+Future<List<String>> _fetchBlockedCommunityIds() async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return [];
+  final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+  final blockedList = userDoc.data()?['BlockedCommunities'] as List<dynamic>? ?? [];
+  return blockedList.map((e) => e.toString()).toList();
+}
+
+/// Filter ghost docs: only members see ghost-mode docs.
+Future<List<QueryDocumentSnapshot>> _filterGhostDocs(
+  List<QueryDocumentSnapshot> inputDocs,
+) async {
+  final user = FirebaseAuth.instance.currentUser;
+  final uid = user?.uid;
+  final List<QueryDocumentSnapshot> results = [];
+  for (var docSnap in inputDocs) {
+    final data = docSnap.data() as Map<String, dynamic>;
+    final bool ghost = data['isGhostMode'] == true;
+    if (!ghost) {
+      results.add(docSnap);
+    } else {
+      if (uid == null) continue;
+      final memberDoc = await docSnap.reference.collection('members').doc(uid).get();
+      if (memberDoc.exists) {
+        results.add(docSnap);
+      }
+    }
+  }
+  return results;
+}
+
 //
-// --- AllOrganizationsPage & Related Widgets ---
+// --- Main Page & Related Widgets ---
 //
 
 /// A page with 3 main tabs: Clubs, Interest Groups, Open Forums.
-/// - Clubs: single, wider card per row.
-/// - Interest Groups / Class Groups: 3 columns, toggled by a local switch.
-/// - Open Forums: 3 columns, circle-shaped.
 class AllOrganizationsPage extends StatefulWidget {
   const AllOrganizationsPage({Key? key}) : super(key: key);
 
@@ -221,8 +268,7 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
     _fetchUserInstitution();
   }
 
-  /// Get the current user’s doc from Firestore to find out their institution.
-  /// Also checks if introchallenge == 1 => sets it to 2 (unlock step #2).
+  /// Get the current user’s doc to determine their institution.
   Future<void> _fetchUserInstitution() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -232,21 +278,16 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
       });
       return;
     }
-
     try {
       final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
       final docSnapshot = await docRef.get();
-
       if (docSnapshot.exists) {
         final data = docSnapshot.data();
         final institutionInDoc = data?['institution'] ?? '';
         final introVal = data?['introchallenge'] ?? 0;
-
-        // If introchallenge=1 => user just completed step #1. Now mark step #2 as unlocked.
         if (introVal == 1) {
           await docRef.update({'introchallenge': 2});
         }
-
         setState(() {
           userInstitution = institutionInDoc;
           isLoadingInstitution = false;
@@ -270,29 +311,18 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
     if (isLoadingInstitution) {
       return const Scaffold(
         backgroundColor: Color(0xFF121212),
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
-
     if (institutionErrorMessage != null) {
       return Scaffold(
         backgroundColor: const Color(0xFF121212),
-        body: Center(
-          child: Text(
-            institutionErrorMessage!,
-            style: const TextStyle(color: Colors.red),
-          ),
-        ),
+        body: Center(child: Text(institutionErrorMessage!, style: const TextStyle(color: Colors.red))),
       );
     }
-
-    // If userInstitution is null or empty, display "ALL COMMUNITIES"
-    final institutionName =
-        (userInstitution != null && userInstitution!.isNotEmpty)
-            ? userInstitution!
-            : "ALL COMMUNITIES";
+    final institutionName = (userInstitution != null && userInstitution!.isNotEmpty)
+        ? userInstitution!
+        : "ALL COMMUNITIES";
 
     return DefaultTabController(
       length: 3,
@@ -313,7 +343,6 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                     bottomRight: Radius.circular(30),
                   ),
                 ),
-                // ---- CUSTOM BACK BUTTON START ----
                 leading: Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: Container(
@@ -324,31 +353,21 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                       color: Colors.white.withOpacity(0.1),
                     ),
                     child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
                       onPressed: () {
-                        // Always direct user to find_community
                         Navigator.pushNamed(context, '/find_community');
                       },
                     ),
                   ),
                 ),
-                // ---- CUSTOM BACK BUTTON END ----
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
                   collapseMode: CollapseMode.parallax,
-                  titlePadding:
-                      const EdgeInsets.only(bottom: 72, left: 16, right: 16),
+                  titlePadding: const EdgeInsets.only(bottom: 72, left: 16, right: 16),
                   title: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.asset(
-                        'assets/commons.png',
-                        height: 40,
-                      ),
+                      Image.asset('assets/commons.png', height: 40),
                       const SizedBox(height: 16),
                       Text(
                         institutionName,
@@ -366,7 +385,6 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Solid #ffb342 background
                       Container(
                         decoration: const BoxDecoration(
                           color: Color(0xFFFFB342),
@@ -376,7 +394,6 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                           ),
                         ),
                       ),
-                      // Subtle black overlay
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.0),
@@ -389,15 +406,11 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                     ],
                   ),
                 ),
-                // Darker search bar with Lovelo font
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(60.0),
                   child: Container(
                     height: 48,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 32.0,
-                      vertical: 16.0,
-                    ),
+                    margin: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(15.0),
@@ -418,23 +431,16 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                             ),
                             decoration: const InputDecoration(
                               hintText: 'Find your next hangout...',
-                              hintStyle: TextStyle(
-                                color: Colors.white54,
-                                fontFamily: 'Lovelo',
-                              ),
+                              hintStyle: TextStyle(color: Colors.white54, fontFamily: 'Lovelo'),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 0,
-                              ),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
                             ),
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.search, color: Colors.white),
                           onPressed: () {
-                            setState(() =>
-                                _searchQuery = _searchController.text.toLowerCase());
+                            setState(() => _searchQuery = _searchController.text.toLowerCase());
                           },
                         ),
                       ],
@@ -442,7 +448,6 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                   ),
                 ),
               ),
-              // TabBar with 3 tabs
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _SliverAppBarDelegate(
@@ -468,7 +473,6 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
           },
           body: TabBarView(
             children: [
-              // 1) Clubs => single column big/wide card
               OrganizationGrid(
                 collectionName: 'clubs',
                 searchQuery: _searchQuery,
@@ -477,14 +481,10 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                 circleCards: false,
                 isClassGroups: false,
               ),
-
-              // 2) Interest Groups tab => toggles interest vs class
               InterestOrClassGroupsTab(
                 userInstitution: userInstitution ?? '',
                 searchQuery: _searchQuery,
               ),
-
-              // 3) Open Forums => 3 columns, circle
               OrganizationGrid(
                 collectionName: 'openForums',
                 searchQuery: _searchQuery,
@@ -511,16 +511,13 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   const _SliverAppBarDelegate(this._tabBar);
-
   @override
   double get minExtent => _tabBar.preferredSize.height;
   @override
   double get maxExtent => _tabBar.preferredSize.height;
-
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      // A darker background to differentiate the tab bar area
       decoration: const BoxDecoration(
         color: Color(0xFF1F1F1F),
         borderRadius: BorderRadius.only(
@@ -531,35 +528,28 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
       child: _tabBar,
     );
   }
-
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }
 
-/// Toggles between 'interestGroups' and 'classGroups', each 3 columns
-/// (though only classGroups get assigned a random color if missing).
 class InterestOrClassGroupsTab extends StatefulWidget {
   final String userInstitution;
   final String searchQuery;
-
   const InterestOrClassGroupsTab({
     Key? key,
     required this.userInstitution,
     required this.searchQuery,
   }) : super(key: key);
-
   @override
   State<InterestOrClassGroupsTab> createState() => _InterestOrClassGroupsTabState();
 }
 
 class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
   bool showClassGroups = false;
-
   @override
   Widget build(BuildContext context) {
     final currentCollection = showClassGroups ? 'classGroups' : 'interestGroups';
     final currentRoute = '/interest-groups-profile';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -605,7 +595,7 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
             onCardTapRoute: currentRoute,
             userInstitution: widget.userInstitution,
             circleCards: false,
-            isClassGroups: showClassGroups, // <--- important
+            isClassGroups: showClassGroups,
           ),
         ),
       ],
@@ -613,8 +603,9 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
   }
 }
 
-/// Displays a grid of orgs from Firestore, filtering out ghost-mode docs unless
-/// the current user is in that doc’s subcollection '/members/<uid>'.
+/// Displays a grid of organizations from Firestore.
+/// Blocked communities (based on BlockedCommunities in the user doc)
+/// are removed from the main view and shown in an expandable section.
 class OrganizationGrid extends StatelessWidget {
   final String collectionName;
   final String searchQuery;
@@ -622,7 +613,6 @@ class OrganizationGrid extends StatelessWidget {
   final String userInstitution;
   final bool circleCards;
   final bool isClassGroups;
-
   const OrganizationGrid({
     Key? key,
     required this.collectionName,
@@ -635,31 +625,19 @@ class OrganizationGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build the base query
-    Query collectionQuery =
-        FirebaseFirestore.instance.collection(collectionName);
-
-    // If we have an institution name (and it's not "ALL COMMUNITIES"), filter by institution
+    // Build the base query.
+    Query collectionQuery = FirebaseFirestore.instance.collection(collectionName);
     if (userInstitution.isNotEmpty && userInstitution != 'ALL COMMUNITIES') {
-      collectionQuery =
-          collectionQuery.where('institution', isEqualTo: userInstitution);
+      collectionQuery = collectionQuery.where('institution', isEqualTo: userInstitution);
     }
-
-    // Filter out expired docs if these are classGroups
     if (isClassGroups) {
-      collectionQuery = collectionQuery.where(
-        'expiresAt',
-        isGreaterThan: Timestamp.now(),
-      );
+      collectionQuery = collectionQuery.where('expiresAt', isGreaterThan: Timestamp.now());
     }
-
     return StreamBuilder<QuerySnapshot>(
       stream: collectionQuery.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          );
+          return const Center(child: CircularProgressIndicator(color: Colors.white));
         }
         if (snapshot.hasError) {
           final errorMsg = snapshot.error.toString();
@@ -685,222 +663,241 @@ class OrganizationGrid extends StatelessWidget {
             ),
           );
         }
-
         final docs = snapshot.data?.docs ?? [];
-
-        // 1) Filter by search
+        // Filter by search.
         final bySearch = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final name = (data['name'] ?? '').toString().toLowerCase();
           final desc = (data['description'] ?? '').toString().toLowerCase();
           return name.contains(searchQuery) || desc.contains(searchQuery);
         }).toList();
-
-        // 2) Do a local membership check for ghost docs
+        // Filter ghost docs.
         return FutureBuilder<List<QueryDocumentSnapshot>>(
           future: _filterGhostDocs(bySearch),
           builder: (ctx, filteredSnap) {
             if (filteredSnap.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              );
+              return const Center(child: CircularProgressIndicator(color: Colors.white));
             }
             if (filteredSnap.hasError) {
-              return Center(
-                child: Text(
-                  'Ghost filter error:\n\n${filteredSnap.error}',
-                  style: const TextStyle(color: Colors.red),
-                ),
-              );
+              return Center(child: Text('Ghost filter error:\n\n${filteredSnap.error}', style: const TextStyle(color: Colors.red)));
             }
-
             final finalDocs = filteredSnap.data ?? [];
             if (finalDocs.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Center(
-                  child: Text(
-                    'No results found',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
+                child: Center(child: Text('No results found', style: TextStyle(color: Colors.grey))),
               );
             }
+            // Fetch blocked community IDs.
+            return FutureBuilder<List<String>>(
+              future: _fetchBlockedCommunityIds(),
+              builder: (context, blockedSnapshot) {
+                if (blockedSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                }
+                if (blockedSnapshot.hasError) {
+                  return Center(child: Text('Error: ${blockedSnapshot.error}', style: const TextStyle(color: Colors.red)));
+                }
+                final blockedIds = blockedSnapshot.data ?? [];
+                final activeDocs = finalDocs.where((doc) => !blockedIds.contains(doc.id)).toList();
+                final blockedDocs = finalDocs.where((doc) => blockedIds.contains(doc.id)).toList();
 
-            // Decide layout based on collection
-            if (collectionName == 'clubs') {
-              // Single column big/wide card
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: List.generate(finalDocs.length, (index) {
-                    final docSnap = finalDocs[index];
-                    final data = docSnap.data() as Map<String, dynamic>;
-                    data['id'] = docSnap.id;
-
-                    final pfpUrl = data['pfpUrl'] ?? '';
-                    final orgName = data['name'] ?? 'No Name';
-                    final description = data['description'] ?? 'No Description';
-
-                    // Wrap each card in a TweenAnimationBuilder for a smooth entry.
-                    return TweenAnimationBuilder<double>(
-                      key: ValueKey(docSnap.id),
-                      duration: Duration(milliseconds: 300 + 50 * index),
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      curve: Curves.easeOut,
-                      builder: (context, value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 30 * (1 - value)),
-                            child: child,
+                // Build UI sections.
+                Widget activeWidget;
+                if (collectionName == 'clubs') {
+                  activeWidget = SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: activeDocs.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        final docSnap = entry.value;
+                        final data = docSnap.data() as Map<String, dynamic>;
+                        data['id'] = docSnap.id;
+                        final pfpUrl = data['pfpUrl'] ?? '';
+                        final orgName = data['name'] ?? 'No Name';
+                        final description = data['description'] ?? 'No Description';
+                        return TweenAnimationBuilder<double>(
+                          key: ValueKey(docSnap.id),
+                          duration: Duration(milliseconds: 300 + 50 * index),
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          curve: Curves.easeOut,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 30 * (1 - value)),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _buildClubCard(
+                            context: context,
+                            docId: docSnap.id,
+                            data: data,
+                            pfpUrl: pfpUrl,
+                            name: orgName,
+                            description: description,
                           ),
                         );
-                      },
-                      child: _buildClubCard(
-                        context: context,
-                        docId: docSnap.id,
-                        data: data,
-                        pfpUrl: pfpUrl,
-                        name: orgName,
-                        description: description,
-                      ),
-                    );
-                  }),
-                ),
-              );
-            } else {
-              // interestGroups, classGroups => 3 columns rectangular
-              // openForums => 3 columns circle
-              int crossAxisCount = 3;
-              double aspectRatio = 3 / 4;
-              if (circleCards) {
-                aspectRatio = 1; // circle => square
-              }
-
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: finalDocs.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      mainAxisSpacing: 16.0,
-                      crossAxisSpacing: 16.0,
-                      childAspectRatio: aspectRatio,
+                      }).toList(),
                     ),
-                    itemBuilder: (context, index) {
-                      final docSnap = finalDocs[index];
-                      final data = docSnap.data() as Map<String, dynamic>;
-                      data['id'] = docSnap.id;
-
-                      final orgName = data['name'] ?? 'No Name';
-                      final originalDesc = data['description'] ?? 'No Description';
-
-                      // For class groups, override originalDesc with "profLastName - days"
-                      String finalDescription = originalDesc;
-                      if (isClassGroups) {
-                        final lastName = data['profLastName'] ?? '';
-                        final daysString = data['days'] ?? '';
-                        finalDescription = '$lastName - $daysString';
-
-                        // If missing a backgroundColor, assign one permanently:
-                        if (!(data['backgroundColor']?.isNotEmpty ?? false)) {
-                          final color = OrganizationGrid._generateAllowedRandomColor();
-                          final colorHex = OrganizationGrid._colorToFirestoreHex(color);
-                          data['backgroundColor'] = colorHex;
-
-                          // Write to Firestore so it never changes in future:
-                          docSnap.reference.update({'backgroundColor': colorHex});
-                        }
-                      }
-
-                      final pfpUrl = data['pfpUrl'] ?? '';
-                      final pfpType = data['pfpType'] ?? '';
-                      final pfpText = data['pfpText'] ?? '';
-                      final bgColorHex = data['backgroundColor'] ?? '';
-
-                      return TweenAnimationBuilder<double>(
-                        key: ValueKey(docSnap.id),
-                        duration: Duration(milliseconds: 300 + 50 * index),
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        curve: Curves.easeOut,
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 30 * (1 - value)),
-                              child: child,
+                  );
+                } else {
+                  int crossAxisCount = 3;
+                  double aspectRatio = circleCards ? 1 : 3 / 4;
+                  activeWidget = SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: activeDocs.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: 16.0,
+                          crossAxisSpacing: 16.0,
+                          childAspectRatio: aspectRatio,
+                        ),
+                        itemBuilder: (context, index) {
+                          final docSnap = activeDocs[index];
+                          final data = docSnap.data() as Map<String, dynamic>;
+                          data['id'] = docSnap.id;
+                          final orgName = data['name'] ?? 'No Name';
+                          final originalDesc = data['description'] ?? 'No Description';
+                          String finalDescription = originalDesc;
+                          if (isClassGroups) {
+                            final lastName = data['profLastName'] ?? '';
+                            final daysString = data['days'] ?? '';
+                            finalDescription = '$lastName - $daysString';
+                            if (!(data['backgroundColor']?.isNotEmpty ?? false)) {
+                              final color = OrganizationGrid._generateAllowedRandomColor();
+                              final colorHex = OrganizationGrid._colorToFirestoreHex(color);
+                              data['backgroundColor'] = colorHex;
+                              docSnap.reference.update({'backgroundColor': colorHex});
+                            }
+                          }
+                          final pfpUrl = data['pfpUrl'] ?? '';
+                          final pfpType = data['pfpType'] ?? '';
+                          final pfpText = data['pfpText'] ?? '';
+                          final bgColorHex = data['backgroundColor'] ?? '';
+                          return TweenAnimationBuilder<double>(
+                            key: ValueKey(docSnap.id),
+                            duration: Duration(milliseconds: 300 + 50 * index),
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            curve: Curves.easeOut,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 30 * (1 - value)),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  onCardTapRoute,
+                                  arguments: {
+                                    'communityId': docSnap.id,
+                                    'communityData': data,
+                                    'userId': FirebaseAuth.instance.currentUser?.uid ?? 'noUser',
+                                    'collectionName': collectionName,
+                                  },
+                                );
+                              },
+                              child: OrganizationCard(
+                                communityId: docSnap.id,
+                                name: orgName,
+                                description: finalDescription,
+                                pfpUrl: pfpUrl,
+                                circleCards: circleCards,
+                                pfpType: pfpType,
+                                pfpText: pfpText,
+                                backgroundColorHex: bgColorHex,
+                                isClassGroups: isClassGroups,
+                              ),
                             ),
                           );
                         },
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              onCardTapRoute,
-                              arguments: {
-                                'communityId': docSnap.id,
-                                'communityData': data,
-                                'userId': FirebaseAuth.instance.currentUser?.uid ?? 'noUser',
-                                'collectionName': collectionName,
-                              },
-                            );
-                          },
-                          child: OrganizationCard(
-                            communityId: docSnap.id,
-                            name: orgName,
-                            description: finalDescription,
-                            pfpUrl: pfpUrl,
-                            circleCards: circleCards,
-                            pfpType: pfpType,
-                            pfpText: pfpText,
-                            backgroundColorHex: bgColorHex,
-                            isClassGroups: isClassGroups,
-                          ),
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    activeWidget,
+                    if (blockedDocs.isNotEmpty)
+                      ExpansionTile(
+                        collapsedIconColor: Colors.white70,
+                        iconColor: Colors.white70,
+                        title: const Text(
+                          "Blocked Communities",
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              );
-            }
+                        children: blockedDocs.map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          data['id'] = doc.id;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: OrganizationCard(
+                              communityId: doc.id,
+                              name: data['name'] ?? 'No Name',
+                              description: data['description'] ?? '',
+                              pfpUrl: data['pfpUrl'] ?? '',
+                              circleCards: circleCards,
+                              pfpType: data['pfpType'] ?? '',
+                              pfpText: data['pfpText'] ?? '',
+                              backgroundColorHex: data['backgroundColor'] ?? '',
+                              isClassGroups: isClassGroups,
+                              isBlocked: true,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                );
+              },
+            );
           },
         );
       },
     );
   }
 
-  /// For each doc, if it's ghost => we check /members/<uid>.
-  /// If the current user is not found, we skip it. So only members see ghost docs.
-  Future<List<QueryDocumentSnapshot>> _filterGhostDocs(
-    List<QueryDocumentSnapshot> inputDocs,
-  ) async {
-    final user = FirebaseAuth.instance.currentUser;
-    final uid = user?.uid;
-
-    final List<QueryDocumentSnapshot> results = [];
-    for (var docSnap in inputDocs) {
-      final data = docSnap.data() as Map<String, dynamic>;
-      final bool ghost = data['isGhostMode'] == true;
-
-      if (!ghost) {
-        results.add(docSnap);
-      } else {
-        if (uid == null) continue;
-        final memberDoc = await docSnap.reference.collection('members').doc(uid).get();
-        if (memberDoc.exists) {
-          results.add(docSnap);
-        }
+  static Color _generateAllowedRandomColor() {
+    const maxTries = 50;
+    for (int i = 0; i < maxTries; i++) {
+      final int randomColorValue = (Random().nextDouble() * 0xFFFFFF).toInt();
+      final color = Color(0xFF000000 | randomColorValue);
+      if (!_isDisallowedColor(color)) {
+        return color;
       }
     }
-    return results;
+    return Colors.blue;
   }
 
-  /// A bigger "club card" style, single column wide layout
+  static String _colorToFirestoreHex(Color color) {
+    final int argb = color.value;
+    final hex = argb.toRadixString(16).toUpperCase().padLeft(8, '0');
+    return '0x$hex';
+  }
+
+  static bool _isDisallowedColor(Color c) {
+    final hsl = HSLColor.fromColor(c);
+    final h = hsl.hue;
+    final s = hsl.saturation;
+    final l = hsl.lightness;
+    if (l > 0.9) return true;
+    if (s < 0.1) return true;
+    if (h >= 50 && h <= 70 && s > 0.5 && l > 0.4) return true;
+    return false;
+  }
+
   Widget _buildClubCard({
     required BuildContext context,
     required String docId,
@@ -944,7 +941,6 @@ class OrganizationGrid extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Big image (16:9 ratio)
                     AspectRatio(
                       aspectRatio: 16 / 9,
                       child: pfpUrl.isNotEmpty
@@ -954,9 +950,7 @@ class OrganizationGrid extends StatelessWidget {
                               placeholder: (context, url) => Container(
                                 color: Colors.grey.shade900,
                                 child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
+                                  child: CircularProgressIndicator(color: Colors.white),
                                 ),
                               ),
                               errorWidget: (context, url, error) => Container(
@@ -977,7 +971,6 @@ class OrganizationGrid extends StatelessWidget {
                               ),
                             ),
                     ),
-                    // Info at bottom
                     Padding(
                       padding: const EdgeInsets.all(14.0),
                       child: Column(
@@ -1013,7 +1006,6 @@ class OrganizationGrid extends StatelessWidget {
               ),
             ),
           ),
-          // Positioned "..." icon
           Positioned(
             top: 8,
             right: 8,
@@ -1026,45 +1018,13 @@ class OrganizationGrid extends StatelessWidget {
       ),
     );
   }
-
-  /// Generate a random color while skipping white/grey/bright-yellows.
-  static Color _generateAllowedRandomColor() {
-    const maxTries = 50;
-    for (int i = 0; i < maxTries; i++) {
-      final int randomColorValue = (Random().nextDouble() * 0xFFFFFF).toInt();
-      final color = Color(0xFF000000 | randomColorValue);
-      if (!_isDisallowedColor(color)) {
-        return color;
-      }
-    }
-    return Colors.blue;
-  }
-
-  /// Convert e.g. Color(0xFFABCDEF) → "0xFFABCDEF"
-  static String _colorToFirestoreHex(Color color) {
-    final int argb = color.value;
-    final hex = argb.toRadixString(16).toUpperCase().padLeft(8, '0');
-    return '0x$hex';
-  }
-
-  /// Exclude near-white, grey, bright yellow.
-  static bool _isDisallowedColor(Color c) {
-    final hsl = HSLColor.fromColor(c);
-    final h = hsl.hue;
-    final s = hsl.saturation;
-    final l = hsl.lightness;
-
-    if (l > 0.9) return true;
-    if (s < 0.1) return true;
-    if (h >= 50 && h <= 70 && s > 0.5 && l > 0.4) return true;
-    return false;
-  }
 }
 
-/// A simpler card that can be rectangular or circular for interest/forums
-/// or class groups. Now includes report/block actions on long press and via a “...” overlay.
+/// A community card that can be rectangular or circular and now includes
+/// report/block actions on long press or via a “...” overlay.
+/// When [isBlocked] is true, an “Unblock” button is shown instead.
 class OrganizationCard extends StatelessWidget {
-  final String communityId; // New: to track the community's ID.
+  final String communityId;
   final String name;
   final String description;
   final String pfpUrl;
@@ -1073,6 +1033,7 @@ class OrganizationCard extends StatelessWidget {
   final String pfpText;
   final String backgroundColorHex;
   final bool isClassGroups;
+  final bool isBlocked;
 
   const OrganizationCard({
     Key? key,
@@ -1085,26 +1046,37 @@ class OrganizationCard extends StatelessWidget {
     required this.pfpText,
     required this.backgroundColorHex,
     required this.isClassGroups,
+    this.isBlocked = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Wrap the card in a GestureDetector to enable long-press actions.
     return GestureDetector(
-      onLongPress: () => _showCommunityActions(context, communityId, 'organizations'),
+      onLongPress: () {
+        if (!isBlocked) {
+          _showCommunityActions(context, communityId, 'organizations');
+        }
+      },
       child: Stack(
         children: [
           circleCards
               ? _buildCircleCard(pfpType == 'textAvatar' && pfpText.isNotEmpty)
               : _buildRectangularCard(pfpType == 'textAvatar' && pfpText.isNotEmpty),
-          // "..." action button overlay.
           Positioned(
             top: 4,
             right: 4,
-            child: IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
-              onPressed: () => _showCommunityActions(context, communityId, 'organizations'),
-            ),
+            child: isBlocked
+                ? TextButton(
+                    onPressed: () => _unblockCommunity(context, communityId),
+                    child: const Text(
+                      'Unblock',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
+                    onPressed: () => _showCommunityActions(context, communityId, 'organizations'),
+                  ),
           ),
         ],
       ),
@@ -1266,27 +1238,17 @@ class OrganizationCard extends StatelessWidget {
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
           color: Colors.grey.shade900,
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+          child: const Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
         errorWidget: (context, url, error) => Container(
           color: Colors.grey.shade900,
-          child: const Icon(
-            Icons.broken_image,
-            color: Colors.white54,
-            size: 48,
-          ),
+          child: const Icon(Icons.broken_image, color: Colors.white54, size: 48),
         ),
       );
     } else {
       return Container(
         color: Colors.grey.shade900,
-        child: const Icon(
-          Icons.image,
-          color: Colors.white54,
-          size: 48,
-        ),
+        child: const Icon(Icons.image, color: Colors.white54, size: 48),
       );
     }
   }
@@ -1301,7 +1263,6 @@ class OrganizationCard extends StatelessWidget {
     } catch (_) {
       parsedColor = Colors.grey.shade700;
     }
-
     return Container(
       decoration: BoxDecoration(
         color: parsedColor,

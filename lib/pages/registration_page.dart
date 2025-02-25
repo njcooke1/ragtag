@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // <-- Added shared_preferences import
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/token_service.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -246,7 +246,21 @@ class _RegistrationPageState extends State<RegistrationPage>
                   DropdownMenuItem(
                     value: 'University of North Carolina at Chapel Hill',
                     child: Text(
-                      'University of North Carolina Chapel Hill',
+                      'University of North Carolina at Chapel Hill',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Duke University',
+                    child: Text(
+                      'Duke University',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'North Carolina A&T State University',
+                    child: Text(
+                      'North Carolina A&T State University',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -254,6 +268,41 @@ class _RegistrationPageState extends State<RegistrationPage>
                     value: 'University of North Carolina Greensboro',
                     child: Text(
                       'University of North Carolina Greensboro',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'University of North Carolina at Charlotte',
+                    child: Text(
+                      'University of North Carolina at Charlotte',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'East Carolina University',
+                    child: Text(
+                      'East Carolina University',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Shaw University',
+                    child: Text(
+                      'Shaw University',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'North Carolina Central University',
+                    child: Text(
+                      'North Carolina Central University',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Meredith College',
+                    child: Text(
+                      'Meredith College',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -399,7 +448,6 @@ class _RegistrationPageState extends State<RegistrationPage>
             ),
           ),
         ),
-
         // Blur effect over shimmer
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -407,7 +455,6 @@ class _RegistrationPageState extends State<RegistrationPage>
             color: Colors.black.withOpacity(0.1),
           ),
         ),
-
         SafeArea(
           child: Padding(
             padding:
@@ -436,7 +483,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                     ),
                   ),
                   const SizedBox(height: 40),
-
                   // Title
                   const Text(
                     "Create Your Account",
@@ -454,7 +500,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
-
                   // Registration form container
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -503,7 +548,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                             ],
                           ),
                           const SizedBox(height: 20),
-
                           // Email
                           _buildTextFormField(
                             label: 'Email',
@@ -524,7 +568,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                             },
                           ),
                           const SizedBox(height: 20),
-
                           // Password
                           _buildTextFormField(
                             label: 'Set Password',
@@ -546,7 +589,6 @@ class _RegistrationPageState extends State<RegistrationPage>
                             },
                           ),
                           const SizedBox(height: 20),
-
                           // Confirm Password
                           _buildTextFormField(
                             label: 'Confirm Password',
@@ -555,8 +597,7 @@ class _RegistrationPageState extends State<RegistrationPage>
                             obscureText: _obscureRetypePassword,
                             toggleVisibility: () {
                               setState(() {
-                                _obscureRetypePassword =
-                                    !_obscureRetypePassword;
+                                _obscureRetypePassword = !_obscureRetypePassword;
                               });
                             },
                             validator: (value) {
@@ -570,11 +611,9 @@ class _RegistrationPageState extends State<RegistrationPage>
                             },
                           ),
                           const SizedBox(height: 20),
-
                           // Institution dropdown
                           _buildDropdownField(),
                           const SizedBox(height: 30),
-
                           // Register button
                           _buildRegisterButton(),
                         ],
@@ -599,7 +638,6 @@ class _RegistrationPageState extends State<RegistrationPage>
         body: _buildVerificationWaitView(),
       );
     }
-
     // Otherwise, show the registration form
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -640,14 +678,12 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
   @override
   void initState() {
     super.initState();
-
-    // 1) Multiple color transitions (rainbow effect)
+    // Multiple color transitions (rainbow effect)
     _colorController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
 
-    // Build a chain of color transitions
     _colorAnimation = TweenSequence<Color?>([
       TweenSequenceItem(
         tween: ColorTween(begin: Colors.red, end: Colors.orange),
@@ -675,7 +711,7 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
       ),
     ]).animate(_colorController);
 
-    // 2) Ticker for bouncing
+    // Ticker for bouncing
     _ticker = createTicker((_) {
       setState(() {
         _xPos += _xVel;
@@ -692,7 +728,6 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
           _xPos = screenWidth - _logoWidth;
           _xVel = -_xVel;
         }
-
         // Bounce vertically
         if (_yPos < 0) {
           _yPos = 0;
@@ -719,7 +754,6 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
     return AnimatedBuilder(
       animation: _colorAnimation,
       builder: (context, child) {
-        // Move the logo to the current position
         return Positioned(
           left: _xPos,
           top: _yPos,
@@ -732,7 +766,7 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
                 BlendMode.srcATop,
               ),
               child: Image.asset(
-                'assets/ragtaglogo.png', // Make sure path is correct
+                'assets/ragtaglogo.png', // Ensure this path is correct
                 fit: BoxFit.contain,
               ),
             ),
