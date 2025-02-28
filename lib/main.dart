@@ -7,6 +7,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+// Import your notification service.
+import 'notification_service.dart';
 
 // Pages
 import 'pages/sign_in_page.dart';
@@ -29,9 +33,18 @@ import 'pages/story_view_page.dart';
 import 'widgets/story_editor.dart';
 import 'pages/profile_page.dart';
 import 'pages/fomo_feed_page.dart';
+import 'pages/chat_page.dart'; // User chat page.
+import 'pages/open_forums_chat_page.dart'; // Forum chat page.
 
-// Create a global instance of secure storage (if needed for other uses)
+// Global secure storage instance.
 final FlutterSecureStorage secureStorage = FlutterSecureStorage();
+
+// Global navigator key for notifications and deep links.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// Initialize flutter_local_notifications plugin.
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 /// Handles background FCM messages.
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -43,7 +56,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
-/// Request notification permissions from the user.
+/// Request notification permissions.
 Future<void> requestNotificationPermission() async {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   NotificationSettings settings = await messaging.requestPermission(
@@ -61,10 +74,23 @@ Future<void> getAPNSTokenAndPrint() async {
   print('APNs token: $token');
 }
 
+/// Initialize local notifications.
+Future<void> initializeLocalNotifications() async {
+  const AndroidInitializationSettings androidSettings =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const IOSInitializationSettings iOSSettings = IOSInitializationSettings();
+  const InitializationSettings initSettings = InitializationSettings(
+    android: androidSettings,
+    iOS: iOSSettings,
+  );
+  await flutterLocalNotificationsPlugin.initialize(initSettings);
+  print('Local notifications initialized.');
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Enable edge-to-edge mode so Flutter draws behind system overlays.
+  // Enable edge-to-edge mode.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -90,20 +116,69 @@ Future<void> main() async {
     print('Error activating AppCheck: $e\n$stacktrace');
   }
 
-  // FCM setup.
+  // Set up FCM background message handler.
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   print('FCM background handler set.');
 
   await requestNotificationPermission();
   await getAPNSTokenAndPrint();
+  await initializeLocalNotifications();
 
-  // Retrieve stored auth token from secure storage.
-  // Firebase Auth persists sessions by default.
-  // This is useful if you're using custom tokens or additional auth logic.
+  // Initialize notification service.
+  await NotificationService().initialize(navigatorKey: navigatorKey);
+
+  // Listen for foreground messages.
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Received a foreground message: ${message.messageId}');
+    NotificationService().showLocalNotification(message);
+  });
+
+  // Listen for notification taps.
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print('onMessageOpenedApp: ${message.messageId}');
+    final data = message.data;
+    final chatType = data['chatType'];
+    if (chatType != null) {
+      switch (chatType) {
+        case "user":
+          Navigator.pushNamed(navigatorKey.currentState!.context, '/user-chat', arguments: {
+            'chatId': data['chatId'],
+            'otherUserId': data['otherUserId'],
+            'otherUserName': data['otherUserName'],
+            'otherUserPhotoUrl': data['otherUserPhotoUrl'],
+          });
+          break;
+        case "club":
+          Navigator.pushNamed(navigatorKey.currentState!.context, '/club-chat', arguments: {
+            'clubId': data['clubId'],
+            'clubName': data['clubName'],
+          });
+          break;
+        case "group":
+          Navigator.pushNamed(navigatorKey.currentState!.context, '/group-chat', arguments: {
+            'communityId': data['communityId'],
+            'communityName': data['communityName'],
+          });
+          break;
+        case "forum":
+          Navigator.pushNamed(navigatorKey.currentState!.context, '/forum-chat', arguments: {
+            'forumId': data['forumId'],
+            'forumName': data['forumName'],
+          });
+          break;
+        default:
+          print('Unhandled chatType in onMessageOpenedApp: $chatType');
+          break;
+      }
+    }
+  });
+
+  // Optionally check for a stored auth token (if using custom auth flows).
   final String? storedAuthToken = await secureStorage.read(key: 'auth_token');
   if (storedAuthToken != null) {
     print('Found auth token in secure storage: $storedAuthToken');
-    // Optionally, use the token to reinitialize your custom auth session.
+    // For custom tokens, sign in explicitly:
+    // await FirebaseAuth.instance.signInWithCustomToken(storedAuthToken);
   } else {
     print('No auth token found in secure storage.');
   }
@@ -147,19 +222,67 @@ class _RagtagAppState extends State<RagtagApp> {
 
   void _handleDeepLink(Uri deepLink) {
     print('Handling deep link: $deepLink');
-    if (deepLink.path.contains("club")) {
-      final clubId = deepLink.queryParameters["c"] ?? "";
-      if (clubId.isNotEmpty) {
-        print('Navigating to clubs profile with clubId: $clubId');
-        Navigator.pushNamed(
-          context,
-          '/clubs-profile',
-          arguments: {
+    final chatType = deepLink.queryParameters["chatType"];
+    if (chatType != null) {
+      switch (chatType) {
+        case "user":
+          final chatId = deepLink.queryParameters["chatId"] ?? "";
+          final otherUserId = deepLink.queryParameters["otherUserId"] ?? "";
+          final otherUserName = deepLink.queryParameters["otherUserName"] ?? "";
+          final otherUserPhotoUrl = deepLink.queryParameters["otherUserPhotoUrl"] ?? "";
+          if (chatId.isNotEmpty) {
+            Navigator.pushNamed(context, '/user-chat', arguments: {
+              'chatId': chatId,
+              'otherUserId': otherUserId,
+              'otherUserName': otherUserName,
+              'otherUserPhotoUrl': otherUserPhotoUrl,
+            });
+          }
+          break;
+        case "club":
+          final clubId = deepLink.queryParameters["clubId"] ?? "";
+          final clubName = deepLink.queryParameters["clubName"] ?? "";
+          if (clubId.isNotEmpty) {
+            Navigator.pushNamed(context, '/club-chat', arguments: {
+              'clubId': clubId,
+              'clubName': clubName,
+            });
+          }
+          break;
+        case "group":
+          final communityId = deepLink.queryParameters["communityId"] ?? "";
+          final communityName = deepLink.queryParameters["communityName"] ?? "";
+          if (communityId.isNotEmpty) {
+            Navigator.pushNamed(context, '/group-chat', arguments: {
+              'communityId': communityId,
+              'communityName': communityName,
+            });
+          }
+          break;
+        case "forum":
+          final forumId = deepLink.queryParameters["forumId"] ?? "";
+          final forumName = deepLink.queryParameters["forumName"] ?? "";
+          if (forumId.isNotEmpty) {
+            Navigator.pushNamed(context, '/forum-chat', arguments: {
+              'forumId': forumId,
+              'forumName': forumName,
+            });
+          }
+          break;
+        default:
+          print('Unhandled chatType in deep link: $chatType');
+          break;
+      }
+    } else {
+      if (deepLink.path.contains("club")) {
+        final clubId = deepLink.queryParameters["c"] ?? "";
+        if (clubId.isNotEmpty) {
+          Navigator.pushNamed(context, '/clubs-profile', arguments: {
             'communityId': clubId,
             'communityData': {},
             'userId': FirebaseAuth.instance.currentUser?.uid ?? '',
-          },
-        );
+          });
+        }
       }
     }
   }
@@ -167,9 +290,11 @@ class _RagtagAppState extends State<RagtagApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Ragtag App',
-      initialRoute: '/landing',
+      // Use RootPage as the home widget to wait for auth state.
+      home: const RootPage(),
       routes: {
         '/home': (context) => const RootPage(),
         '/profilePage': (context) => const ProfilePage(),
@@ -187,12 +312,7 @@ class _RagtagAppState extends State<RagtagApp> {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
-              body: Center(
-                child: Text(
-                  'No community data provided for Club.',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
+              body: Center(child: Text('No community data provided for Club.', style: TextStyle(color: Colors.red))),
             );
           }
           final communityId = args['communityId'] as String? ?? '';
@@ -208,12 +328,7 @@ class _RagtagAppState extends State<RagtagApp> {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
-              body: Center(
-                child: Text(
-                  'No Interest Group data provided.',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
+              body: Center(child: Text('No Interest Group data provided.', style: TextStyle(color: Colors.red))),
             );
           }
           final communityId = args['communityId'] as String? ?? '';
@@ -231,12 +346,7 @@ class _RagtagAppState extends State<RagtagApp> {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null) {
             return const Scaffold(
-              body: Center(
-                child: Text(
-                  'No Open Forum data provided.',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
+              body: Center(child: Text('No Open Forum data provided.', style: TextStyle(color: Colors.red))),
             );
           }
           final communityId = args['communityId'] as String? ?? '';
@@ -251,35 +361,60 @@ class _RagtagAppState extends State<RagtagApp> {
         '/admin-dashboard': (context) => const AdminDashboardPage(),
         '/edit_community': (context) => EditCommunityPage(),
         '/fomo_feed': (context) => const FomoFeedPage(),
+        // Chat routes:
+        '/user-chat': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          if (args == null || args['chatId'] == null) {
+            return const Scaffold(
+              body: Center(child: Text('No chat data provided for user chat.', style: TextStyle(color: Colors.red))),
+            );
+          }
+          return ChatPage(
+            chatId: args['chatId'],
+            otherUserId: args['otherUserId'] ?? '',
+            otherUserName: args['otherUserName'] ?? '',
+            otherUserPhotoUrl: args['otherUserPhotoUrl'] ?? '',
+          );
+        },
+        '/club-chat': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          if (args == null || args['clubId'] == null) {
+            return const Scaffold(
+              body: Center(child: Text('No chat data provided for club chat.', style: TextStyle(color: Colors.red))),
+            );
+          }
+          return ClubChatPage(
+            clubId: args['clubId'],
+            clubName: args['clubName'] ?? '',
+          );
+        },
+        '/group-chat': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          if (args == null || args['communityId'] == null) {
+            return const Scaffold(
+              body: Center(child: Text('No chat data provided for group chat.', style: TextStyle(color: Colors.red))),
+            );
+          }
+          return InterestGroupChatPage(
+            communityId: args['communityId'],
+            communityName: args['communityName'] ?? '',
+          );
+        },
+        '/forum-chat': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          if (args == null || args['forumId'] == null) {
+            return const Scaffold(
+              body: Center(child: Text('No chat data provided for forum chat.', style: TextStyle(color: Colors.red))),
+            );
+          }
+          return OpenForumsChatPage(
+            forumId: args['forumId'],
+            forumName: args['forumName'] ?? '',
+          );
+        },
       },
       onGenerateRoute: (settings) {
-        if (settings.name == '/club-chat') {
-          final args = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(
-            builder: (context) => ClubChatPage(
-              clubId: args['clubId'],
-              clubName: args['clubName'],
-            ),
-          );
-        } else if (settings.name == '/club-events') {
-          final args = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(
-            builder: (context) => ClubEventsPage(
-              clubId: args['clubId'],
-              clubName: args['clubName'],
-            ),
-          );
-        } else if (settings.name == '/group-chat') {
-          final args = settings.arguments as Map<String, dynamic>;
-          final communityId = args['communityId'] ?? '';
-          final communityName = args['communityName'] ?? '';
-          return MaterialPageRoute(
-            builder: (context) => InterestGroupChatPage(
-              communityId: communityId,
-              communityName: communityName,
-            ),
-          );
-        }
+        // Additional onGenerateRoute logic if needed.
         return null;
       },
       theme: ThemeData(
@@ -298,19 +433,31 @@ class _RagtagAppState extends State<RagtagApp> {
   }
 }
 
+/// RootPage now uses a StreamBuilder to listen to FirebaseAuth.authStateChanges().
 class RootPage extends StatelessWidget {
   const RootPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    print('RootPage build. Current user: $user');
-    if (user != null) {
-      print('User detected. Routing to FirstChoicePage.');
-      return const FirstChoicePage();
-    } else {
-      print('No user detected. Routing to OpeningLandingPage.');
-      return const OpeningLandingPage();
-    }
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // While Firebase is determining the auth state, show a loading spinner.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        // Route to the appropriate page based on user authentication.
+        final user = snapshot.data;
+        if (user != null) {
+          print('User detected. Routing to FirstChoicePage.');
+          return const FirstChoicePage();
+        } else {
+          print('No user detected. Routing to OpeningLandingPage.');
+          return const OpeningLandingPage();
+        }
+      },
+    );
   }
 }
