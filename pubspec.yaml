@@ -2,7 +2,7 @@ name: ragtagrevived
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.1+52
+version: 1.0.1+53
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -38,6 +38,7 @@ dependencies:
   pro_image_editor: ^7.6.4
   flutter_drawing_board: ^0.9.5
   stories_page_view: ^0.0.5
+  flutter_local_notifications: 18.0.1
   image_editor: 1.6.0
   confetti: ^0.8.0
   story_view: 0.16.5
