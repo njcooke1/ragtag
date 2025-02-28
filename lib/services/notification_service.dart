@@ -22,12 +22,15 @@ class NotificationService {
       iOS: iOSSettings,
     );
 
-    await flutterLocalNotificationsPlugin.initialize(initSettings,
-        onSelectNotification: (String? payload) async {
-      if (payload != null) {
-        _handleNotificationTap(payload, navigatorKey);
-      }
-    });
+    await flutterLocalNotificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        final String? payload = response.payload;
+        if (payload != null) {
+          _handleNotificationTap(payload, navigatorKey);
+        }
+      },
+    );
 
     // Also listen for FCM messages that open the app.
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
