@@ -34,7 +34,6 @@ import 'widgets/story_editor.dart';
 import 'pages/profile_page.dart';
 import 'pages/fomo_feed_page.dart';
 import 'pages/chat_page.dart'; // User chat page.
-import 'pages/open_forums_chat_page.dart'; // Forum chat page.
 
 // Global secure storage instance.
 final FlutterSecureStorage secureStorage = FlutterSecureStorage();
@@ -154,13 +153,13 @@ Future<void> main() async {
             'clubName': data['clubName'],
           });
           break;
-        case "group":
+        case "interestGroup":
           Navigator.pushNamed(navigatorKey.currentState!.context, '/group-chat', arguments: {
             'communityId': data['communityId'],
             'communityName': data['communityName'],
           });
           break;
-        case "forum":
+        case "openForum":
           Navigator.pushNamed(navigatorKey.currentState!.context, '/forum-chat', arguments: {
             'forumId': data['forumId'],
             'forumName': data['forumName'],
@@ -173,7 +172,7 @@ Future<void> main() async {
     }
   });
 
-  // Optionally check for a stored auth token (if using custom auth flows).
+  // Optionally check for a stored auth token.
   final String? storedAuthToken = await secureStorage.read(key: 'auth_token');
   if (storedAuthToken != null) {
     print('Found auth token in secure storage: $storedAuthToken');
@@ -249,7 +248,7 @@ class _RagtagAppState extends State<RagtagApp> {
             });
           }
           break;
-        case "group":
+        case "interestGroup":
           final communityId = deepLink.queryParameters["communityId"] ?? "";
           final communityName = deepLink.queryParameters["communityName"] ?? "";
           if (communityId.isNotEmpty) {
@@ -259,7 +258,7 @@ class _RagtagAppState extends State<RagtagApp> {
             });
           }
           break;
-        case "forum":
+        case "openForum":
           final forumId = deepLink.queryParameters["forumId"] ?? "";
           final forumName = deepLink.queryParameters["forumName"] ?? "";
           if (forumId.isNotEmpty) {
@@ -293,7 +292,6 @@ class _RagtagAppState extends State<RagtagApp> {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Ragtag App',
-      // Use RootPage as the home widget to wait for auth state.
       home: const RootPage(),
       routes: {
         '/home': (context) => const RootPage(),
@@ -392,7 +390,7 @@ class _RagtagAppState extends State<RagtagApp> {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null || args['communityId'] == null) {
             return const Scaffold(
-              body: Center(child: Text('No chat data provided for group chat.', style: TextStyle(color: Colors.red))),
+              body: Center(child: Text('No chat data provided for interest group chat.', style: TextStyle(color: Colors.red))),
             );
           }
           return InterestGroupChatPage(
@@ -404,7 +402,7 @@ class _RagtagAppState extends State<RagtagApp> {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null || args['forumId'] == null) {
             return const Scaffold(
-              body: Center(child: Text('No chat data provided for forum chat.', style: TextStyle(color: Colors.red))),
+              body: Center(child: Text('No chat data provided for open forum chat.', style: TextStyle(color: Colors.red))),
             );
           }
           return OpenForumsChatPage(
