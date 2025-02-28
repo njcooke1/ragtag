@@ -14,15 +14,21 @@ class ChatMessageListenerService {
         .doc(chatId)
         .collection('messages');
 
-    final subscription = messagesRef.orderBy('timestamp').snapshots().listen((snapshot) {
+    final subscription = messagesRef
+        .orderBy('timestamp')
+        .snapshots()
+        .listen((snapshot) {
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data() as Map<String, dynamic>;
+          final data = change.doc.data();
+          if (data == null || data is! Map<String, dynamic>) continue;
           // Optionally, tag the data with the chat type.
           data['chatType'] = 'user';
           NotificationService().showChatNotification(data);
         }
       }
+    }, onError: (error) {
+      print('Error listening to user chat: $error');
     });
     _subscriptions.add(subscription);
   }
@@ -35,14 +41,20 @@ class ChatMessageListenerService {
         .doc(clubId)
         .collection('messages');
 
-    final subscription = messagesRef.orderBy('timestamp').snapshots().listen((snapshot) {
+    final subscription = messagesRef
+        .orderBy('timestamp')
+        .snapshots()
+        .listen((snapshot) {
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data() as Map<String, dynamic>;
+          final data = change.doc.data();
+          if (data == null || data is! Map<String, dynamic>) continue;
           data['chatType'] = 'club';
           NotificationService().showChatNotification(data);
         }
       }
+    }, onError: (error) {
+      print('Error listening to club chat: $error');
     });
     _subscriptions.add(subscription);
   }
@@ -55,14 +67,20 @@ class ChatMessageListenerService {
         .doc(interestGroupId)
         .collection('messages');
 
-    final subscription = messagesRef.orderBy('timestamp').snapshots().listen((snapshot) {
+    final subscription = messagesRef
+        .orderBy('timestamp')
+        .snapshots()
+        .listen((snapshot) {
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data() as Map<String, dynamic>;
+          final data = change.doc.data();
+          if (data == null || data is! Map<String, dynamic>) continue;
           data['chatType'] = 'interestGroup';
           NotificationService().showChatNotification(data);
         }
       }
+    }, onError: (error) {
+      print('Error listening to interest group chat: $error');
     });
     _subscriptions.add(subscription);
   }
@@ -75,14 +93,20 @@ class ChatMessageListenerService {
         .doc(openForumId)
         .collection('messages');
 
-    final subscription = messagesRef.orderBy('timestamp').snapshots().listen((snapshot) {
+    final subscription = messagesRef
+        .orderBy('timestamp')
+        .snapshots()
+        .listen((snapshot) {
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data() as Map<String, dynamic>;
+          final data = change.doc.data();
+          if (data == null || data is! Map<String, dynamic>) continue;
           data['chatType'] = 'openForum';
           NotificationService().showChatNotification(data);
         }
       }
+    }, onError: (error) {
+      print('Error listening to open forum chat: $error');
     });
     _subscriptions.add(subscription);
   }
