@@ -10,7 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Import your notification service.
-import 'notification_service.dart';
+import 'services/notification_service.dart';
 
 // Pages
 import 'pages/sign_in_page.dart';
