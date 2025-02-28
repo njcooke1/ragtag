@@ -400,17 +400,23 @@ class _RagtagAppState extends State<RagtagApp> {
           );
         },
         '/forum-chat': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-          if (args == null || args['forumId'] == null) {
-            return const Scaffold(
-              body: Center(child: Text('No chat data provided for open forum chat.', style: TextStyle(color: Colors.red))),
-            );
-          }
-          return OpenForumsChatPage(
-            forumId: args['forumId'],
-            forumName: args['forumName'] ?? '',
-          );
-        },
+  final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+  if (args == null || args['forumId'] == null) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          'No chat data provided for open forum chat.',
+          style: TextStyle(color: Colors.red),
+        ),
+      ),
+    );
+  }
+  return OpenForumsProfilePage(
+    communityId: args['forumId'], // treat forumId as communityId
+    communityData: args['forumData'] ?? {}, // pass in any available forum data, or an empty map
+    userId: args['userId'] ?? FirebaseAuth.instance.currentUser?.uid ?? '',
+  );
+},
       },
       onGenerateRoute: (settings) {
         // Additional onGenerateRoute logic if needed.
