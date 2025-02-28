@@ -77,7 +77,8 @@ Future<void> getAPNSTokenAndPrint() async {
 Future<void> initializeLocalNotifications() async {
   const AndroidInitializationSettings androidSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-  const IOSInitializationSettings iOSSettings = IOSInitializationSettings();
+  const DarwinInitializationSettings iOSSettings =
+      DarwinInitializationSettings();
   const InitializationSettings initSettings = InitializationSettings(
     android: androidSettings,
     iOS: iOSSettings,

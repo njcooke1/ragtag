@@ -16,7 +16,7 @@ class NotificationService {
     // Initialization settings for Android and iOS.
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const IOSInitializationSettings iOSSettings = IOSInitializationSettings();
+    const DarwinInitializationSettings iOSSettings = DarwinInitializationSettings();
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iOSSettings,
@@ -72,7 +72,7 @@ class NotificationService {
       priority: Priority.high,
     );
 
-    const IOSNotificationDetails iOSDetails = IOSNotificationDetails();
+    const DarwinNotificationDetails iOSDetails = DarwinNotificationDetails();
 
     const NotificationDetails platformDetails = NotificationDetails(
       android: androidDetails,
