@@ -168,10 +168,10 @@ exports.sendChatNotification = onDocumentCreated(
     }
 
     const chatId = event.params.chatId;
-    const senderUid = messageData.senderUid || '';
+    const senderId = messageData.senderId || '';
     const text = messageData.text || 'New message';
 
-    console.log(`New message in chat ${chatId} from user ${senderUid}`);
+    console.log(`New message in chat ${chatId} from user ${senderId}`);
 
     const chatRef = admin.firestore().collection('chats').doc(chatId);
     const chatSnap = await chatRef.get();
@@ -187,7 +187,7 @@ exports.sendChatNotification = onDocumentCreated(
       return;
     }
 
-    const otherUserIds = participants.filter((uid) => uid !== senderUid);
+    const otherUserIds = participants.filter((uid) => uid !== senderId);
     if (!otherUserIds.length) {
       console.log(`No other participants to notify for chat ${chatId}.`);
       return;
@@ -271,10 +271,10 @@ exports.sendClubChatNotification = onDocumentCreated(
     }
 
     const clubId = event.params.clubId;
-    const senderUid = messageData.senderUid || '';
+    const senderId = messageData.senderId || '';
     const text = messageData.text || 'New message';
 
-    console.log(`New message in club ${clubId} from user ${senderUid}`);
+    console.log(`New message in club ${clubId} from user ${senderId}`);
 
     const clubRef = admin.firestore().collection('clubs').doc(clubId);
     const clubSnap = await clubRef.get();
@@ -291,7 +291,7 @@ exports.sendClubChatNotification = onDocumentCreated(
       return;
     }
 
-    const otherUserIds = memberIds.filter((uid) => uid !== senderUid);
+    const otherUserIds = memberIds.filter((uid) => uid !== senderId);
     if (!otherUserIds.length) {
       console.log(`No other members to notify for club ${clubId}.`);
       return;
@@ -375,10 +375,10 @@ exports.sendInterestGroupChatNotification = onDocumentCreated(
     }
 
     const interestGroupId = event.params.interestGroupId;
-    const senderUid = messageData.senderUid || '';
+    const senderId = messageData.senderId || '';
     const text = messageData.text || 'New message';
 
-    console.log(`New message in interest group ${interestGroupId} from user ${senderUid}`);
+    console.log(`New message in interest group ${interestGroupId} from user ${senderId}`);
 
     const groupRef = admin.firestore().collection('interestGroups').doc(interestGroupId);
     const groupSnap = await groupRef.get();
@@ -395,7 +395,7 @@ exports.sendInterestGroupChatNotification = onDocumentCreated(
       return;
     }
 
-    const otherUserIds = memberIds.filter((uid) => uid !== senderUid);
+    const otherUserIds = memberIds.filter((uid) => uid !== senderId);
     if (!otherUserIds.length) {
       console.log(`No other members to notify for interest group ${interestGroupId}.`);
       return;
@@ -479,10 +479,10 @@ exports.sendOpenForumChatNotification = onDocumentCreated(
     }
 
     const openForumId = event.params.openForumId;
-    const senderUid = messageData.senderUid || '';
+    const senderId = messageData.senderId || '';
     const text = messageData.text || 'New message';
 
-    console.log(`New message in open forum ${openForumId} from user ${senderUid}`);
+    console.log(`New message in open forum ${openForumId} from user ${senderId}`);
 
     const forumRef = admin.firestore().collection('openForums').doc(openForumId);
     const forumSnap = await forumRef.get();
@@ -499,7 +499,7 @@ exports.sendOpenForumChatNotification = onDocumentCreated(
       return;
     }
 
-    const otherUserIds = participantIds.filter((uid) => uid !== senderUid);
+    const otherUserIds = participantIds.filter((uid) => uid !== senderId);
     if (!otherUserIds.length) {
       console.log(`No other participants to notify for open forum ${openForumId}.`);
       return;

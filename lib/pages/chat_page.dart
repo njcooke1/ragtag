@@ -30,8 +30,13 @@ class _ChatPageState extends State<ChatPage> {
   // ---------------------------------------------------------------------------
   final Color scaffoldBg = const Color(0xFF1E1E1E);
   final Color accentColor = const Color(0xFF00BFA6);
+
+  // “My” message bubble color
   final Color myBubbleColor = Colors.blueGrey;
+  // “Other” message bubble color
   final Color otherBubbleColor = Colors.grey;
+
+  // Pinned icon
   final Color pinnedIconColor = const Color(0xFFFFD700);
 
   // ---------------------------------------------------------------------------
@@ -131,6 +136,7 @@ class _ChatPageState extends State<ChatPage> {
       titleSpacing: 0,
       title: Row(
         children: [
+          // The other user’s avatar
           CircleAvatar(
             radius: 18,
             backgroundColor: Colors.grey[800],
@@ -142,6 +148,7 @@ class _ChatPageState extends State<ChatPage> {
                 : null,
           ),
           const SizedBox(width: 8),
+          // The other user’s name
           Text(
             widget.otherUserName,
             style: const TextStyle(
@@ -257,10 +264,10 @@ class _ChatPageState extends State<ChatPage> {
 
         _normalMessages = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          final senderUid = data['senderUid'] ?? '';
+          final senderId = data['senderId'] ?? '';
           // Filter out messages from blocked users (if not sent by current user)
-          if (senderUid != _auth.currentUser?.uid &&
-              _blockedUserIds.contains(senderUid)) {
+          if (senderId != _auth.currentUser?.uid &&
+              _blockedUserIds.contains(senderId)) {
             return false;
           }
           return data['pinned'] != true;
@@ -283,8 +290,7 @@ class _ChatPageState extends State<ChatPage> {
           final ts = data['timestamp'] as Timestamp?;
           final dateTime = ts?.toDate();
           if (dateTime != null) {
-            final justDate =
-                DateTime(dateTime.year, dateTime.month, dateTime.day);
+            final justDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
             if (lastDate == null || justDate != lastDate) {
               lastDate = justDate;
               messageWidgets.add(_buildDateDivider(dateTime));
@@ -371,8 +377,7 @@ class _ChatPageState extends State<ChatPage> {
           ),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [
@@ -444,7 +449,7 @@ class _ChatPageState extends State<ChatPage> {
   // ---------------------------------------------------------------------------
   Widget _buildMessageBubble(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final senderUid = data['senderUid'] ?? '';
+    final senderId = data['senderId'] ?? '';
     final text = data['text'] ?? '';
     final imageUrl = data['imageUrl'] as String?;
     final pinned = data['pinned'] == true;
@@ -458,13 +463,12 @@ class _ChatPageState extends State<ChatPage> {
         : '';
 
     final currentUser = _auth.currentUser;
-    final isMe = (currentUser != null && senderUid == currentUser.uid);
+    final isMe = (currentUser != null && senderId == currentUser.uid);
 
     return GestureDetector(
       onLongPress: () => _showMessageOptions(doc, isMe),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 300),
@@ -474,16 +478,13 @@ class _ChatPageState extends State<ChatPage> {
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(12),
               topRight: const Radius.circular(12),
-              bottomLeft:
-                  isMe ? const Radius.circular(12) : Radius.zero,
-              bottomRight:
-                  isMe ? Radius.zero : const Radius.circular(12),
+              bottomLeft: isMe ? const Radius.circular(12) : Radius.zero,
+              bottomRight: isMe ? Radius.zero : const Radius.circular(12),
             ),
           ),
           child: Column(
-            crossAxisAlignment: isMe
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment:
+                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               if (!isMe && senderName.isNotEmpty) ...[
                 Text(
@@ -574,8 +575,8 @@ class _ChatPageState extends State<ChatPage> {
           child: Wrap(
             children: [
               ListTile(
-                leading: const Icon(Icons.delete_outline,
-                    color: Colors.redAccent),
+                leading:
+                    const Icon(Icons.delete_outline, color: Colors.redAccent),
                 title: Text(
                   isMe ? "Delete for Me" : "Delete Message",
                   style: const TextStyle(color: Colors.white70),
@@ -599,8 +600,7 @@ class _ChatPageState extends State<ChatPage> {
                 )
               else
                 ListTile(
-                  leading:
-                      Icon(Icons.push_pin_outlined, color: accentColor),
+                  leading: Icon(Icons.push_pin_outlined, color: accentColor),
                   title: const Text(
                     "Unpin Message",
                     style: TextStyle(color: Colors.white70),
@@ -666,8 +666,7 @@ class _ChatPageState extends State<ChatPage> {
     return SafeArea(
       top: false,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         decoration: const BoxDecoration(
           color: Colors.black87,
           border: Border(
@@ -760,42 +759,41 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // 12) SEND TEXT MESSAGE (Updated to use current user’s info)
+  // 12) SEND TEXT MESSAGE
   // ---------------------------------------------------------------------------
   Future<void> _sendMessage() async {
-    final text = _msgController.text.trim();
-    if (text.isEmpty) return;
+  final text = _msgController.text.trim();
+  if (text.isEmpty) return;
 
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
+  final currentUser = _auth.currentUser;
+  if (currentUser == null) return;
 
-    // Use current user's display name and photo URL.
-    final senderName = currentUser.displayName ?? 'Me';
-    final senderPhotoUrl = currentUser.photoURL ?? '';
+  // Use the current user's details if available.
+  final senderName = currentUser.displayName ?? "Anonymous";
+  final senderPhotoUrl = currentUser.photoURL ?? "";
 
-    final data = {
-      'senderUid': currentUser.uid,
-      'senderName': senderName,
-      'senderPhotoUrl': senderPhotoUrl,
-      'timestamp': FieldValue.serverTimestamp(),
-      'pinned': false,
-      'type': 'text',
-      'text': text,
-    };
+  final data = {
+    'senderId': currentUser.uid,
+    'senderName': senderName,
+    'senderPhotoUrl': senderPhotoUrl,
+    'timestamp': FieldValue.serverTimestamp(),
+    'pinned': false,
+    'type': 'text',
+    'text': text,
+  };
 
-    await FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .collection('messages')
-        .add(data);
+  await FirebaseFirestore.instance
+      .collection('chats')
+      .doc(widget.chatId)
+      .collection('messages')
+      .add(data);
 
-    _msgController.clear();
-    setState(() => _isTyping = false);
-    _autoScroll();
-  }
-
+  _msgController.clear();
+  setState(() => _isTyping = false);
+  _autoScroll();
+}
   // ---------------------------------------------------------------------------
-  // 13) SEND IMAGE MESSAGE (Updated to use current user’s info)
+  // 13) SEND IMAGE MESSAGE
   // ---------------------------------------------------------------------------
   Future<void> _sendImageMessage() async {
     final currentUser = _auth.currentUser;
@@ -813,12 +811,11 @@ class _ChatPageState extends State<ChatPage> {
       await ref.putFile(file);
       final downloadUrl = await ref.getDownloadURL();
 
-      // Use current user's display name and photo URL.
-      final senderName = currentUser.displayName ?? 'Me';
-      final senderPhotoUrl = currentUser.photoURL ?? '';
+      final senderName = widget.otherUserName;
+      final senderPhotoUrl = widget.otherUserPhotoUrl;
 
       final data = {
-        'senderUid': currentUser.uid,
+        'senderId': currentUser.uid,
         'senderName': senderName,
         'senderPhotoUrl': senderPhotoUrl,
         'timestamp': FieldValue.serverTimestamp(),
@@ -856,6 +853,8 @@ class _ChatPageState extends State<ChatPage> {
   // ---------------------------------------------------------------------------
   // 15) REPORT FLOW
   // ---------------------------------------------------------------------------
+
+  /// Step 1: Prompt user to pick a report category.
   void _showReportDialog() {
     final List<String> reportCategories = [
       "Harassment",
@@ -871,8 +870,8 @@ class _ChatPageState extends State<ChatPage> {
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text("Report this Chat",
-              style: TextStyle(color: Colors.white)),
+          title:
+              const Text("Report this Chat", style: TextStyle(color: Colors.white)),
           content: StatefulBuilder(
             builder: (context, setStateSB) {
               return Column(
@@ -907,7 +906,8 @@ class _ChatPageState extends State<ChatPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancel", style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text("Cancel", style: TextStyle(color: Colors.white70)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -926,13 +926,15 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// Step 2: Confirmation before report submission.
   void _confirmReport(String category) {
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text("Confirm Report", style: TextStyle(color: Colors.white)),
+          title:
+              const Text("Confirm Report", style: TextStyle(color: Colors.white)),
           content: Text(
             'Are you sure you want to report this chat for "$category"?',
             style: const TextStyle(color: Colors.white70),
@@ -940,12 +942,13 @@ class _ChatPageState extends State<ChatPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("No", style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text("No", style: TextStyle(color: Colors.white70)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
               onPressed: () {
-                Navigator.pop(ctx);
+                Navigator.pop(ctx); // close confirmation
                 _submitReport(category);
               },
               child: const Text("Yes, Report"),
@@ -956,6 +959,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// Step 3: Write the report to 'reports' collection in Firestore.
   Future<void> _submitReport(String category) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -972,11 +976,13 @@ class _ChatPageState extends State<ChatPage> {
         'category': category,
       });
 
+      // Show success feedback.
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text('Report Received', style: TextStyle(color: Colors.white)),
+          title:
+              const Text('Report Received', style: TextStyle(color: Colors.white)),
           content: const Text(
             'Thanks! We have received your report and will conduct an investigation within 24 hours.',
             style: TextStyle(color: Colors.white70),
@@ -984,7 +990,8 @@ class _ChatPageState extends State<ChatPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK', style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text('OK', style: TextStyle(color: Colors.white70)),
             ),
           ],
         ),
@@ -997,13 +1004,16 @@ class _ChatPageState extends State<ChatPage> {
   // ---------------------------------------------------------------------------
   // 16) BLOCK USER FLOW
   // ---------------------------------------------------------------------------
+
+  /// Show a confirmation dialog before blocking the user.
   void _confirmBlockDialog() {
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text("Confirm Block", style: TextStyle(color: Colors.white)),
+          title:
+              const Text("Confirm Block", style: TextStyle(color: Colors.white)),
           content: const Text(
             "Are you sure you want to block this user?",
             style: TextStyle(color: Colors.white70),
@@ -1011,7 +1021,8 @@ class _ChatPageState extends State<ChatPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancel", style: TextStyle(color: Colors.white70)),
+              child:
+                  const Text("Cancel", style: TextStyle(color: Colors.white70)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
@@ -1027,6 +1038,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// Perform the block action: add the other user's ID to the current user's "Blocked" field.
   Future<void> _blockUser() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
