@@ -54,6 +54,9 @@ class _ChatPageState extends State<ChatPage> {
   List<DocumentSnapshot> _normalMessages = [];
   List<String> _blockedUserIds = [];
 
+  // Store the Firestore subscription to cancel on dispose.
+  StreamSubscription<DocumentSnapshot>? _blockedUsersSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +68,7 @@ class _ChatPageState extends State<ChatPage> {
   void dispose() {
     _msgController.dispose();
     _scrollController.dispose();
+    _blockedUsersSubscription?.cancel();
     super.dispose();
   }
 
@@ -89,7 +93,7 @@ class _ChatPageState extends State<ChatPage> {
   void _listenToBlockedUsers() {
     final currentUser = _auth.currentUser;
     if (currentUser != null) {
-      FirebaseFirestore.instance
+      _blockedUsersSubscription = FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser.uid)
           .snapshots()
@@ -762,36 +766,37 @@ class _ChatPageState extends State<ChatPage> {
   // 12) SEND TEXT MESSAGE
   // ---------------------------------------------------------------------------
   Future<void> _sendMessage() async {
-  final text = _msgController.text.trim();
-  if (text.isEmpty) return;
+    final text = _msgController.text.trim();
+    if (text.isEmpty) return;
 
-  final currentUser = _auth.currentUser;
-  if (currentUser == null) return;
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
 
-  // Use the current user's details if available.
-  final senderName = currentUser.displayName ?? "Anonymous";
-  final senderPhotoUrl = currentUser.photoURL ?? "";
+    // Use the current user's details if available.
+    final senderName = currentUser.displayName ?? "Anonymous";
+    final senderPhotoUrl = currentUser.photoURL ?? "";
 
-  final data = {
-    'senderId': currentUser.uid,
-    'senderName': senderName,
-    'senderPhotoUrl': senderPhotoUrl,
-    'timestamp': FieldValue.serverTimestamp(),
-    'pinned': false,
-    'type': 'text',
-    'text': text,
-  };
+    final data = {
+      'senderId': currentUser.uid,
+      'senderName': senderName,
+      'senderPhotoUrl': senderPhotoUrl,
+      'timestamp': FieldValue.serverTimestamp(),
+      'pinned': false,
+      'type': 'text',
+      'text': text,
+    };
 
-  await FirebaseFirestore.instance
-      .collection('chats')
-      .doc(widget.chatId)
-      .collection('messages')
-      .add(data);
+    await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .collection('messages')
+        .add(data);
 
-  _msgController.clear();
-  setState(() => _isTyping = false);
-  _autoScroll();
-}
+    _msgController.clear();
+    setState(() => _isTyping = false);
+    _autoScroll();
+  }
+
   // ---------------------------------------------------------------------------
   // 13) SEND IMAGE MESSAGE
   // ---------------------------------------------------------------------------
@@ -811,8 +816,9 @@ class _ChatPageState extends State<ChatPage> {
       await ref.putFile(file);
       final downloadUrl = await ref.getDownloadURL();
 
-      final senderName = widget.otherUserName;
-      final senderPhotoUrl = widget.otherUserPhotoUrl;
+      // Use current user's details for sender info.
+      final senderName = currentUser.displayName ?? "Anonymous";
+      final senderPhotoUrl = currentUser.photoURL ?? "";
 
       final data = {
         'senderId': currentUser.uid,
