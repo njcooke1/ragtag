@@ -324,194 +324,189 @@ class _StartCommunityPageState extends State<StartCommunityPage> with SingleTick
   }
 
   // ---------- Create Community ----------
-  void start_community() async {
-    final name = nameController.text.trim();
-    final description = descriptionController.text.trim();
+// ──────────────────────────────────────────────────────────────────────────────
+//  REPLACE your existing start_community() with everything in this block
+// ──────────────────────────────────────────────────────────────────────────────
+void start_community() async {
+  final name = nameController.text.trim();
+  final description = descriptionController.text.trim();
 
-    // Must select a type
-    if (selectedTypeIndex == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a community type!'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
+  // ---------- basic validation ----------
+  if (selectedTypeIndex == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select a community type!')),
+    );
+    return;
+  }
+  if (name.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please provide a community name.')),
+    );
+    return;
+  }
+  if (selectedCategories.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please choose at least 1 category.')),
+    );
+    return;
+  }
+  if (_profileImageFile == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please pick a profile image first.')),
+    );
+    return;
+  }
 
-    // Must have a name
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please provide a community name.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
+  setState(() => _isLoading = true);
 
-    // Must have at least 1 category
-    if (selectedCategories.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please choose at least 1 category.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
+  try {
+    // ---------- gather essentials ----------
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) throw 'User not authenticated.';
 
-    // Must have a profile image
-    if (_profileImageFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please pick a profile image first.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+    final institution = userDoc.data()?['institution'] ?? '';
 
     final selectedType = communityTypes[selectedTypeIndex!];
     final collectionName = selectedType['collectionName'] as String;
-    final typeTitle = selectedType['title'] as String;
+    final communityDoc =
+        FirebaseFirestore.instance.collection(collectionName).doc();
+    final orgId = communityDoc.id;
 
-    setState(() => _isLoading = true);
+    // ---------- upload profile image ----------
+    final pfpUrl = await _uploadProfileImage(_profileImageFile!, orgId);
+    if (pfpUrl == null) throw 'Image upload failed.';
 
-    try {
-      User? currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User not authenticated.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        setState(() => _isLoading = false);
-        return;
-      }
-      final userId = currentUser.uid;
+    // ---------- write org doc (PENDING) ----------
+    final Map<String, dynamic> data = {
+      'name': name,
+      'description': description,
+      'type': selectedType['title'],
+      'creatorId': currentUser.uid,          // keep for quick lookup
+      'adminIds': [currentUser.uid],         // ✅ guarantees creator sees it forever
+      'createdAt': FieldValue.serverTimestamp(),
+      'institution': institution,
+      'categories': selectedCategories,
+      'pfpUrl': pfpUrl,
 
-      final userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userId);
-      final userDoc = await userDocRef.get();
-      if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User profile not found in Firestore.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        setState(() => _isLoading = false);
-        return;
-      }
-      final userData = userDoc.data()!;
-      final userInstitution = userData['institution'] ?? '';
+      // approval workflow
+      'approvalStatus': 'pending',           // later 'approved' | 'declined'
+      'approvedBy': null,
+      'approvedAt': null,
+    };
+    await communityDoc.set(data);
 
-      final docRef =
-          FirebaseFirestore.instance.collection(collectionName).doc();
-      final orgId = docRef.id;
+    // ---------- update user profile ----------
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .set({
+          // permanent list of orgs the user admins
+          'adminOrgs': FieldValue.arrayUnion([orgId]),
 
-      // Upload the chosen profile image
-      final pfpUrl = await _uploadProfileImage(_profileImageFile!, orgId);
-      if (pfpUrl == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error uploading profile image.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        setState(() => _isLoading = false);
-        return;
-      }
-      setState(() => _profileImageUrl = pfpUrl);
+          // optional: still track it as “pending” if other parts of the app use this
+          'pendingOrgs.$orgId': true,
+        }, SetOptions(merge: true));
 
-      // Build the document data
-      final Map<String, dynamic> communityData = {
-        'name': name,
-        'description': description,
-        'type': typeTitle,
-        'creatorId': userId,
-        'members': {userId: 'admin'},
-        'admins': [userId],
-        'createdAt': FieldValue.serverTimestamp(),
-        'institution': userInstitution,
-        'categories': selectedCategories,
-        'pfpUrl': pfpUrl,
-      };
-
-      // Save to Firestore
-      await docRef.set(communityData);
-
-      // Save admin document with FCM token
-      String? fcmToken = await _getFcmToken();
-      await docRef.collection('admins').doc(userId).set({
-        'joinedAt': FieldValue.serverTimestamp(),
-        'fcmToken': fcmToken ?? '',
-      });
-
-      // Update user document with organizations
-      if (userDoc.exists) {
-        await userDocRef.update({
-          'organizations.$orgId': 'admin',
-        });
-      } else {
-        await userDocRef.set({
-          'username': currentUser.displayName ?? 'Unnamed User',
-          'email': currentUser.email ?? 'No Email',
-          'institution': userInstitution,
-          'organizations': {orgId: 'admin'},
-        });
-      }
-
-      // Navigate based on the community type
-      if (typeTitle == 'Club') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ClubsProfilePage(
-              communityId: orgId,
-              communityData: communityData,
-              userId: userId,
-            ),
-          ),
-        );
-      } else if (typeTitle == 'Interest Group') {
-        Navigator.pushNamed(
-          context,
-          '/interest-groups-profile',
-          arguments: {
-            'communityId': orgId,
-            'communityData': communityData,
-            'userId': userId,
-          },
-        );
-      } else if (typeTitle == 'Open Forum') {
-        Navigator.pushNamed(
-          context,
-          '/open-forums-profile',
-          arguments: {
-            'communityId': orgId,
-            'communityData': communityData,
-            'userId': userId,
-          },
-        );
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Community "$name" created successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error creating community: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    // ---------- success dialog ----------
+    if (mounted) _showPendingDialog(name);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
+    );
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────────
+// NEW helper: sleek “in review” popup
+// ──────────────────────────────────────────────────────────────────────────────
+void _showPendingDialog(String communityName) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      backgroundColor: Colors.black,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Elegant check icon with glow
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blueAccent.withOpacity(0.6),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.hourglass_top, color: Colors.white, size: 34),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              '"$communityName" is now under review',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'A school administrator will approve or decline your request soon. '
+              'You’ll get a notification when a decision is made.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white70,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)
+                  ..pop()          // close dialog
+                  ..pop();         // leave StartCommunityPage
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                child: Text('Got it', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildTextField({
     required TextEditingController controller,

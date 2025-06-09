@@ -26,6 +26,24 @@ class _RegistrationPageState extends State<RegistrationPage>
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _retypePasswordController =
       TextEditingController();
+  final TextEditingController _institutionController = TextEditingController();
+
+  // List of supported institutions
+  final List<String> _institutions = [
+    // Colleges / Universities
+    'North Carolina State University',
+    'University of North Carolina at Chapel Hill',
+    'Duke University',
+    'North Carolina A&T State University',
+    'University of North Carolina Greensboro',
+    'University of North Carolina at Charlotte',
+    'East Carolina University',
+    'Shaw University',
+    'North Carolina Central University',
+    'Meredith College',
+    // High Schools
+    'Person High School',
+  ];
 
   String? _selectedInstitution;
   bool _obscurePassword = true;
@@ -39,12 +57,24 @@ class _RegistrationPageState extends State<RegistrationPage>
   final TokenService _tokenService = TokenService();
 
   @override
+  void initState() {
+    super.initState();
+    // Clear selected institution if user edits the text
+    _institutionController.addListener(() {
+      if (_institutionController.text != _selectedInstitution) {
+        _selectedInstitution = null;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _retypePasswordController.dispose();
+    _institutionController.dispose();
     _verificationCheckTimer?.cancel();
     super.dispose();
   }
@@ -71,6 +101,11 @@ class _RegistrationPageState extends State<RegistrationPage>
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedInstitution == null) {
+      _showSnackBar(message: 'Please select your institution from the list.');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -97,7 +132,7 @@ class _RegistrationPageState extends State<RegistrationPage>
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Initialize token service if needed (comment out if not used)
+      // Initialize token service if needed
       await _tokenService.initializeToken();
 
       // Get the Firebase auth token and save it using shared_preferences
@@ -105,7 +140,6 @@ class _RegistrationPageState extends State<RegistrationPage>
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('authToken', token);
-        print("Token saved in shared preferences: $token");
       }
 
       // Send verification email
@@ -171,9 +205,7 @@ class _RegistrationPageState extends State<RegistrationPage>
             style: const TextStyle(color: Colors.white),
             autofocus: autoFocus,
             textInputAction: textInputAction,
-            onFieldSubmitted: (_) {
-              if (onFieldSubmitted != null) onFieldSubmitted();
-            },
+            onFieldSubmitted: (_) => onFieldSubmitted?.call(),
             decoration: InputDecoration(
               hintText: hintText,
               hintStyle: const TextStyle(color: Colors.white54),
@@ -197,7 +229,8 @@ class _RegistrationPageState extends State<RegistrationPage>
     );
   }
 
-  Widget _buildDropdownField() {
+  /// Institution autocomplete field – width-constrained options panel
+  Widget _buildInstitutionField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -211,104 +244,82 @@ class _RegistrationPageState extends State<RegistrationPage>
             color: Colors.white.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              canvasColor: Colors.black87,
-              popupMenuTheme: PopupMenuThemeData(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                borderRadius: BorderRadius.circular(12),
-                value: _selectedInstitution,
-                dropdownColor: Colors.black87,
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                style: const TextStyle(color: Colors.white),
-                hint: const Text(
-                  'Select Institution',
-                  style: TextStyle(color: Colors.white54),
-                ),
-                onChanged: (String? newValue) {
-                  setState(() => _selectedInstitution = newValue);
+          // keep horizontal padding so the text aligns with other fields
+          padding: const EdgeInsets.symmetric(horizontal: 0),
+          child: LayoutBuilder(                                    // NEW
+            builder: (context, constraints) {
+              final fieldWidth = constraints.maxWidth;             // NEW
+              return Autocomplete<String>(
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  if (textEditingValue.text.isEmpty) {
+                    return const Iterable<String>.empty();
+                  }
+                  return _institutions.where((option) => option
+                      .toLowerCase()
+                      .contains(textEditingValue.text.toLowerCase()));
                 },
-                items: const [
-                  DropdownMenuItem(
-                    value: 'North Carolina State University',
-                    child: Text(
-                      'North Carolina State University',
-                      style: TextStyle(color: Colors.white),
+                displayStringForOption: (option) => option,
+                fieldViewBuilder: (context, controller, focusNode,
+                    onEditingComplete) {
+                  controller.text = _institutionController.text;
+                  return TextFormField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: 'Start typing your institution',
+                      hintStyle: TextStyle(color: Colors.white54),
+                      border: InputBorder.none,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'University of North Carolina at Chapel Hill',
-                    child: Text(
-                      'University of North Carolina at Chapel Hill',
-                      style: TextStyle(color: Colors.white),
+                    validator: (_) => _selectedInstitution == null
+                        ? 'Please select your institution from the list'
+                        : null,
+                  );
+                },
+                optionsViewBuilder: (context, onSelected, options) {
+                  return Align(
+                    alignment: Alignment.topLeft,
+                    child: Material(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(12),
+                      child: ConstrainedBox(                       // NEW
+                        constraints: BoxConstraints(
+                          maxWidth: fieldWidth,                   // NEW
+                          maxHeight: 200,
+                        ),
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: options.length,
+                          itemBuilder: (context, index) {
+                            final option = options.elementAt(index);
+                            return InkWell(
+                              onTap: () => onSelected(option),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Text(option,
+                                    style:
+                                        const TextStyle(color: Colors.white)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Duke University',
-                    child: Text(
-                      'Duke University',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'North Carolina A&T State University',
-                    child: Text(
-                      'North Carolina A&T State University',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'University of North Carolina Greensboro',
-                    child: Text(
-                      'University of North Carolina Greensboro',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'University of North Carolina at Charlotte',
-                    child: Text(
-                      'University of North Carolina at Charlotte',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'East Carolina University',
-                    child: Text(
-                      'East Carolina University',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Shaw University',
-                    child: Text(
-                      'Shaw University',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'North Carolina Central University',
-                    child: Text(
-                      'North Carolina Central University',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Meredith College',
-                    child: Text(
-                      'Meredith College',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                  );
+                },
+                onSelected: (selection) {
+                  setState(() {
+                    _selectedInstitution = selection;
+                    _institutionController.text = selection;
+                  });
+                },
+                initialValue:
+                    TextEditingValue(text: _institutionController.text),
+              );
+            },
           ),
         ),
       ],
@@ -385,7 +396,7 @@ class _RegistrationPageState extends State<RegistrationPage>
                     "Verify to continue!",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Lovelo', // Lovelo font
+                      fontFamily: 'Lovelo',
                       color: Colors.white,
                       fontSize: 20,
                     ),
@@ -597,7 +608,8 @@ class _RegistrationPageState extends State<RegistrationPage>
                             obscureText: _obscureRetypePassword,
                             toggleVisibility: () {
                               setState(() {
-                                _obscureRetypePassword = !_obscureRetypePassword;
+                                _obscureRetypePassword =
+                                    !_obscureRetypePassword;
                               });
                             },
                             validator: (value) {
@@ -611,8 +623,8 @@ class _RegistrationPageState extends State<RegistrationPage>
                             },
                           ),
                           const SizedBox(height: 20),
-                          // Institution dropdown
-                          _buildDropdownField(),
+                          // Institution autocomplete
+                          _buildInstitutionField(),
                           const SizedBox(height: 30),
                           // Register button
                           _buildRegisterButton(),
@@ -661,8 +673,8 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
   // Positions and velocities for manual bouncing
   double _xPos = 0;
   double _yPos = 0;
-  double _xVel = 0.7; // Adjust for slower horizontal movement
-  double _yVel = 1.0; // Adjust for slower vertical movement
+  double _xVel = 0.7;
+  double _yVel = 1.0;
 
   // Ragtag logo size
   final double _logoWidth = 80;
@@ -766,7 +778,7 @@ class _BouncingLogoWidgetState extends State<BouncingLogoWidget>
                 BlendMode.srcATop,
               ),
               child: Image.asset(
-                'assets/ragtaglogo.png', // Ensure this path is correct
+                'assets/ragtaglogo.png',
                 fit: BoxFit.contain,
               ),
             ),

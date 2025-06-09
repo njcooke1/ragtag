@@ -76,28 +76,48 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     super.dispose();
   }
 
-  /// Grab all admin communities from your collections
-  Future<List<QueryDocumentSnapshot>> _fetchAllAdminCommunities() async {
-    final userId = user?.uid;
-    if (userId == null) return [];
+// ──────────────────────────────────────────────────────────────────────────────
+//  REPLACE your existing _fetchAllAdminCommunities() with everything below
+// ──────────────────────────────────────────────────────────────────────────────
+Future<List<QueryDocumentSnapshot>> _fetchAllAdminCommunities() async {
+  final userId = user?.uid;
+  if (userId == null) return [];
 
-    final collections = [
-      'clubs',
-      'openForums',
-      'interestGroups',
-      'ragtagSparks',
-    ];
+  // All collections you want to scan
+  const collections = [
+    'clubs',
+    'openForums',
+    'interestGroups',
+    'ragtagSparks',
+  ];
 
-    final queries = collections.map((col) {
-      return FirebaseFirestore.instance
-          .collection(col)
-          .where('admins', arrayContains: userId)
-          .get();
-    }).toList();
+  // For each collection we query both adminIds and legacy admins fields
+  final futures = collections.map((col) async {
+    final colRef = FirebaseFirestore.instance.collection(col);
 
-    final results = await Future.wait(queries);
-    return results.expand((snapshot) => snapshot.docs).toList();
-  }
+    // New schema (adminIds)
+    final snap1 =
+        await colRef.where('adminIds', arrayContains: userId).get();
+
+    // Legacy schema (admins)
+    final snap2 =
+        await colRef.where('admins', arrayContains: userId).get();
+
+    // Merge and de-duplicate
+    final allDocs = <QueryDocumentSnapshot>{
+      ...snap1.docs,
+      ...snap2.docs,
+    };
+
+    return allDocs;
+  }).toList();
+
+  final results = await Future.wait(futures);
+
+  // Flatten the sets into a single list
+  return results.expand((s) => s).toList();
+}
+// ──────────────────────────────────────────────────────────────────────────────
 
   /// Minimal function to fetch current user's pfp from Firestore
   Future<void> _fetchUserPfpUrl() async {
@@ -543,153 +563,156 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     );
   }
 
-  ///
-  /// Big card: pfp on top, info & edit below
-  ///
-  Widget _buildBigCommunityCard({
-    required BuildContext context,
-    required String docId,
-    required String name,
-    required String description,
-    required String imageUrl,
-    required String communityType,
-  }) {
-    return InkWell(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/edit_community',
-          arguments: {
-            'id': docId,
-            'name': name,
-            'description': description,
-            'imageUrl': imageUrl,
-            'type': communityType,
-          },
-        );
-      },
-      borderRadius: BorderRadius.circular(12),
-      splashColor: Colors.white24,
-      child: Container(
-        decoration: BoxDecoration(
+// ──────────────────────────────────────────────────────────────────────────────
+//  REPLACE your existing _buildBigCommunityCard() with everything below
+// ──────────────────────────────────────────────────────────────────────────────
+Widget _buildBigCommunityCard({
+  required BuildContext context,
+  required String docId,
+  required String name,
+  required String description,
+  required String imageUrl,
+  required String communityType,
+}) {
+  return InkWell(
+    onTap: () {
+      Navigator.pushNamed(
+        context,
+        '/edit_community',
+        arguments: {
+          'id': docId,
+          'name': name,
+          'description': description,
+          'imageUrl': imageUrl,
+          'type': communityType,
+        },
+      );
+    },
+    borderRadius: BorderRadius.circular(12),
+    splashColor: Colors.white24,
+    child: Container(
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.white.withOpacity(0.06)
+            : Colors.black.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
           color: isDarkMode
-              ? Colors.white.withOpacity(0.06)
-              : Colors.black.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDarkMode
-                ? Colors.white.withOpacity(0.1)
-                : Colors.black.withOpacity(0.1),
-            width: 1,
-          ),
+              ? Colors.white.withOpacity(0.1)
+              : Colors.black.withOpacity(0.1),
+          width: 1,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Community image on top
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: (imageUrl.isNotEmpty)
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (ctx, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            color: Colors.grey.shade900,
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white54,
-                              ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Community image on top
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: (imageUrl.isNotEmpty)
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (ctx, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          color: Colors.grey.shade900,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white54,
                             ),
-                          );
-                        },
-                        errorBuilder: (ctx, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade900,
-                            child: Icon(
-                              Icons.broken_image,
-                              color: isDarkMode ? Colors.white54 : Colors.black54,
-                              size: 40,
-                            ),
-                          );
-                        },
-                      )
-                    : Container(
-                        color: Colors.grey.shade900,
-                        child: Icon(
-                          Icons.photo_camera_back,
-                          color: isDarkMode ? Colors.white54 : Colors.black54,
-                          size: 40,
-                        ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (ctx, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey.shade900,
+                          child: Icon(
+                            Icons.broken_image,
+                            color:
+                                isDarkMode ? Colors.white54 : Colors.black54,
+                            size: 40,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey.shade900,
+                      child: Icon(
+                        Icons.photo_camera_back,
+                        color: isDarkMode ? Colors.white54 : Colors.black54,
+                        size: 40,
                       ),
-              ),
+                    ),
             ),
+          ),
 
-            // Info
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: isDarkMode ? Colors.white : Colors.black,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          // Info
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center, // <-- centered
+              children: [
+                Text(
+                  name,
+                  textAlign: TextAlign.center,               // <-- centered
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: isDarkMode ? Colors.white : Colors.black,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: isDarkMode ? Colors.white70 : Colors.black87,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                    fontSize: 14,
                   ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,              // (optional) center desc
+                ),
+                const SizedBox(height: 12),
+              ],
             ),
+          ),
 
-            // Centered hollow circle icon at bottom
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Center(
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDarkMode ? Colors.white70 : Colors.black87,
-                      width: 1.4,
-                    ),
+          // Centered hollow circle icon at bottom
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Center(
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                    width: 1.4,
                   ),
-                  child: Icon(
-                    Icons.edit,
-                    color: isDarkMode
-                        ? Colors.white.withOpacity(0.9)
-                        : Colors.black.withOpacity(0.9),
-                    size: 18,
-                  ),
+                ),
+                child: Icon(
+                  Icons.edit,
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.9)
+                      : Colors.black.withOpacity(0.9),
+                  size: 18,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+// ──────────────────────────────────────────────────────────────────────────────
 
   ///
   /// Bottom icon bar with the new FOMO Feed logo

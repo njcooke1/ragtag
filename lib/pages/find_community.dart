@@ -4,6 +4,7 @@ import 'dart:math'; // For random selection
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:ragtagrevived/pages/review_page.dart';
 
 // Pages
 import 'package:ragtagrevived/pages/clubs_profile_page.dart';
@@ -274,9 +275,14 @@ class FindCommunityPage extends StatefulWidget {
 class _FindCommunityPageState extends State<FindCommunityPage>
     with SingleTickerProviderStateMixin {
   bool isDarkMode = true;
+  bool isEducator = false;
   int currentPage = 0;
   late PageController _pageController;
   late Timer _timer;
+  // ─── add these three private fields ───
+  bool _hasAgreedTOS = false;      // tracks whether TOS accepted
+  bool _isLoadingNew = false;      // true while “NEW” row fetches
+  String? _newErrorMessage;        // non-null if fetch failed
 
   String? currentUserId;
   String? userInstitution;
@@ -299,19 +305,19 @@ class _FindCommunityPageState extends State<FindCommunityPage>
 
   List<Map<String, dynamic>>? _cachedCommunities;
   DateTime? _lastFetchTime;
-  final Duration _cacheDuration = const Duration(hours: 5);
+// Refresh every 30 min instead of 5 h
+final Duration _cacheDuration = const Duration(minutes: 30);
 
-  bool _isLoadingNew = false;
-  String? _newErrorMessage;
+/// A cached list is “fresh” **only if**:
+/// • we actually have items, and
+/// • the TTL hasn’t expired.
+bool get _cacheIsFresh {
+  if (_cachedCommunities == null ||
+      _cachedCommunities!.isEmpty ||     // ← NEW: don’t cache empty results
+      _lastFetchTime == null) return false;
 
-  // For user agreement
-  bool _hasAgreedTOS = false;
-
-  bool get _cacheIsFresh {
-    if (_cachedCommunities == null || _lastFetchTime == null) return false;
-    final elapsed = DateTime.now().difference(_lastFetchTime!);
-    return elapsed < _cacheDuration;
-  }
+  return DateTime.now().difference(_lastFetchTime!) < _cacheDuration;
+}
 
   @override
   void initState() {
@@ -325,6 +331,7 @@ class _FindCommunityPageState extends State<FindCommunityPage>
       return;
     } else {
       currentUserId = user.uid;
+      _checkIfEducator();
       fetchUsername();
       fetchUserInstitution(user.uid);
       fetchUserPhotoUrl(user.uid);
@@ -833,6 +840,21 @@ class _FindCommunityPageState extends State<FindCommunityPage>
     }
   }
 
+// ──────────────────────────────────────────────────────────
+// Look up privilege once and flip the flag
+Future<void> _checkIfEducator() async {
+  if (currentUserId == null) return;
+
+  final snap = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUserId)
+      .get();
+
+  if (snap.exists && snap.data()?['privileges'] == 'educator') {
+    if (mounted) setState(() => isEducator = true);
+  }
+}
+// ──────────────────────────────────────────────────────────
   /// INTRO CHALLENGE LOGIC
   Future<void> _fetchIntroChallengeStatus() async {
     if (currentUserId == null) return;
@@ -1207,69 +1229,85 @@ class _FindCommunityPageState extends State<FindCommunityPage>
     );
   }
 
-  /// 3 big image buttons row
-  Widget buildActionButtons() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    const double buttonHeight = 180.0;
-    const double spacing = 2.0;
+/// 3 big (or 4, if educator) image-buttons row
+Widget buildActionButtons() {
+  final screenWidth = MediaQuery.of(context).size.width;
+  const double buttonHeight = 180.0;
+  const double spacing = 2.0;
 
-    return SizedBox(
-      width: screenWidth,
-      height: buttonHeight,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.zero,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _ScalableImageButton(
-              imagePath: 'assets/allorganizations.png',
-              onTap: () {
-                Navigator.pushNamed(context, '/all_organizations');
-              },
-              height: buttonHeight,
-            ),
-            SizedBox(width: spacing),
-            _ScalableImageButton(
-              imagePath: 'assets/events.png',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ClassSyncPage()),
-                );
-              },
-              height: buttonHeight,
-            ),
-            SizedBox(width: spacing),
-            _ScalableImageButton(
-              imagePath: 'assets/usersearch.png',
-              onTap: () {
-                if (userInstitution != null && userInstitution!.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => UserDirectoryPage(
-                        institution: userInstitution!,
-                      ),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("No institution available for user."),
-                    ),
-                  );
-                }
-              },
-              height: buttonHeight,
-            ),
-          ],
-        ),
+  // ───────── build the list dynamically ─────────
+  final List<Widget> buttons = [];
+
+  // Educator-only “Review” button
+  if (isEducator) {
+    buttons.add(
+      _ScalableImageButton(
+        imagePath: 'assets/review.png',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ReviewPage()),
+          );
+        },
+        height: buttonHeight,
       ),
     );
+    buttons.add(const SizedBox(width: spacing)); // add a spacer *after* it
   }
+
+  // Everyone sees these three:
+  buttons.addAll([
+    _ScalableImageButton(
+      imagePath: 'assets/allorganizations.png',
+      onTap: () => Navigator.pushNamed(context, '/all_organizations'),
+      height: buttonHeight,
+    ),
+    const SizedBox(width: spacing),
+    _ScalableImageButton(
+      imagePath: 'assets/events.png',
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ClassSyncPage()),
+      ),
+      height: buttonHeight,
+    ),
+    const SizedBox(width: spacing),
+    _ScalableImageButton(
+      imagePath: 'assets/usersearch.png',
+      onTap: () {
+        if (userInstitution != null && userInstitution!.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UserDirectoryPage(institution: userInstitution!),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("No institution available for user.")),
+          );
+        }
+      },
+      height: buttonHeight,
+    ),
+  ]);
+
+  // ───────── render ─────────
+  return SizedBox(
+    width: screenWidth,
+    height: buttonHeight,
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.zero,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: buttons,
+      ),
+    ),
+  );
+}
 
   /// "Discover By Category"
   Widget buildDiscoverByCategory() {
@@ -1935,27 +1973,40 @@ class _FindCommunityPageState extends State<FindCommunityPage>
     }
   }
 
-  /// Pull from a given collection, skipping ghost-mode
+  /// Pull from a given collection, enforce approval, and skip ghost-mode
   Future<List<Map<String, dynamic>>> _fetchCollectionOnce(
     String collectionName,
     String institution,
   ) async {
-    final querySnap = await FirebaseFirestore.instance
+    // Base query for the user’s institution
+    Query query = FirebaseFirestore.instance
         .collection(collectionName)
-        .where('institution', isEqualTo: institution)
-        .get();
+        .where('institution', isEqualTo: institution);
 
-    // Filter out any doc that has isGhostMode == true
-    return querySnap.docs
-        .map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          data['collection'] = collectionName;
-          data['type'] = data['type'] ?? _inferTypeFromCollectionName(collectionName);
-          return data;
-        })
-        .where((comm) => comm['isGhostMode'] != true)
-        .toList();
+    // Require "approved" status for Clubs, Interest Groups, and Open Forums
+    if (collectionName == 'clubs' ||
+        collectionName == 'interestGroups' ||
+        collectionName == 'openForums') {
+      query = query.where('approvalStatus', isEqualTo: 'approved');
+    }
+
+    final querySnap = await query.get();
+
+    // Convert to strongly-typed Map and filter out ghost-mode docs
+    final List<Map<String, dynamic>> results = querySnap.docs
+        .where((doc) =>
+            (doc.data() as Map<String, dynamic>)['isGhostMode'] != true)
+        .map<Map<String, dynamic>>((doc) {
+      final Map<String, dynamic> data =
+          doc.data() as Map<String, dynamic>; // explicit cast
+      data['id'] = doc.id;
+      data['collection'] = collectionName;
+      data['type'] =
+          data['type'] ?? _inferTypeFromCollectionName(collectionName);
+      return data;
+    }).toList();
+
+    return results;
   }
 
   String _inferTypeFromCollectionName(String collectionName) {

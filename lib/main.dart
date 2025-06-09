@@ -21,6 +21,7 @@ import 'pages/opening_landing_page.dart';
 import 'pages/interest_groups_chat_page.dart';
 import 'pages/start_community.dart';
 import 'pages/find_community.dart';
+import 'package:ragtagrevived/pages/review_page.dart';
 import 'pages/all_organizations.dart';
 import 'pages/clubs_profile_page.dart';
 import 'pages/interest_groups_profile_page.dart';
@@ -289,10 +290,40 @@ class _RagtagAppState extends State<RagtagApp> {
 
   @override
   Widget build(BuildContext context) {
+    // -------------- THEMING ----------------
+    const baseFont = 'Lovelo-Black';
+
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      fontFamily: baseFont,
+      scaffoldBackgroundColor: const Color(0xFFF9F9F9),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Colors.black),
+        bodyMedium: TextStyle(color: Colors.black),
+        bodySmall: TextStyle(color: Colors.black),
+      ),
+    );
+
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      fontFamily: baseFont,
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Colors.white),
+        bodyMedium: TextStyle(color: Colors.white),
+        bodySmall: TextStyle(color: Colors.white),
+      ),
+    );
+
+    // -------------- APP ----------------
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Ragtag App',
+
+      // ROUTES (unchanged)
       home: const RootPage(),
       routes: {
         '/home': (context) => const RootPage(),
@@ -360,7 +391,6 @@ class _RagtagAppState extends State<RagtagApp> {
         '/admin-dashboard': (context) => const AdminDashboardPage(),
         '/edit_community': (context) => EditCommunityPage(),
         '/fomo_feed': (context) => const FomoFeedPage(),
-        // Chat routes:
         '/user-chat': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           if (args == null || args['chatId'] == null) {
@@ -400,40 +430,28 @@ class _RagtagAppState extends State<RagtagApp> {
           );
         },
         '/forum-chat': (context) {
-  final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-  if (args == null || args['forumId'] == null) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'No chat data provided for open forum chat.',
-          style: TextStyle(color: Colors.red),
-        ),
-      ),
-    );
-  }
-  return OpenForumsProfilePage(
-    communityId: args['forumId'], // treat forumId as communityId
-    communityData: args['forumData'] ?? {}, // pass in any available forum data, or an empty map
-    userId: args['userId'] ?? FirebaseAuth.instance.currentUser?.uid ?? '',
-  );
-},
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          if (args == null || args['forumId'] == null) {
+            return const Scaffold(
+              body: Center(
+                child: Text(
+                  'No chat data provided for open forum chat.',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            );
+          }
+          return OpenForumsProfilePage(
+            communityId: args['forumId'], // treat forumId as communityId
+            communityData: args['forumData'] ?? {}, // pass in any available forum data, or an empty map
+            userId: args['userId'] ?? FirebaseAuth.instance.currentUser?.uid ?? '',
+          );
+        },
       },
-      onGenerateRoute: (settings) {
-        // Additional onGenerateRoute logic if needed.
-        return null;
-      },
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        fontFamily: 'Lovelo-Black',
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white),
-          bodySmall: TextStyle(color: Colors.white),
-        ),
-      ),
-      themeMode: ThemeMode.dark,
+      onGenerateRoute: (settings) => null, // keep custom logic if you add any
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.system, // 🌗 follow device preference
     );
   }
 }
@@ -444,16 +462,14 @@ class RootPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
+    return StreamBuilder<User?>(      // listen to auth state
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // While Firebase is determining the auth state, show a loading spinner.
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        // Route to the appropriate page based on user authentication.
         final user = snapshot.data;
         if (user != null) {
           print('User detected. Routing to FirstChoicePage.');

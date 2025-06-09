@@ -10,7 +10,11 @@ import 'package:flutter/material.dart';
 // --- Helper Functions for Report / Block Actions ---
 //
 
-void _showCommunityActions(BuildContext context, String communityId, String collectionName) {
+void _showCommunityActions(
+  BuildContext context,
+  String communityId,
+  String collectionName,
+) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.black87,
@@ -47,7 +51,11 @@ void _showCommunityActions(BuildContext context, String communityId, String coll
   );
 }
 
-void _showReportDialog(BuildContext context, String communityId, String collectionName) {
+void _showReportDialog(
+  BuildContext context,
+  String communityId,
+  String collectionName,
+) {
   String selectedReason = 'Spam or Scam';
   final TextEditingController _descriptionController = TextEditingController();
 
@@ -82,10 +90,17 @@ void _showReportDialog(BuildContext context, String communityId, String collecti
                       'Inappropriate Content',
                       'Fake Community',
                       'Other',
-                    ].map((reason) => DropdownMenuItem<String>(
-                      value: reason,
-                      child: Text(reason, style: const TextStyle(color: Colors.white)),
-                    )).toList(),
+                    ]
+                        .map(
+                          (reason) => DropdownMenuItem<String>(
+                            value: reason,
+                            child: Text(
+                              reason,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (value) {
                       setState(() {
                         selectedReason = value ?? 'Spam or Scam';
@@ -166,7 +181,9 @@ Future<void> _reportCommunity(
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Report submitted. We will conduct a full investigation within 24 hours.'),
+        content: Text(
+          'Report submitted. We will conduct a full investigation within 24 hours.',
+        ),
       ),
     );
   } catch (e) {
@@ -176,12 +193,20 @@ Future<void> _reportCommunity(
   }
 }
 
-Future<void> _blockCommunity(BuildContext context, String communityId, String collectionName) async {
+Future<void> _blockCommunity(
+  BuildContext context,
+  String communityId,
+  String collectionName,
+) async {
   final currentUser = FirebaseAuth.instance.currentUser;
   if (currentUser == null) return;
   try {
-    await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
-      _getBlockedFieldName(collectionName): FieldValue.arrayUnion([communityId]),
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .update({
+      _getBlockedFieldName(collectionName):
+          FieldValue.arrayUnion([communityId]),
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Community blocked.')),
@@ -193,12 +218,20 @@ Future<void> _blockCommunity(BuildContext context, String communityId, String co
   }
 }
 
-Future<void> _unblockCommunity(BuildContext context, String communityId, String collectionName) async {
+Future<void> _unblockCommunity(
+  BuildContext context,
+  String communityId,
+  String collectionName,
+) async {
   final currentUser = FirebaseAuth.instance.currentUser;
   if (currentUser == null) return;
   try {
-    await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
-      _getBlockedFieldName(collectionName): FieldValue.arrayRemove([communityId]),
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .update({
+      _getBlockedFieldName(collectionName):
+          FieldValue.arrayRemove([communityId]),
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Community unblocked.')),
@@ -239,7 +272,8 @@ Future<List<QueryDocumentSnapshot>> _filterGhostDocs(
       results.add(docSnap);
     } else {
       if (uid == null) continue;
-      final memberDoc = await docSnap.reference.collection('members').doc(uid).get();
+      final memberDoc =
+          await docSnap.reference.collection('members').doc(uid).get();
       if (memberDoc.exists) {
         results.add(docSnap);
       }
@@ -285,7 +319,8 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
       return;
     }
     try {
-      final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final docRef =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
       final docSnapshot = await docRef.get();
       if (docSnapshot.exists) {
         final data = docSnapshot.data();
@@ -323,12 +358,15 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
     if (institutionErrorMessage != null) {
       return Scaffold(
         backgroundColor: const Color(0xFF121212),
-        body: Center(child: Text(institutionErrorMessage!, style: const TextStyle(color: Colors.red))),
+        body: Center(
+            child: Text(institutionErrorMessage!,
+                style: const TextStyle(color: Colors.red))),
       );
     }
-    final institutionName = (userInstitution != null && userInstitution!.isNotEmpty)
-        ? userInstitution!
-        : "ALL COMMUNITIES";
+    final institutionName =
+        (userInstitution != null && userInstitution!.isNotEmpty)
+            ? userInstitution!
+            : "ALL COMMUNITIES";
 
     return DefaultTabController(
       length: 3,
@@ -359,7 +397,8 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                       color: Colors.white.withOpacity(0.1),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+                      icon: const Icon(Icons.arrow_back_ios_new,
+                          color: Colors.white, size: 18),
                       onPressed: () {
                         Navigator.pushNamed(context, '/find_community');
                       },
@@ -369,7 +408,8 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
                   collapseMode: CollapseMode.parallax,
-                  titlePadding: const EdgeInsets.only(bottom: 72, left: 16, right: 16),
+                  titlePadding:
+                      const EdgeInsets.only(bottom: 72, left: 16, right: 16),
                   title: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -416,7 +456,8 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                   preferredSize: const Size.fromHeight(60.0),
                   child: Container(
                     height: 48,
-                    margin: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 32.0, vertical: 16.0),
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(15.0),
@@ -437,16 +478,19 @@ class _AllOrganizationsPageState extends State<AllOrganizationsPage> {
                             ),
                             decoration: const InputDecoration(
                               hintText: 'Find your next hangout...',
-                              hintStyle: TextStyle(color: Colors.white54, fontFamily: 'Lovelo'),
+                              hintStyle: TextStyle(
+                                  color: Colors.white54, fontFamily: 'Lovelo'),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16.0, vertical: 0),
                             ),
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.search, color: Colors.white),
                           onPressed: () {
-                            setState(() => _searchQuery = _searchController.text.toLowerCase());
+                            setState(() => _searchQuery =
+                                _searchController.text.toLowerCase());
                           },
                         ),
                       ],
@@ -522,7 +566,8 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get maxExtent => _tabBar.preferredSize.height;
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xFF1F1F1F),
@@ -534,6 +579,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
       child: _tabBar,
     );
   }
+
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }
@@ -547,7 +593,8 @@ class InterestOrClassGroupsTab extends StatefulWidget {
     required this.searchQuery,
   }) : super(key: key);
   @override
-  State<InterestOrClassGroupsTab> createState() => _InterestOrClassGroupsTabState();
+  State<InterestOrClassGroupsTab> createState() =>
+      _InterestOrClassGroupsTabState();
 }
 
 class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
@@ -572,7 +619,8 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
                   style: TextStyle(
                     fontFamily: 'Lovelo',
                     fontSize: 16,
-                    fontWeight: showClassGroups ? FontWeight.normal : FontWeight.bold,
+                    fontWeight:
+                        showClassGroups ? FontWeight.normal : FontWeight.bold,
                     color: showClassGroups ? Colors.grey : Colors.white,
                   ),
                 ),
@@ -585,7 +633,8 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
                   style: TextStyle(
                     fontFamily: 'Lovelo',
                     fontSize: 16,
-                    fontWeight: showClassGroups ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        showClassGroups ? FontWeight.bold : FontWeight.normal,
                     color: showClassGroups ? Colors.white : Colors.grey,
                   ),
                 ),
@@ -610,8 +659,9 @@ class _InterestOrClassGroupsTabState extends State<InterestOrClassGroupsTab> {
 }
 
 /// Displays a grid of organizations from Firestore.
-/// Blocked communities are now stored in dedicated fields based on the collection type,
-/// so the query below fetches the blocked IDs from the appropriate field.
+/// Blocked communities are now stored in dedicated fields based on the
+/// collection type, so the query below fetches the blocked IDs from the
+/// appropriate field.
 class OrganizationGrid extends StatelessWidget {
   final String collectionName;
   final String searchQuery;
@@ -632,18 +682,36 @@ class OrganizationGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Build the base query.
-    Query collectionQuery = FirebaseFirestore.instance.collection(collectionName);
+    Query collectionQuery =
+        FirebaseFirestore.instance.collection(collectionName);
+
+    // Filter by institution if needed.
     if (userInstitution.isNotEmpty && userInstitution != 'ALL COMMUNITIES') {
-      collectionQuery = collectionQuery.where('institution', isEqualTo: userInstitution);
+      collectionQuery =
+          collectionQuery.where('institution', isEqualTo: userInstitution);
     }
+
+    // *** NEW: Only show approved communities for Clubs, Interest Groups,
+    // and Open Forums (NOT classGroups). ***
+    if (collectionName == 'clubs' ||
+        collectionName == 'interestGroups' ||
+        collectionName == 'openForums') {
+      collectionQuery =
+          collectionQuery.where('approvalStatus', isEqualTo: 'approved');
+    }
+
+    // Additional filter for active class groups.
     if (isClassGroups) {
-      collectionQuery = collectionQuery.where('expiresAt', isGreaterThan: Timestamp.now());
+      collectionQuery =
+          collectionQuery.where('expiresAt', isGreaterThan: Timestamp.now());
     }
+
     return StreamBuilder<QuerySnapshot>(
       stream: collectionQuery.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.white));
+          return const Center(
+              child: CircularProgressIndicator(color: Colors.white));
         }
         if (snapshot.hasError) {
           final errorMsg = snapshot.error.toString();
@@ -682,38 +750,59 @@ class OrganizationGrid extends StatelessWidget {
           future: _filterGhostDocs(bySearch),
           builder: (ctx, filteredSnap) {
             if (filteredSnap.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Colors.white));
+              return const Center(
+                  child: CircularProgressIndicator(color: Colors.white));
             }
             if (filteredSnap.hasError) {
-              return Center(child: Text('Ghost filter error:\n\n${filteredSnap.error}', style: const TextStyle(color: Colors.red)));
+              return Center(
+                child: Text(
+                  'Ghost filter error:\n\n${filteredSnap.error}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              );
             }
             final finalDocs = filteredSnap.data ?? [];
             if (finalDocs.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Center(child: Text('No results found', style: TextStyle(color: Colors.grey))),
+                child: Center(
+                  child: Text('No results found',
+                      style: TextStyle(color: Colors.grey)),
+                ),
               );
             }
-            // Use a StreamBuilder to listen to changes in the user's document for blocked communities.
+            // Use a StreamBuilder to listen to changes in the user's document
+            // for blocked communities.
             return StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .doc(FirebaseAuth.instance.currentUser!.uid)
                   .snapshots(),
               builder: (context, userDocSnapshot) {
-                if (userDocSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                if (userDocSnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                      child: CircularProgressIndicator(color: Colors.white));
                 }
                 if (userDocSnapshot.hasError) {
-                  return Center(child: Text('Error: ${userDocSnapshot.error}', style: const TextStyle(color: Colors.red)));
+                  return Center(
+                    child: Text('Error: ${userDocSnapshot.error}',
+                        style: const TextStyle(color: Colors.red)),
+                  );
                 }
-                final userData = userDocSnapshot.data?.data() as Map<String, dynamic>? ?? {};
+                final userData = userDocSnapshot.data?.data()
+                        as Map<String, dynamic>? ??
+                    {};
                 final blockedField = _getBlockedFieldName(collectionName);
-                final blockedList = userData[blockedField] as List<dynamic>? ?? [];
-                final blockedIds = blockedList.map((e) => e.toString()).toList();
+                final blockedList =
+                    userData[blockedField] as List<dynamic>? ?? [];
+                final blockedIds =
+                    blockedList.map((e) => e.toString()).toList();
 
-                final activeDocs = finalDocs.where((doc) => !blockedIds.contains(doc.id)).toList();
-                final blockedDocs = finalDocs.where((doc) => blockedIds.contains(doc.id)).toList();
+                final activeDocs =
+                    finalDocs.where((doc) => !blockedIds.contains(doc.id)).toList();
+                final blockedDocs =
+                    finalDocs.where((doc) => blockedIds.contains(doc.id)).toList();
 
                 // Build UI sections.
                 Widget activeWidget;
@@ -845,13 +934,17 @@ class OrganizationGrid extends StatelessWidget {
                         iconColor: Colors.white70,
                         title: const Text(
                           "Blocked Communities",
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold),
                         ),
                         children: blockedDocs.map((doc) {
                           final data = doc.data() as Map<String, dynamic>;
                           data['id'] = doc.id;
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             child: OrganizationCard(
                               collectionName: collectionName,
                               communityId: doc.id,
@@ -959,7 +1052,8 @@ class OrganizationGrid extends StatelessWidget {
                               placeholder: (context, url) => Container(
                                 color: Colors.grey.shade900,
                                 child: const Center(
-                                  child: CircularProgressIndicator(color: Colors.white),
+                                  child:
+                                      CircularProgressIndicator(color: Colors.white),
                                 ),
                               ),
                               errorWidget: (context, url, error) => Container(
@@ -1019,7 +1113,8 @@ class OrganizationGrid extends StatelessWidget {
             top: 8,
             right: 8,
             child: IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
+              icon: const Icon(Icons.more_vert,
+                  color: Colors.white70, size: 20),
               onPressed: () => _showCommunityActions(context, docId, 'clubs'),
             ),
           ),
@@ -1071,31 +1166,34 @@ class OrganizationCard extends StatelessWidget {
       child: Stack(
         children: [
           circleCards
-              ? _buildCircleCard(pfpType == 'textAvatar' && pfpText.isNotEmpty)
-              : _buildRectangularCard(pfpType == 'textAvatar' && pfpText.isNotEmpty),
+              ? _buildCircleCard(
+                  pfpType == 'textAvatar' && pfpText.isNotEmpty)
+              : _buildRectangularCard(
+                  pfpType == 'textAvatar' && pfpText.isNotEmpty),
           Positioned(
             top: 4,
             right: 4,
             child: isBlocked
                 ? TextButton(
-                    onPressed: () => _unblockCommunity(context, communityId, collectionName),
+                    onPressed: () =>
+                        _unblockCommunity(context, communityId, collectionName),
                     child: const Text(
                       'Unblock',
                       style: TextStyle(color: Colors.redAccent),
                     ),
                   )
                 : IconButton(
-                    icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
-                    onPressed: () => _showCommunityActions(context, communityId, collectionName),
+                    icon: const Icon(Icons.more_vert,
+                        color: Colors.white70, size: 20),
+                    onPressed: () =>
+                        _showCommunityActions(context, communityId, collectionName),
                   ),
           ),
         ],
       ),
     );
 
-    return isBlocked
-        ? Opacity(opacity: 0.6, child: cardContent)
-        : cardContent;
+    return isBlocked ? Opacity(opacity: 0.6, child: cardContent) : cardContent;
   }
 
   Widget _buildCircleCard(bool isTextAvatar) {
@@ -1213,7 +1311,8 @@ class OrganizationCard extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
-                  crossAxisAlignment: circleCards ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      circleCards ? CrossAxisAlignment.center : CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
@@ -1253,17 +1352,20 @@ class OrganizationCard extends StatelessWidget {
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
           color: Colors.grey.shade900,
-          child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+          child:
+              const Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
         errorWidget: (context, url, error) => Container(
           color: Colors.grey.shade900,
-          child: const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+          child: const Icon(Icons.broken_image,
+              color: Colors.white54, size: 48),
         ),
       );
     } else {
       return Container(
         color: Colors.grey.shade900,
-        child: const Icon(Icons.image, color: Colors.white54, size: 48),
+        child:
+            const Icon(Icons.image, color: Colors.white54, size: 48),
       );
     }
   }

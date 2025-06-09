@@ -9,10 +9,9 @@ const admin = require('firebase-admin');
 initializeApp();
 
 // ------------------------------------------
-// HELPER FUNCTION
+// HELPER FUNCTION: Send notifications
 // ------------------------------------------
 async function sendNotification(fcmTokens, notificationPayload) {
-  // If only one token, send a single message to use the /fcm/send endpoint.
   if (fcmTokens.length === 1) {
     const message = {
       token: fcmTokens[0],
@@ -20,14 +19,12 @@ async function sendNotification(fcmTokens, notificationPayload) {
       data: notificationPayload.data,
     };
     const messageId = await admin.messaging().send(message);
-    // Mimic sendAll response format for consistency:
     return {
       successCount: 1,
       failureCount: 0,
       responses: [{ error: null, messageId }],
     };
   } else {
-    // Multiple tokens: use sendAll (this calls the batch endpoint)
     const messages = fcmTokens.map((token) => ({
       token,
       notification: notificationPayload.notification,
@@ -38,9 +35,27 @@ async function sendNotification(fcmTokens, notificationPayload) {
 }
 
 // ------------------------------------------
+// HELPER FUNCTION: Get sender's full name
+// ------------------------------------------
+async function getSenderName(senderId, currentName) {
+  // If currentName is set and not "Anonymous", use it.
+  if (currentName && currentName !== 'Anonymous') {
+    return currentName;
+  }
+  try {
+    const userDoc = await admin.firestore().collection('users').doc(senderId).get();
+    if (userDoc.exists) {
+      return userDoc.data().fullName || 'Unknown User';
+    }
+  } catch (error) {
+    console.error(`Error fetching fullName for senderId ${senderId}:`, error);
+  }
+  return 'Unknown User';
+}
+
+// ------------------------------------------
 // TAG NOTIFICATION FUNCTION
-// Triggered when a new doc is created in:
-//  clubs/{communityId}/tagNotifications/{tagId}
+// (Remains unchanged)
 // ------------------------------------------
 exports.sendTagNotification = onDocumentCreated(
   'clubs/{communityId}/tagNotifications/{tagId}',
@@ -57,8 +72,7 @@ exports.sendTagNotification = onDocumentCreated(
     const tagId = event.params.tagId;
 
     console.log(
-      `Tag created: Title=${tagTitle}, Message=${tagMessage}, ` +
-      `CommunityID=${communityId}, TagID=${tagId}`
+      `Tag created: Title=${tagTitle}, Message=${tagMessage}, CommunityID=${communityId}, TagID=${tagId}`
     );
 
     const communityRef = admin.firestore().collection('clubs').doc(communityId);
@@ -80,7 +94,6 @@ exports.sendTagNotification = onDocumentCreated(
 
       console.log(`Found ${memberIds.length} members in community ${communityId}.`);
 
-      // Collect FCM tokens from members
       const fcmTokens = [];
       for (const userId of memberIds) {
         const userRef = admin.firestore().collection('users').doc(userId);
@@ -97,26 +110,17 @@ exports.sendTagNotification = onDocumentCreated(
         return;
       }
 
-      // Build the notification payload
       const notificationPayload = {
         notification: {
           title: tagTitle,
           body: tagMessage,
         },
-        data: {
-          communityId,
-          tagId,
-        },
+        data: { communityId, tagId },
       };
 
-      // Send notifications using our helper
       const response = await sendNotification(fcmTokens, notificationPayload);
-      console.log(
-        `Tag notifications sent: ${response.successCount} succeeded, ` +
-        `${response.failureCount} failed.`
-      );
+      console.log(`Tag notifications sent: ${response.successCount} succeeded, ${response.failureCount} failed.`);
 
-      // Remove invalid tokens
       const tokensToRemove = [];
       response.responses.forEach((res, idx) => {
         if (res.error) {
@@ -132,16 +136,10 @@ exports.sendTagNotification = onDocumentCreated(
       if (tokensToRemove.length > 0) {
         console.log('Removing invalid tokens from Firestore:', tokensToRemove);
         for (const invalidToken of tokensToRemove) {
-          const usersSnap = await admin
-            .firestore()
-            .collection('users')
-            .where('fcmToken', '==', invalidToken)
-            .get();
+          const usersSnap = await admin.firestore().collection('users').where('fcmToken', '==', invalidToken).get();
           if (!usersSnap.empty) {
             for (const doc of usersSnap.docs) {
-              await doc.ref.update({
-                fcmToken: admin.firestore.FieldValue.delete(),
-              });
+              await doc.ref.update({ fcmToken: admin.firestore.FieldValue.delete() });
               console.log(`Removed invalid token from user ${doc.id}`);
             }
           }
@@ -155,8 +153,6 @@ exports.sendTagNotification = onDocumentCreated(
 
 // ------------------------------------------
 // USER CHAT MESSAGE NOTIFICATION FUNCTION
-// Triggered when a new doc is created in:
-//   chats/{chatId}/messages/{messageId}
 // ------------------------------------------
 exports.sendChatNotification = onDocumentCreated(
   'chats/{chatId}/messages/{messageId}',
@@ -168,10 +164,28 @@ exports.sendChatNotification = onDocumentCreated(
     }
 
     const chatId = event.params.chatId;
+    const messageId = event.params.messageId;
     const senderId = messageData.senderId || '';
-    const text = messageData.text || 'New message';
+    let senderName = messageData.senderName || 'Unknown User';
+    senderName = await getSenderName(senderId, senderName);
 
-    console.log(`New message in chat ${chatId} from user ${senderId}`);
+    // Update the message document if the senderName is outdated.
+    if (messageData.senderName !== senderName) {
+      await admin.firestore()
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .doc(messageId)
+        .update({ senderName });
+    }
+
+    const messageText = messageData.text || '';
+    const messagePreview =
+      messageText.length > 0
+        ? messageText.substring(0, 50) + (messageText.length > 50 ? '…' : '')
+        : 'sent a message';
+
+    console.log(`New message in chat ${chatId} from ${senderName}`);
 
     const chatRef = admin.firestore().collection('chats').doc(chatId);
     const chatSnap = await chatRef.get();
@@ -208,21 +222,13 @@ exports.sendChatNotification = onDocumentCreated(
     }
 
     const notificationPayload = {
-      notification: {
-        title: 'New Message',
-        body: text,
-      },
-      data: {
-        chatId,
-      },
+      notification: { title: senderName, body: messagePreview },
+      data: { chatId },
     };
 
     try {
       const response = await sendNotification(fcmTokens, notificationPayload);
-      console.log(
-        `Chat notifications sent: ${response.successCount} succeeded, ` +
-        `${response.failureCount} failed.`
-      );
+      console.log(`Chat notifications sent: ${response.successCount} succeeded, ${response.failureCount} failed.`);
 
       const tokensToRemove = [];
       response.responses.forEach((res, idx) => {
@@ -242,9 +248,7 @@ exports.sendChatNotification = onDocumentCreated(
           const usersWithBadToken = await admin.firestore().collection('users').where('fcmToken', '==', invalidToken).get();
           if (!usersWithBadToken.empty) {
             for (const doc of usersWithBadToken.docs) {
-              await doc.ref.update({
-                fcmToken: admin.firestore.FieldValue.delete(),
-              });
+              await doc.ref.update({ fcmToken: admin.firestore.FieldValue.delete() });
               console.log(`Removed invalid token from user ${doc.id}`);
             }
           }
@@ -258,8 +262,6 @@ exports.sendChatNotification = onDocumentCreated(
 
 // ------------------------------------------
 // CLUB CHAT MESSAGE NOTIFICATION FUNCTION
-// Triggered when a new doc is created in:
-//   clubs/{clubId}/messages/{messageId}
 // ------------------------------------------
 exports.sendClubChatNotification = onDocumentCreated(
   'clubs/{clubId}/messages/{messageId}',
@@ -271,10 +273,28 @@ exports.sendClubChatNotification = onDocumentCreated(
     }
 
     const clubId = event.params.clubId;
+    const messageId = event.params.messageId;
     const senderId = messageData.senderId || '';
-    const text = messageData.text || 'New message';
+    let senderName = messageData.senderName || 'Unknown User';
+    senderName = await getSenderName(senderId, senderName);
 
-    console.log(`New message in club ${clubId} from user ${senderId}`);
+    // Update the message document if the senderName is outdated.
+    if (messageData.senderName !== senderName) {
+      await admin.firestore()
+        .collection('clubs')
+        .doc(clubId)
+        .collection('messages')
+        .doc(messageId)
+        .update({ senderName });
+    }
+
+    const messageText = messageData.text || '';
+    const messagePreview =
+      messageText.length > 0
+        ? messageText.substring(0, 50) + (messageText.length > 50 ? '…' : '')
+        : 'sent a message';
+
+    console.log(`New message in club ${clubId} from ${senderName}`);
 
     const clubRef = admin.firestore().collection('clubs').doc(clubId);
     const clubSnap = await clubRef.get();
@@ -312,21 +332,13 @@ exports.sendClubChatNotification = onDocumentCreated(
     }
 
     const notificationPayload = {
-      notification: {
-        title: 'New Club Message',
-        body: text,
-      },
-      data: {
-        clubId,
-      },
+      notification: { title: senderName, body: messagePreview },
+      data: { clubId },
     };
 
     try {
       const response = await sendNotification(fcmTokens, notificationPayload);
-      console.log(
-        `Club chat notifications sent: ${response.successCount} succeeded, ` +
-        `${response.failureCount} failed.`
-      );
+      console.log(`Club chat notifications sent: ${response.successCount} succeeded, ${response.failureCount} failed.`);
 
       const tokensToRemove = [];
       response.responses.forEach((res, idx) => {
@@ -346,9 +358,7 @@ exports.sendClubChatNotification = onDocumentCreated(
           const usersSnap = await admin.firestore().collection('users').where('fcmToken', '==', invalidToken).get();
           if (!usersSnap.empty) {
             for (const doc of usersSnap.docs) {
-              await doc.ref.update({
-                fcmToken: admin.firestore.FieldValue.delete(),
-              });
+              await doc.ref.update({ fcmToken: admin.firestore.FieldValue.delete() });
               console.log(`Removed invalid token from user ${doc.id}`);
             }
           }
@@ -362,8 +372,6 @@ exports.sendClubChatNotification = onDocumentCreated(
 
 // ------------------------------------------
 // INTEREST GROUP CHAT MESSAGE NOTIFICATION FUNCTION
-// Triggered when a new doc is created in:
-//   interestGroups/{interestGroupId}/messages/{messageId}
 // ------------------------------------------
 exports.sendInterestGroupChatNotification = onDocumentCreated(
   'interestGroups/{interestGroupId}/messages/{messageId}',
@@ -375,10 +383,28 @@ exports.sendInterestGroupChatNotification = onDocumentCreated(
     }
 
     const interestGroupId = event.params.interestGroupId;
+    const messageId = event.params.messageId;
     const senderId = messageData.senderId || '';
-    const text = messageData.text || 'New message';
+    let senderName = messageData.senderName || 'Unknown User';
+    senderName = await getSenderName(senderId, senderName);
 
-    console.log(`New message in interest group ${interestGroupId} from user ${senderId}`);
+    // Update the message document if the senderName is outdated.
+    if (messageData.senderName !== senderName) {
+      await admin.firestore()
+        .collection('interestGroups')
+        .doc(interestGroupId)
+        .collection('messages')
+        .doc(messageId)
+        .update({ senderName });
+    }
+
+    const messageText = messageData.text || '';
+    const messagePreview =
+      messageText.length > 0
+        ? messageText.substring(0, 50) + (messageText.length > 50 ? '…' : '')
+        : 'sent a message';
+
+    console.log(`New message in interest group ${interestGroupId} from ${senderName}`);
 
     const groupRef = admin.firestore().collection('interestGroups').doc(interestGroupId);
     const groupSnap = await groupRef.get();
@@ -416,21 +442,13 @@ exports.sendInterestGroupChatNotification = onDocumentCreated(
     }
 
     const notificationPayload = {
-      notification: {
-        title: 'New Interest Group Message',
-        body: text,
-      },
-      data: {
-        interestGroupId,
-      },
+      notification: { title: senderName, body: messagePreview },
+      data: { interestGroupId },
     };
 
     try {
       const response = await sendNotification(fcmTokens, notificationPayload);
-      console.log(
-        `Interest group chat notifications sent: ${response.successCount} succeeded, ` +
-        `${response.failureCount} failed.`
-      );
+      console.log(`Interest group chat notifications sent: ${response.successCount} succeeded, ${response.failureCount} failed.`);
 
       const tokensToRemove = [];
       response.responses.forEach((res, idx) => {
@@ -450,9 +468,7 @@ exports.sendInterestGroupChatNotification = onDocumentCreated(
           const usersSnap = await admin.firestore().collection('users').where('fcmToken', '==', invalidToken).get();
           if (!usersSnap.empty) {
             for (const doc of usersSnap.docs) {
-              await doc.ref.update({
-                fcmToken: admin.firestore.FieldValue.delete(),
-              });
+              await doc.ref.update({ fcmToken: admin.firestore.FieldValue.delete() });
               console.log(`Removed invalid token from user ${doc.id}`);
             }
           }
@@ -466,8 +482,6 @@ exports.sendInterestGroupChatNotification = onDocumentCreated(
 
 // ------------------------------------------
 // OPEN FORUM CHAT MESSAGE NOTIFICATION FUNCTION
-// Triggered when a new doc is created in:
-//   openForums/{openForumId}/messages/{messageId}
 // ------------------------------------------
 exports.sendOpenForumChatNotification = onDocumentCreated(
   'openForums/{openForumId}/messages/{messageId}',
@@ -479,10 +493,28 @@ exports.sendOpenForumChatNotification = onDocumentCreated(
     }
 
     const openForumId = event.params.openForumId;
+    const messageId = event.params.messageId;
     const senderId = messageData.senderId || '';
-    const text = messageData.text || 'New message';
+    let senderName = messageData.senderName || 'Unknown User';
+    senderName = await getSenderName(senderId, senderName);
 
-    console.log(`New message in open forum ${openForumId} from user ${senderId}`);
+    // Update the message document if the senderName is outdated.
+    if (messageData.senderName !== senderName) {
+      await admin.firestore()
+        .collection('openForums')
+        .doc(openForumId)
+        .collection('messages')
+        .doc(messageId)
+        .update({ senderName });
+    }
+
+    const messageText = messageData.text || '';
+    const messagePreview =
+      messageText.length > 0
+        ? messageText.substring(0, 50) + (messageText.length > 50 ? '…' : '')
+        : 'sent a message';
+
+    console.log(`New message in open forum ${openForumId} from ${senderName}`);
 
     const forumRef = admin.firestore().collection('openForums').doc(openForumId);
     const forumSnap = await forumRef.get();
@@ -520,21 +552,13 @@ exports.sendOpenForumChatNotification = onDocumentCreated(
     }
 
     const notificationPayload = {
-      notification: {
-        title: 'New Open Forum Message',
-        body: text,
-      },
-      data: {
-        openForumId,
-      },
+      notification: { title: senderName, body: messagePreview },
+      data: { openForumId },
     };
 
     try {
       const response = await sendNotification(fcmTokens, notificationPayload);
-      console.log(
-        `Open forum chat notifications sent: ${response.successCount} succeeded, ` +
-        `${response.failureCount} failed.`
-      );
+      console.log(`Open forum chat notifications sent: ${response.successCount} succeeded, ${response.failureCount} failed.`);
 
       const tokensToRemove = [];
       response.responses.forEach((res, idx) => {
@@ -554,9 +578,7 @@ exports.sendOpenForumChatNotification = onDocumentCreated(
           const usersSnap = await admin.firestore().collection('users').where('fcmToken', '==', invalidToken).get();
           if (!usersSnap.empty) {
             for (const doc of usersSnap.docs) {
-              await doc.ref.update({
-                fcmToken: admin.firestore.FieldValue.delete(),
-              });
+              await doc.ref.update({ fcmToken: admin.firestore.FieldValue.delete() });
               console.log(`Removed invalid token from user ${doc.id}`);
             }
           }

@@ -90,6 +90,7 @@ flutter:
     - assets/back_button_image.png
     - assets/club1.png
     - assets/event1.png
+    - assets/review.png
     - assets/background.png
     - assets/club2.png
     - assets/newmemberbadge.png
@@ -104,6 +105,7 @@ flutter:
     - assets/pfpcut.png
     - assets/allorganizations.png
     - assets/events.png
+    - assets/dms.png
     - assets/LaunchImage.png
     - assets/newbanner.png
     - assets/news.png

@@ -1,36 +1,34 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"        // use canonical id
     id "dev.flutter.flutter-gradle-plugin"
-    id "com.google.gms.google-services" // Applied here
+    id "com.google.gms.google-services"
 }
 
-// Load signing info from key.properties (if it exists)
+/* ───────────────  Signing (unchanged) ─────────────── */
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+/* ───────────────  Android block  ─────────────── */
 android {
     namespace = "com.ragtag.ragtag"
-    
-    // Force compileSdk to API 35
-    compileSdk = 35
 
-    // If you have Build Tools 35.0.0 installed, set this explicitly:
+    /* Compile against API-35 (Android 15) */
+    compileSdk = 35
     buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "com.ragtag.ragtag"
         minSdkVersion 23
-        targetSdk = 35
+        targetSdk 35
 
         versionCode 1
         versionName "1.0"
     }
 
-    // Configure signing for release
     signingConfigs {
         release {
             storeFile file(keystoreProperties['storeFile'])
@@ -42,38 +40,44 @@ android {
 
     buildTypes {
         release {
-            // Use the release signing config
             signingConfig signingConfigs.release
-            
-            // (Optional) enable ProGuard/R8 for shrinking/obfuscation:
+            // Enable if you want shrinking/obfuscation:
             // minifyEnabled true
             // shrinkResources true
-            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+            //               'proguard-rules.pro'
         }
     }
 
+    /* ── Java 17 & desugaring ── */
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true      // <- **important**
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
+    kotlin {
+        jvmToolchain(17)                       // Kotlin ≥1.8 way to set JDK
     }
 }
 
+/* ───────────────  Flutter  ─────────────── */
 flutter {
     source = "../.."
 }
 
+/* ───────────────  Dependencies  ─────────────── */
 dependencies {
+    // Desugared JDK back-port for Java-time, Streams, etc.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
     // Firebase BoM
-    implementation platform('com.google.firebase:firebase-bom:33.7.0')
-    
-    // Firebase libraries
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-firestore'
-    implementation 'com.google.firebase:firebase-analytics'
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+
+    // Individual Firebase libs (versions come from BoM)
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-analytics")
 }
 
-apply plugin: 'com.google.gms.google-services'
+/* No need for an extra `apply plugin:`—the Plugins DSL already applied them */

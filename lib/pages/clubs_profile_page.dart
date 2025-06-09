@@ -23,6 +23,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'club_drawer_page.dart';
 import 'all_organizations.dart';
 import 'clubs_subpages.dart';
+import 'package:flutter/services.dart'; // for subtle haptics
 
 class ClubsProfilePage extends StatefulWidget {
   final String communityId;
